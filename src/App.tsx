@@ -39,6 +39,7 @@ const AppRoutes = () => {
       <Route path="/grading/preview" element={<GradingPreview />} />
       <Route path="/training" element={<Training />} />
       <Route path="/lms" element={<LMSIntegration />} />
+      <Route path="/lms/callback" element={<LMSCallback />} />
       <Route path="/privacy" element={<PrivacySettings />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

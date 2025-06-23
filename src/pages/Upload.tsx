@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Upload as UploadIcon, FileText, CheckCircle, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useToast } from "@/hooks/use-toast";
-import { uploadFile, extractTextFromFile } from "@/lib/fileUpload";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -23,6 +22,39 @@ const Upload = () => {
   const [instructions, setInstructions] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
+
+  const uploadFile = async (file: File, bucket: string) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(filePath, file);
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(filePath);
+
+    return {
+      success: true,
+      url: data.publicUrl
+    };
+  };
+
+  const extractTextFromFile = async (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        resolve(e.target?.result as string || '');
+      };
+      reader.readAsText(file);
+    });
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -69,7 +101,7 @@ const Upload = () => {
       const uploadResult = await uploadFile(uploadedFile, 'submissions');
       
       if (!uploadResult.success) {
-        throw new Error(uploadResult.error);
+        throw new Error('Upload failed');
       }
 
       // Extract text from file
