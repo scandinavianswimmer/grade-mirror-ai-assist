@@ -9,10 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Upload as UploadIcon, FileText, CheckCircle, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/components/AuthProvider";
 
 const Upload = () => {
+  console.log('Upload: Rendering page');
+  
   const [dragActive, setDragActive] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -21,40 +21,6 @@ const Upload = () => {
   const [rubric, setRubric] = useState('');
   const [instructions, setInstructions] = useState('');
   const { toast } = useToast();
-  const { user } = useAuth();
-
-  const uploadFile = async (file: File, bucket: string) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, file);
-
-    if (uploadError) {
-      throw uploadError;
-    }
-
-    const { data } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(filePath);
-
-    return {
-      success: true,
-      url: data.publicUrl
-    };
-  };
-
-  const extractTextFromFile = async (file: File): Promise<string> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        resolve(e.target?.result as string || '');
-      };
-      reader.readAsText(file);
-    });
-  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -85,10 +51,10 @@ const Upload = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!uploadedFile || !user) {
+    if (!uploadedFile) {
       toast({
         title: "Error",
-        description: "Please select a file and ensure you're logged in.",
+        description: "Please select a file to upload.",
         variant: "destructive"
       });
       return;
@@ -97,42 +63,8 @@ const Upload = () => {
     setUploading(true);
 
     try {
-      // Upload file to Supabase Storage
-      const uploadResult = await uploadFile(uploadedFile, 'submissions');
-      
-      if (!uploadResult.success) {
-        throw new Error('Upload failed');
-      }
-
-      // Extract text from file
-      const extractedText = await extractTextFromFile(uploadedFile);
-
-      // Create assignment record
-      const { data: assignment, error: assignmentError } = await supabase
-        .from('assignments')
-        .insert({
-          user_id: user.id,
-          title: assignmentName,
-          course_name: course,
-          due_date: new Date().toISOString(),
-          status: 'active'
-        })
-        .select()
-        .single();
-
-      if (assignmentError) throw assignmentError;
-
-      // Create submission record
-      const { error: submissionError } = await supabase
-        .from('submissions')
-        .insert({
-          assignment_id: assignment.id,
-          student_name: 'Student Name', // This would come from the form in a real app
-          file_url: uploadResult.url,
-          status: 'pending'
-        });
-
-      if (submissionError) throw submissionError;
+      // Simulate upload process
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       toast({
         title: "Assignment uploaded successfully!",
@@ -150,7 +82,7 @@ const Upload = () => {
       console.error('Upload error:', error);
       toast({
         title: "Upload failed",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description: "Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -193,7 +125,7 @@ const Upload = () => {
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Select course" />
                     </SelectTrigger>
-                    <SelectContent className="bg-white">
+                    <SelectContent className="bg-white z-50">
                       <SelectItem value="english-101">English 101 - Composition</SelectItem>
                       <SelectItem value="history-201">History 201 - American History</SelectItem>
                       <SelectItem value="literature-301">Literature 301 - Modern Fiction</SelectItem>
@@ -207,7 +139,7 @@ const Upload = () => {
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Select rubric" />
                     </SelectTrigger>
-                    <SelectContent className="bg-white">
+                    <SelectContent className="bg-white z-50">
                       <SelectItem value="essay-standard">Standard Essay Rubric</SelectItem>
                       <SelectItem value="creative-writing">Creative Writing Rubric</SelectItem>
                       <SelectItem value="research-paper">Research Paper Rubric</SelectItem>
