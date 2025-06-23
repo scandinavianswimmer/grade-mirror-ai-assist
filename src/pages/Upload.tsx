@@ -6,14 +6,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload as UploadIcon, FileText, CheckCircle } from "lucide-react";
+import { Upload as UploadIcon, FileText, CheckCircle, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useToast } from "@/hooks/use-toast";
+import { uploadFile, extractTextFromFile } from "@/lib/fileUpload";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/components/AuthProvider";
 
 const Upload = () => {
   const [dragActive, setDragActive] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [assignmentName, setAssignmentName] = useState('');
+  const [course, setCourse] = useState('');
+  const [rubric, setRubric] = useState('');
+  const [instructions, setInstructions] = useState('');
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -41,12 +50,80 @@ const Upload = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Assignment uploaded successfully!",
-      description: "Your submission is being processed by the AI grading assistant.",
-    });
+    
+    if (!uploadedFile || !user) {
+      toast({
+        title: "Error",
+        description: "Please select a file and ensure you're logged in.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      // Upload file to Supabase Storage
+      const uploadResult = await uploadFile(uploadedFile, 'submissions');
+      
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error);
+      }
+
+      // Extract text from file
+      const extractedText = await extractTextFromFile(uploadedFile);
+
+      // Create assignment record
+      const { data: assignment, error: assignmentError } = await supabase
+        .from('assignments')
+        .insert({
+          user_id: user.id,
+          title: assignmentName,
+          course_name: course,
+          due_date: new Date().toISOString(),
+          status: 'active'
+        })
+        .select()
+        .single();
+
+      if (assignmentError) throw assignmentError;
+
+      // Create submission record
+      const { error: submissionError } = await supabase
+        .from('submissions')
+        .insert({
+          assignment_id: assignment.id,
+          student_name: 'Student Name', // This would come from the form in a real app
+          file_url: uploadResult.url,
+          status: 'pending'
+        });
+
+      if (submissionError) throw submissionError;
+
+      toast({
+        title: "Assignment uploaded successfully!",
+        description: "Your submission is ready for AI grading assistance.",
+      });
+
+      // Reset form
+      setUploadedFile(null);
+      setAssignmentName('');
+      setCourse('');
+      setRubric('');
+      setInstructions('');
+      
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -69,15 +146,18 @@ const Upload = () => {
                 <div>
                   <Label htmlFor="assignment-name">Assignment Name</Label>
                   <Input 
-                    id="assignment-name" 
+                    id="assignment-name"
+                    value={assignmentName}
+                    onChange={(e) => setAssignmentName(e.target.value)}
                     placeholder="e.g., Essay Assignment #3 - Character Analysis"
                     className="mt-1"
+                    required
                   />
                 </div>
 
                 <div>
                   <Label htmlFor="course">Course</Label>
-                  <Select>
+                  <Select value={course} onValueChange={setCourse}>
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Select course" />
                     </SelectTrigger>
@@ -91,7 +171,7 @@ const Upload = () => {
 
                 <div>
                   <Label htmlFor="rubric">Grading Rubric</Label>
-                  <Select>
+                  <Select value={rubric} onValueChange={setRubric}>
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Select rubric" />
                     </SelectTrigger>
@@ -153,6 +233,8 @@ const Upload = () => {
                 <Label htmlFor="instructions">Additional Instructions (Optional)</Label>
                 <Textarea 
                   id="instructions"
+                  value={instructions}
+                  onChange={(e) => setInstructions(e.target.value)}
                   placeholder="Any specific grading criteria or notes for the AI assistant..."
                   className="mt-1"
                   rows={3}
@@ -161,9 +243,18 @@ const Upload = () => {
 
               {/* Submit Button */}
               <div className="flex gap-4">
-                <Button type="submit" className="flex-1">
-                  <FileText className="w-4 h-4 mr-2" />
-                  Upload & Generate AI Feedback
+                <Button type="submit" className="flex-1" disabled={uploading}>
+                  {uploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Upload & Generate AI Feedback
+                    </>
+                  )}
                 </Button>
               </div>
             </form>

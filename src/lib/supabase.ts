@@ -55,6 +55,16 @@ export interface TrainingData {
   created_at: string
 }
 
+export interface LLMSession {
+  id: string
+  user_id: string
+  status: 'pending' | 'completed' | 'failed'
+  input_data: any
+  output_data: any
+  timestamp: string
+  confidence_score?: number
+}
+
 export interface LMSIntegration {
   id: string
   user_id: string
@@ -62,5 +72,14 @@ export interface LMSIntegration {
   access_token: string
   refresh_token?: string
   status: 'connected' | 'disconnected' | 'error'
+  created_at: string
+}
+
+export interface PrivacySettings {
+  id: string
+  user_id: string
+  anonymize_student_names: boolean
+  allow_training_on_content: boolean
+  auto_delete_training_data: boolean
   created_at: string
 }

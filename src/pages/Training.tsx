@@ -4,19 +4,71 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Upload, Brain, FileText, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Upload, Brain, FileText, CheckCircle, Clock, AlertCircle, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useToast } from "@/hooks/use-toast";
+import { uploadFile, extractTextFromFile } from "@/lib/fileUpload";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/components/AuthProvider";
 
 const Training = () => {
   const [trainingProgress, setTrainingProgress] = useState(75);
+  const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  const handleUploadTrainingData = () => {
-    toast({
-      title: "Training data uploaded!",
-      description: "Your grading examples are being processed to improve AI accuracy.",
-    });
+  const handleUploadTrainingData = async (fileType: 'assignment' | 'rubric') => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.doc,.docx,.txt';
+    
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file || !user) return;
+
+      setUploading(true);
+      
+      try {
+        // Upload file
+        const uploadResult = await uploadFile(file, 'training-data');
+        
+        if (!uploadResult.success) {
+          throw new Error(uploadResult.error);
+        }
+
+        // Extract text
+        const extractedText = await extractTextFromFile(file);
+
+        // Save to training_data table
+        const { error } = await supabase
+          .from('training_data')
+          .insert({
+            user_id: user.id,
+            data_type: fileType,
+            file_url: uploadResult.url,
+            processed: false
+          });
+
+        if (error) throw error;
+
+        toast({
+          title: "Training data uploaded!",
+          description: "Your grading examples are being processed to improve AI accuracy.",
+        });
+        
+      } catch (error) {
+        console.error('Training upload error:', error);
+        toast({
+          title: "Upload failed",
+          description: error instanceof Error ? error.message : "Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setUploading(false);
+      }
+    };
+    
+    input.click();
   };
 
   return (
@@ -81,8 +133,18 @@ const Training = () => {
                 <Upload className="w-8 h-8 text-gray-400 mx-auto mb-4" />
                 <p className="font-medium mb-2">Student Essays</p>
                 <p className="text-sm text-gray-600 mb-4">Upload graded student submissions</p>
-                <Button onClick={handleUploadTrainingData}>
-                  Upload Essays
+                <Button 
+                  onClick={() => handleUploadTrainingData('assignment')}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    'Upload Essays'
+                  )}
                 </Button>
               </div>
               
@@ -90,8 +152,19 @@ const Training = () => {
                 <FileText className="w-8 h-8 text-gray-400 mx-auto mb-4" />
                 <p className="font-medium mb-2">Grading Rubrics</p>
                 <p className="text-sm text-gray-600 mb-4">Upload your custom rubrics</p>
-                <Button variant="outline">
-                  Upload Rubrics
+                <Button 
+                  variant="outline"
+                  onClick={() => handleUploadTrainingData('rubric')}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    'Upload Rubrics'
+                  )}
                 </Button>
               </div>
             </div>
