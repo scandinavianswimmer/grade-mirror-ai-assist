@@ -5,30 +5,29 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, Lock, Trash2, Eye, Database, AlertTriangle } from "lucide-react";
+import { Shield, Lock, Database, AlertTriangle } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import { useToast } from "@/hooks/use-toast";
+import DataManagement from "@/components/DataManagement";
+import { usePrivacySettings } from "@/hooks/usePrivacySettings";
 
 const PrivacySettings = () => {
-  const [anonymizeData, setAnonymizeData] = useState(true);
-  const [allowAiTraining, setAllowAiTraining] = useState(true);
-  const [autoDelete, setAutoDelete] = useState(true);
+  const { settings, isLoading, saveSettings, isSaving } = usePrivacySettings();
   const [dataRetention, setDataRetention] = useState("30");
-  const { toast } = useToast();
 
-  const handleSaveSettings = () => {
-    toast({
-      title: "Privacy settings saved!",
-      description: "Your privacy preferences have been updated successfully.",
-    });
+  const handleSettingChange = (key: string, value: boolean) => {
+    saveSettings({ [key]: value });
   };
 
-  const handleDeleteAllData = () => {
-    toast({
-      title: "Data deletion initiated",
-      description: "All user data will be permanently deleted within 24 hours.",
-    });
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">Loading privacy settings...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -80,8 +79,9 @@ const PrivacySettings = () => {
                 </div>
                 <Switch
                   id="anonymize"
-                  checked={anonymizeData}
-                  onCheckedChange={setAnonymizeData}
+                  checked={settings?.anonymize_student_names ?? true}
+                  onCheckedChange={(checked) => handleSettingChange('anonymize_student_names', checked)}
+                  disabled={isSaving}
                 />
               </div>
 
@@ -96,8 +96,9 @@ const PrivacySettings = () => {
                 </div>
                 <Switch
                   id="ai-training"
-                  checked={allowAiTraining}
-                  onCheckedChange={setAllowAiTraining}
+                  checked={settings?.allow_training_on_content ?? true}
+                  onCheckedChange={(checked) => handleSettingChange('allow_training_on_content', checked)}
+                  disabled={isSaving}
                 />
               </div>
 
@@ -112,8 +113,9 @@ const PrivacySettings = () => {
                 </div>
                 <Switch
                   id="auto-delete"
-                  checked={autoDelete}
-                  onCheckedChange={setAutoDelete}
+                  checked={settings?.auto_delete_training_data ?? true}
+                  onCheckedChange={(checked) => handleSettingChange('auto_delete_training_data', checked)}
+                  disabled={isSaving}
                 />
               </div>
 
@@ -140,55 +142,8 @@ const PrivacySettings = () => {
             </div>
           </Card>
 
-          {/* Data Access & Control */}
-          <Card className="p-6 mb-8">
-            <h3 className="text-lg font-semibold mb-4">Data Access & Control</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Eye className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="font-medium">Download My Data</p>
-                    <p className="text-sm text-gray-600">Export all your data in a portable format</p>
-                  </div>
-                </div>
-                <Button variant="outline">Download</Button>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Database className="w-5 h-5 text-green-600" />
-                  <div>
-                    <p className="font-medium">View Data Usage</p>
-                    <p className="text-sm text-gray-600">See how your data is being used for AI training</p>
-                  </div>
-                </div>
-                <Button variant="outline">View Details</Button>
-              </div>
-            </div>
-          </Card>
-
-          {/* Danger Zone */}
-          <Card className="p-6 mb-8 bg-red-50 border-red-200">
-            <div className="flex items-center gap-3 mb-4">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-              <h3 className="text-lg font-semibold text-red-900">Danger Zone</h3>
-            </div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-red-900">Delete All Data</p>
-                  <p className="text-sm text-red-700">
-                    Permanently delete all your uploaded content, grades, and training data
-                  </p>
-                </div>
-                <Button variant="destructive" onClick={handleDeleteAllData}>
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete All
-                </Button>
-              </div>
-            </div>
-          </Card>
+          {/* Data Management Component */}
+          <DataManagement />
 
           {/* Compliance Information */}
           <Card className="p-6 mb-8">
@@ -211,14 +166,6 @@ const PrivacySettings = () => {
               </div>
             </div>
           </Card>
-
-          {/* Save Button */}
-          <div className="text-center">
-            <Button onClick={handleSaveSettings} size="lg">
-              <Shield className="w-4 h-4 mr-2" />
-              Save Privacy Settings
-            </Button>
-          </div>
         </div>
       </div>
     </div>
