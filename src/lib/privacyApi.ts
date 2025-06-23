@@ -75,11 +75,23 @@ export const exportUserData = async (userId: string) => {
 
 // Data deletion
 export const deleteAllUserData = async (userId: string): Promise<void> => {
-  // Delete in order to respect foreign key constraints
-  await supabase.from('submissions').delete().eq('assignment_id', 
-    supabase.from('assignments').select('id').eq('user_id', userId)
-  )
+  // First get assignment IDs for this user
+  const { data: assignments } = await supabase
+    .from('assignments')
+    .select('id')
+    .eq('user_id', userId)
   
+  const assignmentIds = assignments?.map(a => a.id) || []
+  
+  // Delete submissions for user's assignments
+  if (assignmentIds.length > 0) {
+    await supabase
+      .from('submissions')
+      .delete()
+      .in('assignment_id', assignmentIds)
+  }
+  
+  // Delete user's data in order to respect foreign key constraints
   await supabase.from('assignments').delete().eq('user_id', userId)
   await supabase.from('rubrics').delete().eq('user_id', userId)
   await supabase.from('training_data').delete().eq('user_id', userId)
@@ -93,14 +105,23 @@ export const deleteUnfinalizedGrades = async (userId: string, daysOld: number = 
   const cutoffDate = new Date()
   cutoffDate.setDate(cutoffDate.getDate() - daysOld)
 
-  const { error } = await supabase
-    .from('submissions')
-    .delete()
-    .eq('status', 'ai_graded')
-    .lt('created_at', cutoffDate.toISOString())
-    .in('assignment_id', 
-      supabase.from('assignments').select('id').eq('user_id', userId)
-    )
+  // First get assignment IDs for this user
+  const { data: assignments } = await supabase
+    .from('assignments')
+    .select('id')
+    .eq('user_id', userId)
+  
+  const assignmentIds = assignments?.map(a => a.id) || []
+  
+  // Delete unfinalized grades for user's assignments
+  if (assignmentIds.length > 0) {
+    const { error } = await supabase
+      .from('submissions')
+      .delete()
+      .eq('status', 'ai_graded')
+      .lt('created_at', cutoffDate.toISOString())
+      .in('assignment_id', assignmentIds)
 
-  if (error) throw error
+    if (error) throw error
+  }
 }
