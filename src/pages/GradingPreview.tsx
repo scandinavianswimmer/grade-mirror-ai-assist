@@ -1,22 +1,79 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, Edit, Star, Brain, Send } from "lucide-react";
+import { Check, Edit, Star, Brain, Send, Loader2, RefreshCw } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useToast } from "@/hooks/use-toast";
+import { generateGradingFeedback, type GradingResponse } from "@/lib/geminiApi";
+import { useAuth } from "@/components/AuthProvider";
 
 const GradingPreview = () => {
-  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [aiResponse, setAiResponse] = useState<GradingResponse | null>(null);
   const [finalGrade, setFinalGrade] = useState("A-");
   const [overallFeedback, setOverallFeedback] = useState(
     "This is a well-structured essay that demonstrates strong analytical thinking and clear writing. Your thesis is compelling and well-supported throughout the paper. The use of textual evidence is appropriate and effectively integrated. Consider expanding on your conclusion to more explicitly connect your analysis to broader themes in the work."
   );
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Sample essay and rubric for demo
+  const sampleEssay = `In Shakespeare's Hamlet, the theme of appearance versus reality permeates throughout the entire play, creating a complex web of deception that ultimately leads to tragedy. The protagonist's struggle to distinguish between what seems to be true and what actually is true serves as the driving force behind much of the play's action.
+
+From the very beginning, we see this theme established with the ghost of Hamlet's father. Hamlet questions whether the ghost is real or a figment of his imagination, and whether its claims about Claudius are true. This uncertainty sets the tone for the entire play.
+
+The play-within-a-play scene exemplifies this theme perfectly. Hamlet uses "The Mousetrap" to test Claudius's guilt, attempting to make reality visible through performance. The irony is that Hamlet uses fiction to reveal truth, blurring the lines between appearance and reality even further.
+
+In conclusion, Shakespeare masterfully weaves the theme of appearance versus reality throughout Hamlet, creating a tragedy that forces both characters and audience to question the nature of truth itself.`;
+
+  const sampleRubric = `Literary Analysis Rubric:
+- Thesis & Argument (25%): Clear, compelling thesis with strong supporting arguments
+- Textual Evidence (25%): Appropriate use of quotes and examples from the text
+- Organization (25%): Logical structure with smooth transitions
+- Writing Quality (25%): Grammar, style, and clarity of expression`;
+
+  const handleGenerateAIFeedback = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to generate AI feedback.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await generateGradingFeedback(
+        sampleEssay,
+        sampleRubric,
+        user.id
+      );
+      
+      setAiResponse(response);
+      setFinalGrade(response.suggestedGrade);
+      setOverallFeedback(response.overallFeedback);
+      
+      toast({
+        title: "AI feedback generated!",
+        description: `Generated with ${Math.round(response.confidence * 100)}% confidence`,
+      });
+    } catch (error) {
+      console.error('Error generating feedback:', error);
+      toast({
+        title: "Failed to generate feedback",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleFinalize = () => {
     toast({
@@ -35,7 +92,11 @@ const GradingPreview = () => {
           <div className="flex items-center gap-4">
             <Badge variant="outline">Essay Assignment #3</Badge>
             <Badge variant="outline">Student: John Smith</Badge>
-            <Badge className="bg-green-100 text-green-800">AI Confidence: 87%</Badge>
+            {aiResponse && (
+              <Badge className="bg-green-100 text-green-800">
+                AI Confidence: {Math.round(aiResponse.confidence * 100)}%
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -43,48 +104,48 @@ const GradingPreview = () => {
           {/* Student Essay */}
           <div className="lg:col-span-2">
             <Card className="p-6 h-full">
-              <h2 className="text-lg font-semibold mb-4">Student Submission</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold">Student Submission</h2>
+                <Button 
+                  onClick={handleGenerateAIFeedback}
+                  disabled={isLoading}
+                  className="flex items-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Generating AI Feedback...
+                    </>
+                  ) : (
+                    <>
+                      <Brain className="w-4 h-4" />
+                      Generate AI Feedback
+                    </>
+                  )}
+                </Button>
+              </div>
+              
               <div className="prose max-w-none">
                 <div className="relative">
-                  <p className="mb-4">
-                    In Shakespeare's Hamlet, the theme of appearance versus reality permeates throughout the entire play, 
-                    creating a complex web of deception that ultimately leads to tragedy. 
-                    <span className="bg-yellow-100 px-1 rounded cursor-pointer relative group">
-                      The protagonist's struggle to distinguish between what seems to be true and what actually is true
-                      <span className="absolute left-0 top-full mt-1 bg-blue-600 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">
-                        Great insight into the central conflict
-                      </span>
-                    </span> 
-                    serves as the driving force behind much of the play's action.
-                  </p>
+                  {aiResponse?.inlineComments.map((comment, index) => {
+                    const textToHighlight = comment.text;
+                    const essayWithHighlights = sampleEssay.replace(
+                      textToHighlight,
+                      `<span class="bg-yellow-100 px-1 rounded cursor-pointer relative group">${textToHighlight}<span class="absolute left-0 top-full mt-1 bg-blue-600 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">${comment.comment}</span></span>`
+                    );
+                    return null; // This is just for mapping, actual rendering below
+                  })}
                   
-                  <p className="mb-4">
-                    From the very beginning, we see this theme established with the ghost of Hamlet's father. 
-                    <span className="bg-yellow-100 px-1 rounded cursor-pointer relative group">
-                      Hamlet questions whether the ghost is real or a figment of his imagination
-                      <span className="absolute left-0 top-full mt-1 bg-blue-600 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">
-                        Excellent textual support
-                      </span>
-                    </span>, 
-                    and whether its claims about Claudius are true. This uncertainty sets the tone for the entire play.
-                  </p>
-                  
-                  <p className="mb-4">
-                    The play-within-a-play scene exemplifies this theme perfectly. Hamlet uses "The Mousetrap" to test 
-                    Claudius's guilt, attempting to make reality visible through performance. 
-                    <span className="bg-red-100 px-1 rounded cursor-pointer relative group">
-                      The irony is that Hamlet uses fiction to reveal truth
-                      <span className="absolute left-0 top-full mt-1 bg-orange-600 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">
-                        Consider developing this paradox further
-                      </span>
-                    </span>, 
-                    blurring the lines between appearance and reality even further.
-                  </p>
-                  
-                  <p>
-                    In conclusion, Shakespeare masterfully weaves the theme of appearance versus reality throughout Hamlet, 
-                    creating a tragedy that forces both characters and audience to question the nature of truth itself.
-                  </p>
+                  <div 
+                    dangerouslySetInnerHTML={{ 
+                      __html: aiResponse?.inlineComments.reduce((text, comment) => {
+                        return text.replace(
+                          comment.text,
+                          `<span class="bg-yellow-100 px-1 rounded cursor-pointer relative group">${comment.text}<span class="absolute left-0 top-full mt-1 bg-blue-600 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">${comment.comment}</span></span>`
+                        );
+                      }, sampleEssay.replace(/\n/g, '</p><p class="mb-4">')) || sampleEssay.replace(/\n/g, '</p><p class="mb-4">')
+                    }} 
+                  />
                 </div>
               </div>
             </Card>
@@ -120,6 +181,12 @@ const GradingPreview = () => {
               <div className="flex items-center gap-2 mb-4">
                 <Brain className="w-5 h-5 text-blue-600" />
                 <h3 className="text-lg font-semibold">AI Suggested Grade</h3>
+                {aiResponse && (
+                  <RefreshCw 
+                    className="w-4 h-4 text-gray-400 cursor-pointer hover:text-gray-600"
+                    onClick={handleGenerateAIFeedback}
+                  />
+                )}
               </div>
               
               <div className="mb-4">
@@ -143,6 +210,14 @@ const GradingPreview = () => {
                 />
               </div>
 
+              {aiResponse?.reasoning && (
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>AI Reasoning:</strong> {aiResponse.reasoning}
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-3">
                 <Button onClick={handleFinalize} className="w-full">
                   <Check className="w-4 h-4 mr-2" />
@@ -157,23 +232,19 @@ const GradingPreview = () => {
             </Card>
 
             {/* AI Insights */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">AI Insights</h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-start gap-2">
-                  <Star className="w-4 h-4 text-yellow-500 mt-0.5" />
-                  <p>Strong analytical thinking demonstrated throughout</p>
+            {aiResponse && (
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">AI Insights</h3>
+                <div className="space-y-3 text-sm">
+                  {aiResponse.inlineComments.slice(0, 3).map((comment, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <Star className="w-4 h-4 text-yellow-500 mt-0.5" />
+                      <p>{comment.comment}</p>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex items-start gap-2">
-                  <Star className="w-4 h-4 text-yellow-500 mt-0.5" />
-                  <p>Good use of textual evidence to support claims</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Edit className="w-4 h-4 text-blue-500 mt-0.5" />
-                  <p>Conclusion could be more developed</p>
-                </div>
-              </div>
-            </Card>
+              </Card>
+            )}
           </div>
         </div>
       </div>
