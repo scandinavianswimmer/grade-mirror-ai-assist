@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
@@ -22,6 +21,8 @@ export interface Assignment {
   due_date: string
   status: 'draft' | 'active' | 'completed'
   course_name?: string
+  canvas_id?: string
+  canvas_course_id?: string
   created_at: string
 }
 
@@ -34,7 +35,8 @@ export interface Submission {
   final_score?: number
   feedback?: string
   ai_feedback?: string
-  status: 'pending' | 'ai_graded' | 'finalized'
+  canvas_submission_id?: string
+  status: 'pending' | 'ai_graded' | 'finalize' | 'pushed_to_lms'
   created_at: string
 }
 
@@ -71,6 +73,9 @@ export interface LMSIntegration {
   platform: 'canvas' | 'blackboard' | 'moodle'
   access_token: string
   refresh_token?: string
+  canvas_url?: string
+  auto_sync: boolean
+  auto_push: boolean
   status: 'connected' | 'disconnected' | 'error'
   created_at: string
 }

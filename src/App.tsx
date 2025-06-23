@@ -10,6 +10,7 @@ import Upload from "./pages/Upload";
 import GradingPreview from "./pages/GradingPreview";
 import Training from "./pages/Training";
 import LMSIntegration from "./pages/LMSIntegration";
+import LMSCallback from "./pages/LMSCallback";
 import PrivacySettings from "./pages/PrivacySettings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";

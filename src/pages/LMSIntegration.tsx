@@ -1,32 +1,166 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, AlertCircle, Link, RefreshCw, Download, Upload } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { CheckCircle, AlertCircle, Link, RefreshCw, Download, Upload, ExternalLink } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/lib/supabase";
+import { generateCanvasAuthUrl, disconnectCanvas } from "@/lib/canvasOAuth";
+import { syncCanvasAssignments, getCanvasClient } from "@/lib/canvasApi";
 
 const LMSIntegration = () => {
-  const [isConnected, setIsConnected] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
   const [autoSync, setAutoSync] = useState(true);
   const [autoPush, setAutoPush] = useState(false);
+  const [canvasUrl, setCanvasUrl] = useState("https://canvas.instructure.com");
+  const [loading, setLoading] = useState(false);
+  const [syncStats, setSyncStats] = useState({
+    assignmentsCount: 0,
+    gradesCount: 0,
+    lastSync: null as string | null
+  });
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  const handleConnect = () => {
-    toast({
-      title: "Connecting to Canvas...",
-      description: "You'll be redirected to Canvas for authentication.",
+  useEffect(() => {
+    checkConnectionStatus();
+    loadSyncStats();
+  }, [user]);
+
+  const checkConnectionStatus = async () => {
+    if (!user) return;
+
+    const { data } = await supabase
+      .from('lms_integrations')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('platform', 'canvas')
+      .eq('status', 'connected')
+      .single();
+
+    setIsConnected(!!data);
+    if (data?.canvas_url) {
+      setCanvasUrl(data.canvas_url);
+    }
+  };
+
+  const loadSyncStats = async () => {
+    if (!user) return;
+
+    // Get assignments count
+    const { count: assignmentsCount } = await supabase
+      .from('assignments')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .not('canvas_id', 'is', null);
+
+    // Get pushed grades count
+    const { count: gradesCount } = await supabase
+      .from('submissions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pushed_to_lms');
+
+    // Get last sync time (most recent assignment creation)
+    const { data: lastAssignment } = await supabase
+      .from('assignments')
+      .select('created_at')
+      .eq('user_id', user.id)
+      .not('canvas_id', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    setSyncStats({
+      assignmentsCount: assignmentsCount || 0,
+      gradesCount: gradesCount || 0,
+      lastSync: lastAssignment?.created_at || null
     });
   };
 
-  const handleSync = () => {
-    toast({
-      title: "Syncing assignments...",
-      description: "Fetching latest assignments and submissions from Canvas.",
-    });
+  const handleConnect = () => {
+    if (!canvasUrl.trim()) {
+      toast({
+        title: "Canvas URL required",
+        description: "Please enter your Canvas instance URL",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const authUrl = generateCanvasAuthUrl(canvasUrl);
+    window.location.href = authUrl;
+  };
+
+  const handleDisconnect = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      await disconnectCanvas(user.id);
+      setIsConnected(false);
+      toast({
+        title: "Disconnected",
+        description: "Successfully disconnected from Canvas",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to disconnect from Canvas",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSync = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const assignments = await syncCanvasAssignments(user.id);
+      await loadSyncStats();
+      toast({
+        title: "Sync completed",
+        description: `Synced ${assignments.length} assignments from Canvas`,
+      });
+    } catch (error) {
+      toast({
+        title: "Sync failed",
+        description: error instanceof Error ? error.message : "Failed to sync with Canvas",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateSyncSettings = async (setting: 'auto_sync' | 'auto_push', value: boolean) => {
+    if (!user) return;
+
+    await supabase
+      .from('lms_integrations')
+      .update({ [setting]: value })
+      .eq('user_id', user.id)
+      .eq('platform', 'canvas');
+  };
+
+  const formatLastSync = (dateString: string | null) => {
+    if (!dateString) return 'Never';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)} hours ago`;
+    return `${Math.floor(diffMins / 1440)} days ago`;
   };
 
   return (
@@ -64,119 +198,144 @@ const LMSIntegration = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center p-4 bg-blue-50 rounded-lg">
                     <Download className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                    <p className="font-semibold">15</p>
+                    <p className="font-semibold">{syncStats.assignmentsCount}</p>
                     <p className="text-sm text-gray-600">Assignments Synced</p>
                   </div>
                   <div className="text-center p-4 bg-green-50 rounded-lg">
                     <Upload className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                    <p className="font-semibold">8</p>
+                    <p className="font-semibold">{syncStats.gradesCount}</p>
                     <p className="text-sm text-gray-600">Grades Pushed</p>
                   </div>
                   <div className="text-center p-4 bg-orange-50 rounded-lg">
                     <RefreshCw className="w-8 h-8 text-orange-600 mx-auto mb-2" />
-                    <p className="font-semibold">5 min</p>
+                    <p className="font-semibold">{formatLastSync(syncStats.lastSync)}</p>
                     <p className="text-sm text-gray-600">Last Sync</p>
                   </div>
                 </div>
 
                 <div className="flex gap-4">
-                  <Button onClick={handleSync} className="flex-1">
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Sync Now
+                  <Button onClick={handleSync} disabled={loading} className="flex-1">
+                    <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                    {loading ? 'Syncing...' : 'Sync Now'}
                   </Button>
-                  <Button variant="outline" onClick={() => setIsConnected(false)}>
+                  <Button variant="outline" onClick={handleDisconnect} disabled={loading}>
                     Disconnect
                   </Button>
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8">
-                <Link className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 mb-6">
-                  Connect your Canvas account to automatically sync assignments and grades.
-                </p>
-                <Button onClick={handleConnect} size="lg">
-                  <Link className="w-4 h-4 mr-2" />
-                  Connect to Canvas
-                </Button>
+              <div className="space-y-4">
+                <div className="text-center py-8">
+                  <Link className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-6">
+                    Connect your Canvas account to automatically sync assignments and grades.
+                  </p>
+                </div>
+                
+                <div className="max-w-md mx-auto">
+                  <Label htmlFor="canvas-url">Canvas Instance URL</Label>
+                  <Input
+                    id="canvas-url"
+                    type="url"
+                    placeholder="https://yourschool.instructure.com"
+                    value={canvasUrl}
+                    onChange={(e) => setCanvasUrl(e.target.value)}
+                    className="mb-4"
+                  />
+                  <Button onClick={handleConnect} size="lg" className="w-full">
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Connect to Canvas
+                  </Button>
+                </div>
               </div>
             )}
           </Card>
 
           {/* Sync Settings */}
-          <Card className="p-6 mb-8">
-            <h3 className="text-lg font-semibold mb-4">Sync Settings</h3>
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="auto-sync" className="text-base font-medium">
-                    Auto-sync assignments
-                  </Label>
-                  <p className="text-sm text-gray-600">
-                    Automatically fetch new assignments and submissions every hour
-                  </p>
+          {isConnected && (
+            <Card className="p-6 mb-8">
+              <h3 className="text-lg font-semibold mb-4">Sync Settings</h3>
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="auto-sync" className="text-base font-medium">
+                      Auto-sync assignments
+                    </Label>
+                    <p className="text-sm text-gray-600">
+                      Automatically fetch new assignments and submissions every hour
+                    </p>
+                  </div>
+                  <Switch
+                    id="auto-sync"
+                    checked={autoSync}
+                    onCheckedChange={(checked) => {
+                      setAutoSync(checked);
+                      updateSyncSettings('auto_sync', checked);
+                    }}
+                  />
                 </div>
-                <Switch
-                  id="auto-sync"
-                  checked={autoSync}
-                  onCheckedChange={setAutoSync}
-                />
-              </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="auto-push" className="text-base font-medium">
-                    Auto-push approved grades
-                  </Label>
-                  <p className="text-sm text-gray-600">
-                    Automatically send finalized grades and feedback to Canvas
-                  </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="auto-push" className="text-base font-medium">
+                      Auto-push approved grades
+                    </Label>
+                    <p className="text-sm text-gray-600">
+                      Automatically send finalized grades and feedback to Canvas
+                    </p>
+                  </div>
+                  <Switch
+                    id="auto-push"
+                    checked={autoPush}
+                    onCheckedChange={(checked) => {
+                      setAutoPush(checked);
+                      updateSyncSettings('auto_push', checked);
+                    }}
+                  />
                 </div>
-                <Switch
-                  id="auto-push"
-                  checked={autoPush}
-                  onCheckedChange={setAutoPush}
-                />
               </div>
-            </div>
-          </Card>
+            </Card>
+          )}
 
           {/* Recent Activity */}
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4">Recent Sync Activity</h3>
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <div>
-                    <p className="font-medium">Essay Assignment #3 - Grade Posted</p>
-                    <p className="text-sm text-gray-600">Pushed 8 grades to Canvas • 2 minutes ago</p>
+              {syncStats.assignmentsCount > 0 ? (
+                <>
+                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <div>
+                        <p className="font-medium">Assignments Synced Successfully</p>
+                        <p className="text-sm text-gray-600">
+                          Synchronized {syncStats.assignmentsCount} assignments from Canvas
+                        </p>
+                      </div>
+                    </div>
+                    <Badge className="bg-green-100 text-green-800">Success</Badge>
                   </div>
+                  
+                  {syncStats.gradesCount > 0 && (
+                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Upload className="w-5 h-5 text-blue-600" />
+                        <div>
+                          <p className="font-medium">Grades Pushed to Canvas</p>
+                          <p className="text-sm text-gray-600">
+                            Successfully pushed {syncStats.gradesCount} grades and feedback
+                          </p>
+                        </div>
+                      </div>
+                      <Badge className="bg-blue-100 text-blue-800">Completed</Badge>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No sync activity yet. Connect to Canvas and sync your assignments to get started.</p>
                 </div>
-                <Badge className="bg-green-100 text-green-800">Success</Badge>
-              </div>
-              
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Download className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="font-medium">Research Paper Assignment - Synced</p>
-                    <p className="text-sm text-gray-600">Fetched 12 new submissions • 1 hour ago</p>
-                  </div>
-                </div>
-                <Badge className="bg-blue-100 text-blue-800">Synced</Badge>
-              </div>
-              
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <RefreshCw className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="font-medium">Weekly Discussion Posts - Synced</p>
-                    <p className="text-sm text-gray-600">Fetched 25 new posts • 3 hours ago</p>
-                  </div>
-                </div>
-                <Badge variant="outline">Completed</Badge>
-              </div>
+              )}
             </div>
           </Card>
 
@@ -184,7 +343,7 @@ const LMSIntegration = () => {
           <Card className="mt-8 p-6 bg-blue-50 border-blue-200">
             <h3 className="text-lg font-semibold mb-2">Need Help?</h3>
             <p className="text-blue-800 text-sm mb-4">
-              Having trouble connecting to Canvas? Check our integration guide or contact support.
+              Having trouble connecting to Canvas? Make sure you have the correct Canvas URL and administrator permissions.
             </p>
             <div className="flex gap-3">
               <Button variant="outline" size="sm">
