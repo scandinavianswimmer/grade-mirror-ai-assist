@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,6 +13,9 @@ import LMSCallback from "./pages/LMSCallback";
 import PrivacySettings from "./pages/PrivacySettings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import FreemiumDashboard from "./pages/FreemiumDashboard";
+import UploadTraining from "./pages/UploadTraining";
+import SubmitAssignment from "./pages/SubmitAssignment";
 
 const queryClient = new QueryClient();
 
@@ -37,7 +39,10 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<Index />} />
+      <Route path="/" element={<FreemiumDashboard />} />
+      <Route path="/dashboard" element={<FreemiumDashboard />} />
+      <Route path="/upload-training" element={<UploadTraining />} />
+      <Route path="/submit-assignment" element={<SubmitAssignment />} />
       <Route path="/upload" element={<Upload />} />
       <Route path="/grading/preview" element={<GradingPreview />} />
       <Route path="/training" element={<Training />} />
