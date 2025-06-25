@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import FreemiumDashboard from "./pages/FreemiumDashboard";
 import UploadTraining from "./pages/UploadTraining";
 import SubmitAssignment from "./pages/SubmitAssignment";
+import Onboarding from "./pages/Onboarding";
 
 const queryClient = new QueryClient();
 
@@ -32,15 +33,11 @@ const AppRoutes = () => {
     );
   }
 
-  // Temporarily bypass authentication for debugging
-  // if (!session) {
-  //   return <Auth />;
-  // }
-
   return (
     <Routes>
       <Route path="/" element={<FreemiumDashboard />} />
       <Route path="/dashboard" element={<FreemiumDashboard />} />
+      <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/upload-training" element={<UploadTraining />} />
       <Route path="/submit-assignment" element={<SubmitAssignment />} />
       <Route path="/upload" element={<Upload />} />
