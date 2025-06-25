@@ -1,10 +1,13 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/components/AuthProvider";
-import Index from "./pages/Index";
+import Landing from "./pages/Landing";
+import Enterprise from "./pages/Enterprise";
+import Pricing from "./pages/Pricing";
 import Upload from "./pages/Upload";
 import GradingPreview from "./pages/GradingPreview";
 import Training from "./pages/Training";
@@ -35,7 +38,9 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<FreemiumDashboard />} />
+      <Route path="/" element={<Landing />} />
+      <Route path="/enterprise" element={<Enterprise />} />
+      <Route path="/pricing" element={<Pricing />} />
       <Route path="/dashboard" element={<FreemiumDashboard />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/upload-training" element={<UploadTraining />} />
