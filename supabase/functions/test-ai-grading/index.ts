@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,23 +15,101 @@ serve(async (req) => {
   try {
     const { userId, essay } = await req.json()
 
-    // Simulate AI grading based on teacher's style
-    // In a real implementation, this would use the teacher's AI profile and Gemini API
-    const feedback = `This essay demonstrates a solid understanding of the American Revolution's key events and causes. The introduction effectively sets up the historical context, and the student shows good knowledge of specific events like the Boston Tea Party and Boston Massacre.
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
+    if (!geminiApiKey) {
+      throw new Error('GEMINI_API_KEY not configured')
+    }
 
-Strengths:
-- Clear chronological organization
-- Good use of specific historical examples
-- Solid conclusion that ties back to the thesis
+    // Get teacher's AI profile from database
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
 
-Areas for improvement:
-- Could benefit from more analysis of cause-and-effect relationships
-- Some transitions between paragraphs could be smoother
-- Consider expanding on the significance of the Treaty of Paris
+    const { data: aiProfile, error: profileError } = await supabase
+      .from('ai_profiles')
+      .select('grading_style_summary')
+      .eq('user_id', userId)
+      .single()
 
-The writing is clear and demonstrates good historical knowledge. With some additional analysis and smoother transitions, this would be an excellent essay.`
+    if (profileError) {
+      throw new Error('Could not fetch teacher grading profile')
+    }
 
-    const grade = "B+"
+    const gradingStyle = aiProfile?.grading_style_summary || 'You have a balanced grading approach focusing on both content and writing mechanics.'
+
+    // Create personalized grading prompt
+    const prompt = `You are an AI grading assistant trained to match a specific teacher's grading style and preferences.
+
+TEACHER'S GRADING STYLE:
+${gradingStyle}
+
+STUDENT ESSAY TO GRADE:
+${essay}
+
+Please provide comprehensive feedback that matches this teacher's style, including:
+
+1. OVERALL FEEDBACK: A detailed paragraph summarizing the essay's strengths and areas for improvement
+2. SUGGESTED GRADE: A letter grade (A+, A, A-, B+, B, B-, C+, C, C-, D+, D, F)
+3. SPECIFIC AREAS:
+   - Content and Ideas
+   - Organization and Structure  
+   - Writing Mechanics
+   - Areas for Improvement
+
+Format your response as follows:
+GRADE: [Letter Grade]
+
+OVERALL FEEDBACK:
+[Comprehensive feedback paragraph]
+
+DETAILED ANALYSIS:
+Content and Ideas: [Analysis]
+Organization: [Analysis] 
+Writing Mechanics: [Analysis]
+Areas for Improvement: [Specific suggestions]
+
+Keep the tone and approach consistent with the teacher's established grading style.`
+
+    // Call Gemini API
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: prompt }]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.4,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 1024,
+        }
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`Gemini API error: ${response.status}`)
+    }
+
+    const result = await response.json()
+    const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text
+
+    if (!generatedText) {
+      throw new Error('No response from Gemini API')
+    }
+
+    // Parse the response to extract grade and feedback
+    const gradeMatch = generatedText.match(/GRADE:\s*([A-F][+-]?)/i)
+    const feedbackMatch = generatedText.match(/OVERALL FEEDBACK:\s*(.*?)(?=DETAILED ANALYSIS:|$)/s)
+    
+    const grade = gradeMatch?.[1] || "B+"
+    const feedback = feedbackMatch?.[1]?.trim() || generatedText.trim()
 
     return new Response(
       JSON.stringify({ feedback, grade }),
@@ -40,6 +119,7 @@ The writing is clear and demonstrates good historical knowledge. With some addit
       },
     )
   } catch (error) {
+    console.error('Error generating test grading:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
