@@ -5,6 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/components/AuthProvider";
 import Index from "./pages/Index";
+import Dashboard from "./pages/Dashboard";
+import CreateAssignment from "./pages/CreateAssignment";
+import AssignmentDetail from "./pages/AssignmentDetail";
 import Upload from "./pages/Upload";
 import GradingPreview from "./pages/GradingPreview";
 import Training from "./pages/Training";
@@ -37,7 +40,9 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<FreemiumDashboard />} />
-      <Route path="/dashboard" element={<FreemiumDashboard />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/create-assignment" element={<CreateAssignment />} />
+      <Route path="/assignment/:id" element={<AssignmentDetail />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/onboarding-flow" element={<OnboardingFlow />} />
       <Route path="/upload-training" element={<UploadTraining />} />
