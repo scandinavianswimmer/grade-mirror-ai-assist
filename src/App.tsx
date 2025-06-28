@@ -17,6 +17,7 @@ import FreemiumDashboard from "./pages/FreemiumDashboard";
 import UploadTraining from "./pages/UploadTraining";
 import SubmitAssignment from "./pages/SubmitAssignment";
 import Onboarding from "./pages/Onboarding";
+import OnboardingFlow from "./pages/OnboardingFlow";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const AppRoutes = () => {
       <Route path="/" element={<FreemiumDashboard />} />
       <Route path="/dashboard" element={<FreemiumDashboard />} />
       <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/onboarding-flow" element={<OnboardingFlow />} />
       <Route path="/upload-training" element={<UploadTraining />} />
       <Route path="/submit-assignment" element={<SubmitAssignment />} />
       <Route path="/upload" element={<Upload />} />
