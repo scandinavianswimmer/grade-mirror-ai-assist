@@ -115,7 +115,7 @@ const CreateAssignment = () => {
                     name="title"
                     value={formData.title}
                     onChange={handleInputChange}
-                    placeholder='e.g., "Analysis of The Great Gatsby\'s Symbolism"'
+                    placeholder="e.g., Analysis of The Great Gatsby's Symbolism"
                     required
                   />
                 </div>
