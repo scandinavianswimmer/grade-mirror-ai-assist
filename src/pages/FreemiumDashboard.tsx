@@ -12,7 +12,7 @@ import { getUserLimits, getSubmissions, getTrainingExamples, UserLimits, Freemiu
 import { useToast } from '@/hooks/use-toast';
 
 const FreemiumDashboard = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [limits, setLimits] = useState<UserLimits | null>(null);
   const [submissions, setSubmissions] = useState<FreemiumSubmission[]>([]);
@@ -20,30 +20,10 @@ const FreemiumDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('FreemiumDashboard: Auth state changed', { user: !!user, authLoading });
-    
-    if (authLoading) {
-      return; // Still loading auth state
+    if (user) {
+      loadDashboardData();
     }
-    
-    if (!user) {
-      console.log('FreemiumDashboard: No user, showing demo data');
-      // Show demo/placeholder data for non-authenticated users
-      setLimits({
-        trainingExamplesCount: 0,
-        weeklyFeedbackCount: 0,
-        maxTrainingExamples: 5,
-        maxWeeklyFeedback: 10,
-        plan: 'freemium'
-      });
-      setSubmissions([]);
-      setTrainingExamples([]);
-      setLoading(false);
-      return;
-    }
-
-    loadDashboardData();
-  }, [user, authLoading]);
+  }, [user]);
 
   const loadDashboardData = async () => {
     if (!user) return;
@@ -78,22 +58,7 @@ const FreemiumDashboard = () => {
     }
   };
 
-  // Show loading spinner while auth is loading
-  if (authLoading) {
-    console.log('FreemiumDashboard: Auth loading...');
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <Navbar />
-        <div className="container mx-auto px-4 py-8 flex items-center justify-center">
-          <div className="text-lg font-medium">Loading...</div>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading spinner while dashboard data is loading
   if (loading) {
-    console.log('FreemiumDashboard: Dashboard loading...');
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <Navbar />
@@ -103,8 +68,6 @@ const FreemiumDashboard = () => {
       </div>
     );
   }
-
-  console.log('FreemiumDashboard: Rendering dashboard', { user: !!user, limits });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -120,13 +83,6 @@ const FreemiumDashboard = () => {
             <p className="text-gray-600">
               Your AI-powered grading assistant. Upload training examples and start generating personalized feedback.
             </p>
-            {!user && (
-              <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-yellow-800">
-                  <Link to="/auth" className="font-medium underline">Sign in</Link> to start using GradeMirror with your personal training data.
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Freemium Limits Card */}
@@ -184,9 +140,9 @@ const FreemiumDashboard = () => {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Upload Training Data</h3>
                 <p className="text-gray-600 mb-4">Upload past graded essays to train the AI</p>
-                <Link to={user ? "/upload-training" : "/auth"}>
-                  <Button className="w-full" disabled={!user || (limits?.trainingExamplesCount >= (limits?.maxTrainingExamples || 5))}>
-                    {user ? "Upload Examples" : "Sign In to Upload"}
+                <Link to="/upload-training">
+                  <Button className="w-full" disabled={limits?.trainingExamplesCount >= (limits?.maxTrainingExamples || 5)}>
+                    Upload Examples
                   </Button>
                 </Link>
               </div>
@@ -199,9 +155,9 @@ const FreemiumDashboard = () => {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Grade New Essay</h3>
                 <p className="text-gray-600 mb-4">Upload student essay for AI feedback</p>
-                <Link to={user ? "/submit-assignment" : "/auth"}>
-                  <Button className="w-full" disabled={!user || (limits?.weeklyFeedbackCount >= (limits?.maxWeeklyFeedback || 10))}>
-                    {user ? "Grade Essay" : "Sign In to Grade"}
+                <Link to="/submit-assignment">
+                  <Button className="w-full" disabled={limits?.weeklyFeedbackCount >= (limits?.maxWeeklyFeedback || 10)}>
+                    Grade Essay
                   </Button>
                 </Link>
               </div>
@@ -214,9 +170,9 @@ const FreemiumDashboard = () => {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">AI Training Status</h3>
                 <p className="text-gray-600 mb-4">View your AI model training progress</p>
-                <Link to={user ? "/training" : "/auth"}>
+                <Link to="/training">
                   <Button variant="outline" className="w-full">
-                    {user ? "View Training" : "Sign In to View"}
+                    View Training
                   </Button>
                 </Link>
               </div>
@@ -227,57 +183,49 @@ const FreemiumDashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Recent AI Feedback</h3>
-              {user ? (
-                submissions.length > 0 ? (
-                  <div className="space-y-3">
-                    {submissions.map((submission) => (
-                      <div key={submission.id} className="p-3 bg-gray-50 rounded-lg">
-                        <p className="font-medium text-sm">Student Essay</p>
-                        <p className="text-xs text-gray-600 truncate">{submission.essay.substring(0, 100)}...</p>
-                        <div className="flex justify-between items-center mt-2">
-                          <span className="text-xs text-gray-500">
-                            {new Date(submission.created_at).toLocaleDateString()}
-                          </span>
-                          {submission.ai_grade && (
-                            <Badge variant="outline">{submission.ai_grade}</Badge>
-                          )}
-                        </div>
+              {submissions.length > 0 ? (
+                <div className="space-y-3">
+                  {submissions.map((submission) => (
+                    <div key={submission.id} className="p-3 bg-gray-50 rounded-lg">
+                      <p className="font-medium text-sm">Student Essay</p>
+                      <p className="text-xs text-gray-600 truncate">{submission.essay.substring(0, 100)}...</p>
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-xs text-gray-500">
+                          {new Date(submission.created_at).toLocaleDateString()}
+                        </span>
+                        {submission.ai_grade && (
+                          <Badge variant="outline">{submission.ai_grade}</Badge>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-center py-4">No feedback generated yet</p>
-                )
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <p className="text-gray-500 text-center py-4">Sign in to see your recent feedback</p>
+                <p className="text-gray-500 text-center py-4">No feedback generated yet</p>
               )}
             </Card>
 
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Training Examples</h3>
-              {user ? (
-                trainingExamples.length > 0 ? (
-                  <div className="space-y-3">
-                    {trainingExamples.slice(0, 5).map((example) => (
-                      <div key={example.id} className="p-3 bg-gray-50 rounded-lg">
-                        <p className="font-medium text-sm">Training Example</p>
-                        <p className="text-xs text-gray-600 truncate">{example.essay.substring(0, 80)}...</p>
-                        <div className="flex justify-between items-center mt-2">
-                          <span className="text-xs text-gray-500">
-                            {new Date(example.created_at).toLocaleDateString()}
-                          </span>
-                          {example.grade && (
-                            <Badge variant="outline">{example.grade}</Badge>
-                          )}
-                        </div>
+              {trainingExamples.length > 0 ? (
+                <div className="space-y-3">
+                  {trainingExamples.slice(0, 5).map((example) => (
+                    <div key={example.id} className="p-3 bg-gray-50 rounded-lg">
+                      <p className="font-medium text-sm">Training Example</p>
+                      <p className="text-xs text-gray-600 truncate">{example.essay.substring(0, 80)}...</p>
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-xs text-gray-500">
+                          {new Date(example.created_at).toLocaleDateString()}
+                        </span>
+                        {example.grade && (
+                          <Badge variant="outline">{example.grade}</Badge>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-center py-4">No training examples uploaded</p>
-                )
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <p className="text-gray-500 text-center py-4">Sign in to upload training examples</p>
+                <p className="text-gray-500 text-center py-4">No training examples uploaded</p>
               )}
             </Card>
           </div>

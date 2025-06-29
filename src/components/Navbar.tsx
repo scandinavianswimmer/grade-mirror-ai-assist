@@ -16,8 +16,8 @@ const Navbar = () => {
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: Home },
-    { path: '/upload', label: 'Upload', icon: Upload },
-    { path: '/training', label: 'Training', icon: Brain },
+    { path: '/upload-training', label: 'Upload Training', icon: Upload },
+    { path: '/submit-assignment', label: 'Grade Essay', icon: Brain },
     { path: '/privacy', label: 'Privacy', icon: Settings },
   ];
 
@@ -27,7 +27,7 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-8">
             <Link to="/" className="text-xl font-bold text-blue-600">
-              AI Grader
+              GradeMirror
             </Link>
             
             <div className="hidden md:flex space-x-4">
@@ -54,7 +54,7 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            {user && (
+            {user ? (
               <>
                 <span className="text-sm text-gray-600">
                   {user.email}
@@ -69,6 +69,10 @@ const Navbar = () => {
                   <span>Sign Out</span>
                 </Button>
               </>
+            ) : (
+              <Link to="/auth">
+                <Button>Sign In</Button>
+              </Link>
             )}
           </div>
         </div>

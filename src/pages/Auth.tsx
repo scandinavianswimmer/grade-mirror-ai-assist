@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { useAuth } from '@/components/AuthProvider'
 import { GraduationCap } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { useNavigate } from 'react-router-dom'
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true)
@@ -14,8 +15,16 @@ const Auth = () => {
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
-  const { signIn, signUp } = useAuth()
+  const { signIn, signUp, user } = useAuth()
   const { toast } = useToast()
+  const navigate = useNavigate()
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (user) {
+      navigate('/')
+    }
+  }, [user, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,12 +37,14 @@ const Auth = () => {
           title: "Welcome back!",
           description: "Successfully signed in to GradeMirror."
         })
+        navigate('/')
       } else {
         await signUp(email, password, name)
         toast({
           title: "Account created!",
           description: "Please check your email to verify your account."
         })
+        // Don't navigate immediately for signup - wait for email verification
       }
     } catch (error: any) {
       toast({

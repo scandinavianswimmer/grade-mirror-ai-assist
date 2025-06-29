@@ -1,9 +1,11 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/components/AuthProvider";
+import AuthGuard from "@/components/AuthGuard";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import CreateAssignment from "./pages/CreateAssignment";
@@ -39,21 +41,84 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<FreemiumDashboard />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/create-assignment" element={<CreateAssignment />} />
-      <Route path="/assignment/:id" element={<AssignmentDetail />} />
-      <Route path="/onboarding" element={<Onboarding />} />
-      <Route path="/onboarding-flow" element={<OnboardingFlow />} />
-      <Route path="/upload-training" element={<UploadTraining />} />
-      <Route path="/submit-assignment" element={<SubmitAssignment />} />
-      <Route path="/upload" element={<Upload />} />
-      <Route path="/grading/preview" element={<GradingPreview />} />
-      <Route path="/training" element={<Training />} />
-      <Route path="/lms" element={<LMSIntegration />} />
-      <Route path="/lms/callback" element={<LMSCallback />} />
-      <Route path="/privacy" element={<PrivacySettings />} />
-      <Route path="/auth" element={<Auth />} />
+      {/* Public routes */}
+      <Route path="/auth" element={
+        <AuthGuard requireAuth={false}>
+          <Auth />
+        </AuthGuard>
+      } />
+      
+      {/* Protected routes */}
+      <Route path="/" element={
+        <AuthGuard>
+          <FreemiumDashboard />
+        </AuthGuard>
+      } />
+      <Route path="/dashboard" element={
+        <AuthGuard>
+          <Dashboard />
+        </AuthGuard>
+      } />
+      <Route path="/create-assignment" element={
+        <AuthGuard>
+          <CreateAssignment />
+        </AuthGuard>
+      } />
+      <Route path="/assignment/:id" element={
+        <AuthGuard>
+          <AssignmentDetail />
+        </AuthGuard>
+      } />
+      <Route path="/onboarding" element={
+        <AuthGuard>
+          <Onboarding />
+        </AuthGuard>
+      } />
+      <Route path="/onboarding-flow" element={
+        <AuthGuard>
+          <OnboardingFlow />
+        </AuthGuard>
+      } />
+      <Route path="/upload-training" element={
+        <AuthGuard>
+          <UploadTraining />
+        </AuthGuard>
+      } />
+      <Route path="/submit-assignment" element={
+        <AuthGuard>
+          <SubmitAssignment />
+        </AuthGuard>
+      } />
+      <Route path="/upload" element={
+        <AuthGuard>
+          <Upload />
+        </AuthGuard>
+      } />
+      <Route path="/grading/preview" element={
+        <AuthGuard>
+          <GradingPreview />
+        </AuthGuard>
+      } />
+      <Route path="/training" element={
+        <AuthGuard>
+          <Training />
+        </AuthGuard>
+      } />
+      <Route path="/lms" element={
+        <AuthGuard>
+          <LMSIntegration />
+        </AuthGuard>
+      } />
+      <Route path="/lms/callback" element={
+        <AuthGuard>
+          <LMSCallback />
+        </AuthGuard>
+      } />
+      <Route path="/privacy" element={
+        <AuthGuard>
+          <PrivacySettings />
+        </AuthGuard>
+      } />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
