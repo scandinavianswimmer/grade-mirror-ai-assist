@@ -26,7 +26,23 @@ const UploadTraining = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to upload training examples.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!formData.essay.trim() || !formData.rubric.trim()) {
+      toast({
+        title: "Missing required fields",
+        description: "Please provide both the student essay and grading rubric.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setLoading(true);
 
@@ -36,7 +52,7 @@ const UploadTraining = () => {
       if (limits.trainingExamplesCount >= limits.maxTrainingExamples) {
         toast({
           title: "Limit reached",
-          description: "You've reached the maximum number of training examples for the free plan.",
+          description: `You've reached the maximum number of training examples (${limits.maxTrainingExamples}) for the ${limits.plan} plan.`,
           variant: "destructive"
         });
         return;
@@ -55,12 +71,21 @@ const UploadTraining = () => {
         description: "Your grading example has been added to improve AI accuracy."
       });
 
-      navigate('/dashboard');
+      // Reset form
+      setFormData({
+        essay: '',
+        rubric: '',
+        feedback: '',
+        grade: ''
+      });
+
+      // Navigate back to dashboard
+      navigate('/');
     } catch (error) {
       console.error('Upload error:', error);
       toast({
         title: "Upload failed",
-        description: "Please try again.",
+        description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -71,6 +96,21 @@ const UploadTraining = () => {
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto text-center">
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Sign In Required</h1>
+            <p className="text-gray-600 mb-8">Please sign in to upload training examples.</p>
+            <Button onClick={() => navigate('/auth')}>Sign In</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">

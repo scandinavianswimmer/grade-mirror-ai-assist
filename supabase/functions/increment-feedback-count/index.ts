@@ -16,10 +16,20 @@ serve(async (req) => {
   try {
     const { userId } = await req.json();
 
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: 'User ID is required' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
+
     // Initialize Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
         global: {
           headers: { Authorization: req.headers.get('Authorization')! },
@@ -27,26 +37,44 @@ serve(async (req) => {
       }
     );
 
-    // Increment the weekly feedback count
-    const { data, error } = await supabaseClient
+    // Get current user data
+    const { data: userData, error: fetchError } = await supabaseClient
       .from('users')
-      .select('weekly_feedback_count, plan')
+      .select('weekly_feedback_count, plan, last_reset_date')
       .eq('id', userId)
       .single();
 
-    if (error) {
-      throw error;
+    if (fetchError) {
+      console.error('Error fetching user data:', fetchError);
+      return new Response(
+        JSON.stringify({ error: fetchError.message }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
     }
 
-    const newCount = (data.weekly_feedback_count || 0) + 1;
-    const limit = data.plan === 'freemium' ? 3 : 999; // Freemium users get 3 per week
+    if (!userData) {
+      return new Response(
+        JSON.stringify({ error: 'User not found' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 404,
+        }
+      );
+    }
 
-    if (newCount > limit) {
+    const currentCount = userData.weekly_feedback_count || 0;
+    const limit = userData.plan === 'freemium' ? 10 : 100;
+
+    // Check if user has reached their limit
+    if (currentCount >= limit) {
       return new Response(
         JSON.stringify({ 
           error: 'Weekly limit reached',
           limit,
-          current: data.weekly_feedback_count 
+          current: currentCount 
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -55,11 +83,23 @@ serve(async (req) => {
       );
     }
 
-    // Update the count
-    await supabaseClient
+    // Increment the count
+    const newCount = currentCount + 1;
+    const { error: updateError } = await supabaseClient
       .from('users')
       .update({ weekly_feedback_count: newCount })
       .eq('id', userId);
+
+    if (updateError) {
+      console.error('Error updating feedback count:', updateError);
+      return new Response(
+        JSON.stringify({ error: updateError.message }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
 
     return new Response(
       JSON.stringify({ 

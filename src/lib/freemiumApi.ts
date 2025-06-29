@@ -62,27 +62,55 @@ export const deleteTrainingExample = async (id: string): Promise<void> => {
   if (error) throw error;
 };
 
-// Submissions API
+// Submissions API - Updated to work with freemium model
 export const getSubmissions = async (userId: string): Promise<FreemiumSubmission[]> => {
   const { data, error } = await supabase
-    .from('submissions')
-    .select('*')
+    .from('training_examples')
+    .select('id, user_id, essay, rubric, feedback as ai_feedback, grade as ai_grade, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data || [];
+  
+  // Transform training examples to look like submissions for freemium users
+  return (data || []).map(item => ({
+    id: item.id,
+    user_id: item.user_id,
+    essay: item.essay,
+    rubric: item.rubric,
+    ai_feedback: item.ai_feedback,
+    ai_grade: item.ai_grade,
+    inline_comments: null,
+    created_at: item.created_at
+  }));
 };
 
 export const createSubmission = async (submission: Omit<FreemiumSubmission, 'id' | 'created_at'>): Promise<FreemiumSubmission> => {
+  // For freemium users, we store submissions as training examples
   const { data, error } = await supabase
-    .from('submissions')
-    .insert(submission)
+    .from('training_examples')
+    .insert({
+      user_id: submission.user_id,
+      essay: submission.essay,
+      rubric: submission.rubric,
+      feedback: submission.ai_feedback,
+      grade: submission.ai_grade
+    })
     .select()
     .single();
 
   if (error) throw error;
-  return data;
+  
+  return {
+    id: data.id,
+    user_id: data.user_id,
+    essay: data.essay,
+    rubric: data.rubric,
+    ai_feedback: data.feedback,
+    ai_grade: data.grade,
+    inline_comments: null,
+    created_at: data.created_at
+  };
 };
 
 // User Limits API
@@ -104,7 +132,9 @@ export const getUserLimits = async (userId: string): Promise<UserLimits> => {
 };
 
 export const incrementFeedbackCount = async (userId: string): Promise<void> => {
-  const { error } = await supabase.rpc('increment_feedback_count', { user_id: userId });
+  const { error } = await supabase.functions.invoke('increment-feedback-count', {
+    body: { userId }
+  });
   if (error) throw error;
 };
 
