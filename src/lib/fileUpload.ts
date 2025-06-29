@@ -10,9 +10,15 @@ export interface FileUploadResult {
 
 export const uploadFile = async (file: File, bucket: string = 'uploads'): Promise<FileUploadResult> => {
   try {
+    // Get the current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'User not authenticated' };
+    }
+
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `${fileName}`;
+    const filePath = `${user.id}/${fileName}`;
 
     const { data, error } = await supabase.storage
       .from(bucket)

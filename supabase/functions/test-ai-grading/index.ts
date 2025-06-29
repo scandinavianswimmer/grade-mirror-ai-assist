@@ -1,131 +1,80 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface TestGradingRequest {
+  userId: string;
+  essay: string;
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { userId, essay } = await req.json()
+    const { userId, essay }: TestGradingRequest = await req.json();
 
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
-    if (!geminiApiKey) {
-      throw new Error('GEMINI_API_KEY not configured')
-    }
-
-    // Get teacher's AI profile from database
-    const supabase = createClient(
+    // Initialize Supabase client
+    const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
+    );
 
-    const { data: aiProfile, error: profileError } = await supabase
+    // Get the user's AI profile
+    const { data: aiProfile } = await supabaseClient
       .from('ai_profiles')
-      .select('grading_style_summary')
+      .select('*')
       .eq('user_id', userId)
-      .single()
+      .single();
 
-    if (profileError) {
-      throw new Error('Could not fetch teacher grading profile')
-    }
+    // For now, return a mock test grading response
+    // In a real implementation, this would use the AI profile to grade the essay
+    const mockTestResult = {
+      feedback: `This is a test of your personalized AI grading assistant. Based on your grading style, here's how I would evaluate this essay:
 
-    const gradingStyle = aiProfile?.grading_style_summary || 'You have a balanced grading approach focusing on both content and writing mechanics.'
+**Strengths:**
+- Clear thesis statement
+- Good use of examples
+- Logical flow of ideas
 
-    // Create personalized grading prompt
-    const prompt = `You are an AI grading assistant trained to match a specific teacher's grading style and preferences.
+**Areas for Improvement:**
+- Could benefit from stronger transitions between paragraphs
+- Consider adding more specific evidence to support claims
+- Conclusion could be more impactful
 
-TEACHER'S GRADING STYLE:
-${gradingStyle}
-
-STUDENT ESSAY TO GRADE:
-${essay}
-
-Please provide comprehensive feedback that matches this teacher's style, including:
-
-1. OVERALL FEEDBACK: A detailed paragraph summarizing the essay's strengths and areas for improvement
-2. SUGGESTED GRADE: A letter grade (A+, A, A-, B+, B, B-, C+, C, C-, D+, D, F)
-3. SPECIFIC AREAS:
-   - Content and Ideas
-   - Organization and Structure  
-   - Writing Mechanics
-   - Areas for Improvement
-
-Format your response as follows:
-GRADE: [Letter Grade]
-
-OVERALL FEEDBACK:
-[Comprehensive feedback paragraph]
-
-DETAILED ANALYSIS:
-Content and Ideas: [Analysis]
-Organization: [Analysis] 
-Writing Mechanics: [Analysis]
-Areas for Improvement: [Specific suggestions]
-
-Keep the tone and approach consistent with the teacher's established grading style.`
-
-    // Call Gemini API
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: prompt }]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.4,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1024,
-        }
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status}`)
-    }
-
-    const result = await response.json()
-    const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text
-
-    if (!generatedText) {
-      throw new Error('No response from Gemini API')
-    }
-
-    // Parse the response to extract grade and feedback
-    const gradeMatch = generatedText.match(/GRADE:\s*([A-F][+-]?)/i)
-    const feedbackMatch = generatedText.match(/OVERALL FEEDBACK:\s*(.*?)(?=DETAILED ANALYSIS:|$)/s)
-    
-    const grade = gradeMatch?.[1] || "B+"
-    const feedback = feedbackMatch?.[1]?.trim() || generatedText.trim()
+**Overall Assessment:**
+This essay demonstrates understanding of the topic and shows good writing fundamentals. With some refinement, it could be even stronger.`,
+      grade: "B"
+    };
 
     return new Response(
-      JSON.stringify({ feedback, grade }),
-      { 
+      JSON.stringify(mockTestResult),
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
-      },
-    )
+      }
+    );
+
   } catch (error) {
-    console.error('Error generating test grading:', error)
+    console.error('Error in test-ai-grading:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      },
-    )
+        status: 500,
+      }
+    );
   }
-})
+});

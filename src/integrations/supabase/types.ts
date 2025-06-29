@@ -9,6 +9,91 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_profiles: {
+        Row: {
+          ai_model_id: string | null
+          created_at: string | null
+          grading_style_summary: string | null
+          id: string
+          last_trained: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_model_id?: string | null
+          created_at?: string | null
+          grading_style_summary?: string | null
+          id?: string
+          last_trained?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_model_id?: string | null
+          created_at?: string | null
+          grading_style_summary?: string | null
+          id?: string
+          last_trained?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assignments: {
+        Row: {
+          canvas_course_id: string | null
+          canvas_id: string | null
+          course_name: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          rubric_url: string | null
+          status: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          canvas_course_id?: string | null
+          canvas_id?: string | null
+          course_name?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          rubric_url?: string | null
+          status?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          canvas_course_id?: string | null
+          canvas_id?: string | null
+          course_name?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          rubric_url?: string | null
+          status?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enterprise_contacts: {
         Row: {
           contact_name: string
@@ -35,6 +120,255 @@ export type Database = {
           message?: string | null
         }
         Relationships: []
+      }
+      grading_examples: {
+        Row: {
+          file_type: string
+          file_url: string
+          id: string
+          title: string
+          uploaded_at: string | null
+          user_id: string
+        }
+        Insert: {
+          file_type: string
+          file_url: string
+          id?: string
+          title: string
+          uploaded_at?: string | null
+          user_id: string
+        }
+        Update: {
+          file_type?: string
+          file_url?: string
+          id?: string
+          title?: string
+          uploaded_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grading_examples_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      llm_sessions: {
+        Row: {
+          confidence_score: number | null
+          id: string
+          input_data: Json | null
+          output_data: Json | null
+          status: string | null
+          timestamp: string | null
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+          status?: string | null
+          timestamp?: string | null
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+          status?: string | null
+          timestamp?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "llm_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lms_integrations: {
+        Row: {
+          access_token: string
+          auto_push: boolean | null
+          auto_sync: boolean | null
+          canvas_url: string | null
+          created_at: string | null
+          id: string
+          platform: string
+          refresh_token: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          auto_push?: boolean | null
+          auto_sync?: boolean | null
+          canvas_url?: string | null
+          created_at?: string | null
+          id?: string
+          platform: string
+          refresh_token?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          auto_push?: boolean | null
+          auto_sync?: boolean | null
+          canvas_url?: string | null
+          created_at?: string | null
+          id?: string
+          platform?: string
+          refresh_token?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_integrations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      privacy_settings: {
+        Row: {
+          allow_training_on_content: boolean | null
+          anonymize_student_names: boolean | null
+          auto_delete_training_data: boolean | null
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          allow_training_on_content?: boolean | null
+          anonymize_student_names?: boolean | null
+          auto_delete_training_data?: boolean | null
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          allow_training_on_content?: boolean | null
+          anonymize_student_names?: boolean | null
+          auto_delete_training_data?: boolean | null
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "privacy_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rubrics: {
+        Row: {
+          created_at: string | null
+          id: string
+          rubric_json: Json
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          rubric_json: Json
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          rubric_json?: Json
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rubrics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      submissions: {
+        Row: {
+          ai_feedback: string | null
+          ai_grade: string | null
+          ai_score: number | null
+          assignment_id: string
+          canvas_submission_id: string | null
+          created_at: string | null
+          essay: string | null
+          feedback: string | null
+          file_url: string | null
+          final_score: number | null
+          id: string
+          inline_comments: Json | null
+          rubric: string | null
+          status: string | null
+          student_name: string
+        }
+        Insert: {
+          ai_feedback?: string | null
+          ai_grade?: string | null
+          ai_score?: number | null
+          assignment_id: string
+          canvas_submission_id?: string | null
+          created_at?: string | null
+          essay?: string | null
+          feedback?: string | null
+          file_url?: string | null
+          final_score?: number | null
+          id?: string
+          inline_comments?: Json | null
+          rubric?: string | null
+          status?: string | null
+          student_name: string
+        }
+        Update: {
+          ai_feedback?: string | null
+          ai_grade?: string | null
+          ai_score?: number | null
+          assignment_id?: string
+          canvas_submission_id?: string | null
+          created_at?: string | null
+          essay?: string | null
+          feedback?: string | null
+          file_url?: string | null
+          final_score?: number | null
+          id?: string
+          inline_comments?: Json | null
+          rubric?: string | null
+          status?: string | null
+          student_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submissions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       teacher_interest: {
         Row: {
@@ -75,6 +409,130 @@ export type Database = {
           school?: string | null
           subjects?: string | null
           why_joining?: string | null
+        }
+        Relationships: []
+      }
+      training_data: {
+        Row: {
+          created_at: string | null
+          data_type: string
+          file_url: string
+          id: string
+          processed: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data_type: string
+          file_url: string
+          id?: string
+          processed?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data_type?: string
+          file_url?: string
+          id?: string
+          processed?: boolean | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_data_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_examples: {
+        Row: {
+          created_at: string | null
+          essay: string
+          feedback: string | null
+          grade: string | null
+          id: string
+          rubric: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          essay: string
+          feedback?: string | null
+          grade?: string | null
+          id?: string
+          rubric: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          essay?: string
+          feedback?: string | null
+          grade?: string | null
+          id?: string
+          rubric?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_examples_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string | null
+          gender: string | null
+          id: string
+          last_reset_date: string | null
+          name: string | null
+          onboarding_complete: boolean | null
+          plan: string | null
+          role: string | null
+          school: string | null
+          weekly_feedback_count: number | null
+          why_joining: string | null
+          years_experience: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          gender?: string | null
+          id: string
+          last_reset_date?: string | null
+          name?: string | null
+          onboarding_complete?: boolean | null
+          plan?: string | null
+          role?: string | null
+          school?: string | null
+          weekly_feedback_count?: number | null
+          why_joining?: string | null
+          years_experience?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          gender?: string | null
+          id?: string
+          last_reset_date?: string | null
+          name?: string | null
+          onboarding_complete?: boolean | null
+          plan?: string | null
+          role?: string | null
+          school?: string | null
+          weekly_feedback_count?: number | null
+          why_joining?: string | null
+          years_experience?: number | null
         }
         Relationships: []
       }

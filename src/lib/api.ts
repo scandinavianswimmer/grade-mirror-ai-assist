@@ -24,6 +24,17 @@ export const createAssignment = async (assignment: Omit<Assignment, 'id' | 'crea
   return data
 }
 
+export const getAssignment = async (id: string) => {
+  const { data, error } = await supabase
+    .from('assignments')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 // Submissions
 export const getSubmissions = async (assignmentId: string) => {
   const { data, error } = await supabase
@@ -135,18 +146,15 @@ export const generateGradingFeedback = async (payload: {
     grade: string
   }>
 }) => {
-  // This would call your AI service
-  const response = await fetch('/api/generate-grading-feedback', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
+  const { data, error } = await supabase.functions.invoke('generate-grading-feedback', {
+    body: {
+      essayText: payload.essay_text,
+      rubricText: payload.rubric_text,
+      trainingData: payload.training_examples,
+      userId: payload.teacher_id
+    }
   })
 
-  if (!response.ok) {
-    throw new Error('Failed to generate feedback')
-  }
-
-  return response.json()
+  if (error) throw error
+  return data
 }

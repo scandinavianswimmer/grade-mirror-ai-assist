@@ -1,73 +1,86 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const supabase = createClient(
+    const { userId } = await req.json();
+
+    // Initialize Supabase client
+    const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
+    );
 
-    const { user_id } = await req.json()
-
-    // Get current user data
-    const { data: user, error: userError } = await supabase
+    // Increment the weekly feedback count
+    const { data, error } = await supabaseClient
       .from('users')
-      .select('weekly_feedback_count, last_reset_date')
-      .eq('id', user_id)
-      .single()
+      .select('weekly_feedback_count, plan')
+      .eq('id', userId)
+      .single();
 
-    if (userError) throw userError
-
-    // Check if we need to reset the weekly count
-    const today = new Date()
-    const lastReset = new Date(user.last_reset_date)
-    const daysDiff = Math.floor((today.getTime() - lastReset.getTime()) / (1000 * 60 * 60 * 24))
-
-    let newCount = (user.weekly_feedback_count || 0) + 1
-    let resetDate = user.last_reset_date
-
-    if (daysDiff >= 7) {
-      newCount = 1
-      resetDate = today.toISOString().split('T')[0]
+    if (error) {
+      throw error;
     }
 
-    // Update the user's feedback count
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({
-        weekly_feedback_count: newCount,
-        last_reset_date: resetDate
-      })
-      .eq('id', user_id)
+    const newCount = (data.weekly_feedback_count || 0) + 1;
+    const limit = data.plan === 'freemium' ? 3 : 999; // Freemium users get 3 per week
 
-    if (updateError) throw updateError
+    if (newCount > limit) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Weekly limit reached',
+          limit,
+          current: data.weekly_feedback_count 
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 429,
+        }
+      );
+    }
+
+    // Update the count
+    await supabaseClient
+      .from('users')
+      .update({ weekly_feedback_count: newCount })
+      .eq('id', userId);
 
     return new Response(
-      JSON.stringify({ success: true, new_count: newCount }),
-      { 
+      JSON.stringify({ 
+        success: true,
+        count: newCount,
+        limit 
+      }),
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      },
-    )
+        status: 200,
+      }
+    );
 
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error in increment-feedback-count:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
-      },
-    )
+      }
+    );
   }
-})
+});
