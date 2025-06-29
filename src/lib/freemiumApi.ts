@@ -66,7 +66,7 @@ export const deleteTrainingExample = async (id: string): Promise<void> => {
 export const getSubmissions = async (userId: string): Promise<FreemiumSubmission[]> => {
   const { data, error } = await supabase
     .from('training_examples')
-    .select('id, user_id, essay, rubric, feedback as ai_feedback, grade as ai_grade, created_at')
+    .select('id, user_id, essay, rubric, feedback, grade, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
@@ -78,8 +78,8 @@ export const getSubmissions = async (userId: string): Promise<FreemiumSubmission
     user_id: item.user_id,
     essay: item.essay,
     rubric: item.rubric,
-    ai_feedback: item.ai_feedback,
-    ai_grade: item.ai_grade,
+    ai_feedback: item.feedback,
+    ai_grade: item.grade,
     inline_comments: null,
     created_at: item.created_at
   }));
