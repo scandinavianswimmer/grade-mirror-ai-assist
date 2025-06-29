@@ -9,7 +9,7 @@ interface AuthGuardProps {
 }
 
 const AuthGuard: React.FC<AuthGuardProps> = ({ children, requireAuth = true }) => {
-  const { user, loading } = useAuth();
+  const { user, session, loading } = useAuth();
 
   if (loading) {
     return (
@@ -19,11 +19,11 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, requireAuth = true }) =
     );
   }
 
-  if (requireAuth && !user) {
+  if (requireAuth && !user && !session) {
     return <Navigate to="/auth" replace />;
   }
 
-  if (!requireAuth && user) {
+  if (!requireAuth && (user || session)) {
     return <Navigate to="/" replace />;
   }
 

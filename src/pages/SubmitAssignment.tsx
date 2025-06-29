@@ -4,8 +4,9 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Brain, Loader2, AlertCircle } from 'lucide-react';
+import { Brain, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import FileUpload from '@/components/FileUpload';
 import { useAuth } from '@/components/AuthProvider';
 import { generateAIFeedback, createSubmission, getUserLimits } from '@/lib/freemiumApi';
 import { useToast } from '@/hooks/use-toast';
@@ -19,12 +20,31 @@ const SubmitAssignment = () => {
   const [essay, setEssay] = useState('');
   const [rubric, setRubric] = useState('');
   const [feedback, setFeedback] = useState<any>(null);
+  const [step, setStep] = useState<'input' | 'processing' | 'results'>('input');
+
+  const handleFileUpload = (file: File, content: string) => {
+    setEssay(content);
+    toast({
+      title: "Essay uploaded",
+      description: `${file.name} has been loaded successfully`
+    });
+  };
 
   const handleGenerateFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
+    if (!essay.trim() || !rubric.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please provide both an essay and rubric",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
+    setStep('processing');
 
     try {
       // Check limits first
@@ -35,6 +55,7 @@ const SubmitAssignment = () => {
           description: "You've reached your weekly AI feedback limit for the free plan.",
           variant: "destructive"
         });
+        setStep('input');
         return;
       }
 
@@ -52,6 +73,7 @@ const SubmitAssignment = () => {
       });
 
       setFeedback(aiResponse);
+      setStep('results');
 
       toast({
         title: "AI feedback generated!",
@@ -64,9 +86,17 @@ const SubmitAssignment = () => {
         description: "Please try again.",
         variant: "destructive"
       });
+      setStep('input');
     } finally {
       setLoading(false);
     }
+  };
+
+  const startOver = () => {
+    setEssay('');
+    setRubric('');
+    setFeedback(null);
+    setStep('input');
   };
 
   return (
@@ -74,7 +104,7 @@ const SubmitAssignment = () => {
       <Navbar />
       
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Grade Student Essay</h1>
             <p className="text-gray-600">
@@ -82,118 +112,162 @@ const SubmitAssignment = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Input Form */}
-            <Card className="p-6">
-              <form onSubmit={handleGenerateFeedback} className="space-y-6">
-                <div>
-                  <Label htmlFor="essay">Student Essay *</Label>
-                  <Textarea
-                    id="essay"
-                    value={essay}
-                    onChange={(e) => setEssay(e.target.value)}
-                    placeholder="Paste the student's essay text here..."
-                    className="mt-1 min-h-[200px]"
-                    required
+          {step === 'input' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Input Form */}
+              <div className="space-y-6">
+                <Card className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Upload Essay</h3>
+                  <FileUpload
+                    onFileSelect={handleFileUpload}
+                    placeholder="Upload student essay..."
+                    acceptedTypes={['.txt', '.docx', '.pdf']}
                   />
-                </div>
+                </Card>
 
-                <div>
-                  <Label htmlFor="rubric">Grading Rubric *</Label>
-                  <Textarea
-                    id="rubric"
-                    value={rubric}
-                    onChange={(e) => setRubric(e.target.value)}
-                    placeholder="Paste the grading rubric or criteria..."
-                    className="mt-1 min-h-[150px]"
-                    required
-                  />
-                </div>
+                <Card className="p-6">
+                  <form onSubmit={handleGenerateFeedback} className="space-y-6">
+                    <div>
+                      <Label htmlFor="essay">Student Essay *</Label>
+                      <Textarea
+                        id="essay"
+                        value={essay}
+                        onChange={(e) => setEssay(e.target.value)}
+                        placeholder="Paste or type the student's essay text here..."
+                        className="mt-1 min-h-[200px]"
+                        required
+                      />
+                    </div>
 
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating AI Feedback...
-                    </>
-                  ) : (
-                    <>
+                    <div>
+                      <Label htmlFor="rubric">Grading Rubric *</Label>
+                      <Textarea
+                        id="rubric"
+                        value={rubric}
+                        onChange={(e) => setRubric(e.target.value)}
+                        placeholder="Enter the grading rubric or criteria..."
+                        className="mt-1 min-h-[150px]"
+                        required
+                      />
+                    </div>
+
+                    <Button type="submit" className="w-full" disabled={loading}>
                       <Brain className="w-4 h-4 mr-2" />
                       Generate AI Feedback
-                    </>
-                  )}
-                </Button>
-              </form>
+                    </Button>
+                  </form>
+                </Card>
+              </div>
+
+              {/* Instructions */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">How it works</h3>
+                <div className="space-y-4 text-sm text-gray-600">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-blue-600 font-medium">1</span>
+                    </div>
+                    <p>Upload or paste the student's essay text</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-blue-600 font-medium">2</span>
+                    </div>
+                    <p>Provide the grading rubric or criteria</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-blue-600 font-medium">3</span>
+                    </div>
+                    <p>AI analyzes the essay against your criteria</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-blue-600 font-medium">4</span>
+                    </div>
+                    <p>Review and customize the AI-generated feedback</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {step === 'processing' && (
+            <Card className="p-12">
+              <div className="text-center">
+                <Loader2 className="w-16 h-16 text-blue-600 mx-auto mb-6 animate-spin" />
+                <h3 className="text-xl font-semibold mb-4">Analyzing Essay</h3>
+                <p className="text-gray-600 mb-6">
+                  Our AI is carefully reviewing the essay against your rubric...
+                </p>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '70%' }}></div>
+                </div>
+              </div>
             </Card>
+          )}
 
-            {/* AI Feedback Results */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">AI Feedback</h3>
-              
-              {!feedback && !loading && (
-                <div className="text-center py-8">
-                  <Brain className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">Submit essay and rubric to generate AI feedback</p>
+          {step === 'results' && feedback && (
+            <div className="space-y-6">
+              <Card className="p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                  <h3 className="text-xl font-semibold">AI Feedback Complete</h3>
                 </div>
-              )}
 
-              {loading && (
-                <div className="text-center py-8">
-                  <Loader2 className="w-8 h-8 text-blue-600 mx-auto mb-4 animate-spin" />
-                  <p className="text-gray-600">AI is analyzing the essay...</p>
-                </div>
-              )}
-
-              {feedback && (
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Suggested Grade */}
                   <div className="p-4 bg-blue-50 rounded-lg">
                     <h4 className="font-semibold text-blue-800 mb-2">Suggested Grade</h4>
-                    <p className="text-2xl font-bold text-blue-600">{feedback.suggestedGrade}</p>
-                    <p className="text-sm text-blue-700 mt-1">{feedback.reasoning}</p>
+                    <p className="text-3xl font-bold text-blue-600">{feedback.suggestedGrade}</p>
+                    <p className="text-sm text-blue-700 mt-2">{feedback.reasoning}</p>
                   </div>
-
-                  {/* Overall Feedback */}
-                  <div className="p-4 bg-green-50 rounded-lg">
-                    <h4 className="font-semibold text-green-800 mb-2">Overall Feedback</h4>
-                    <p className="text-sm text-green-700">{feedback.overallFeedback}</p>
-                  </div>
-
-                  {/* Inline Comments */}
-                  {feedback.inlineComments && feedback.inlineComments.length > 0 && (
-                    <div className="p-4 bg-orange-50 rounded-lg">
-                      <h4 className="font-semibold text-orange-800 mb-2">Inline Comments</h4>
-                      <div className="space-y-2">
-                        {feedback.inlineComments.map((comment: any, index: number) => (
-                          <div key={index} className="text-sm">
-                            <p className="font-medium text-orange-700">"{comment.text}"</p>
-                            <p className="text-orange-600">{comment.comment}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Confidence Score */}
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <h4 className="font-semibold text-gray-800 mb-2">AI Confidence</h4>
-                    <p className="text-sm text-gray-700">
-                      {Math.round((feedback.confidence || 0.8) * 100)}% confident in this assessment
+                    <p className="text-2xl font-bold text-gray-600">
+                      {Math.round((feedback.confidence || 0.8) * 100)}%
                     </p>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <Button onClick={() => navigate('/dashboard')} className="flex-1">
-                      Save & Return to Dashboard
-                    </Button>
-                    <Button variant="outline" onClick={() => window.print()}>
-                      Print Feedback
-                    </Button>
+                    <p className="text-sm text-gray-600 mt-1">Assessment reliability</p>
                   </div>
                 </div>
-              )}
-            </Card>
-          </div>
+
+                {/* Overall Feedback */}
+                <div className="mt-6 p-4 bg-green-50 rounded-lg">
+                  <h4 className="font-semibold text-green-800 mb-3">Overall Feedback</h4>
+                  <p className="text-sm text-green-700 whitespace-pre-wrap">{feedback.overallFeedback}</p>
+                </div>
+
+                {/* Inline Comments */}
+                {feedback.inlineComments && feedback.inlineComments.length > 0 && (
+                  <div className="mt-6 p-4 bg-orange-50 rounded-lg">
+                    <h4 className="font-semibold text-orange-800 mb-3">Specific Comments</h4>
+                    <div className="space-y-3">
+                      {feedback.inlineComments.map((comment: any, index: number) => (
+                        <div key={index} className="border-l-3 border-orange-300 pl-3">
+                          <p className="font-medium text-orange-700 text-sm">"{comment.text}"</p>
+                          <p className="text-orange-600 text-sm mt-1">{comment.comment}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-3 mt-6">
+                  <Button onClick={() => navigate('/dashboard')} className="flex-1">
+                    Save & Return to Dashboard
+                  </Button>
+                  <Button variant="outline" onClick={startOver}>
+                    Grade Another Essay
+                  </Button>
+                  <Button variant="outline" onClick={() => window.print()}>
+                    Print Feedback
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          )}
 
           {/* Usage Warning */}
           <Card className="mt-8 p-4 bg-yellow-50 border-yellow-200">

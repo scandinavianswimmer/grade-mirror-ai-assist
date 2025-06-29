@@ -26,13 +26,17 @@ interface GradingResponse {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
     const { essayText, rubricText, trainingData, userId }: GradingRequest = await req.json();
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+
+    if (!geminiApiKey) {
+      throw new Error('Gemini API key not configured');
+    }
 
     // Initialize Supabase client
     const supabaseClient = createClient(
@@ -45,24 +49,85 @@ serve(async (req) => {
       }
     );
 
-    // For now, return a mock response
-    // In a real implementation, this would call an AI service like OpenAI or Google Gemini
-    const mockResponse: GradingResponse = {
-      inlineComments: [
-        {
-          text: essayText.substring(0, 50),
-          comment: "Good introduction, but could be more engaging."
-        },
-        {
-          text: essayText.substring(50, 100),
-          comment: "Strong argument presented here."
+    // Build context from training data
+    let trainingContext = '';
+    if (trainingData && trainingData.length > 0) {
+      trainingContext = `\n\nBased on your previous grading examples:\n${trainingData.map(example => 
+        `Essay: ${example.essay?.substring(0, 200)}...\nFeedback: ${example.feedback}\nGrade: ${example.grade}`
+      ).join('\n\n')}`;
+    }
+
+    const prompt = `You are an expert teacher grading a student essay. Please provide detailed feedback following this exact JSON format:
+
+{
+  "inlineComments": [
+    {
+      "text": "specific text from essay",
+      "comment": "your comment about this text"
+    }
+  ],
+  "overallFeedback": "comprehensive feedback paragraph",
+  "suggestedGrade": "letter grade (A, B+, C-, etc.)",
+  "reasoning": "explanation for the grade",
+  "confidence": 0.85
+}
+
+Essay to grade:
+${essayText}
+
+Grading Rubric:
+${rubricText}
+
+${trainingContext}
+
+Please respond with ONLY the JSON object, no additional text.`;
+
+    // Call Gemini API
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.4,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 2048,
         }
-      ],
-      overallFeedback: `This essay demonstrates a solid understanding of the topic. The arguments are well-structured and supported with evidence. However, there are areas for improvement:\n\n1. Strengthen the introduction to better hook the reader\n2. Provide more specific examples to support your claims\n3. Consider addressing potential counterarguments\n\nOverall, this is a good piece of writing that shows clear thought and effort.`,
-      suggestedGrade: "B+",
-      reasoning: "The essay meets most criteria outlined in the rubric. Strong content and structure, with room for improvement in engagement and depth of analysis.",
-      confidence: 0.85
-    };
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Gemini API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!generatedText) {
+      throw new Error('No response from Gemini API');
+    }
+
+    // Parse the JSON response
+    let gradingResponse: GradingResponse;
+    try {
+      gradingResponse = JSON.parse(generatedText);
+    } catch (parseError) {
+      // Fallback if JSON parsing fails
+      gradingResponse = {
+        inlineComments: [],
+        overallFeedback: generatedText,
+        suggestedGrade: "B",
+        reasoning: "AI-generated feedback based on essay analysis",
+        confidence: 0.8
+      };
+    }
 
     // Log the grading session
     await supabaseClient
@@ -70,13 +135,13 @@ serve(async (req) => {
       .insert({
         user_id: userId,
         status: 'completed',
-        input_data: { essayText: essayText.substring(0, 200), rubricText },
-        output_data: mockResponse,
-        confidence_score: mockResponse.confidence
+        input_data: { essayText: essayText.substring(0, 500), rubricText },
+        output_data: gradingResponse,
+        confidence_score: gradingResponse.confidence
       });
 
     return new Response(
-      JSON.stringify(mockResponse),
+      JSON.stringify(gradingResponse),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,

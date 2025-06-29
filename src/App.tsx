@@ -27,9 +27,9 @@ import OnboardingFlow from "./pages/OnboardingFlow";
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
-  const { session, loading } = useAuth();
+  const { user, session, loading } = useAuth();
 
-  console.log('AppRoutes: Auth state:', { session: !!session, loading });
+  console.log('AppRoutes: Auth state:', { user: !!user, session: !!session, loading });
 
   if (loading) {
     return (

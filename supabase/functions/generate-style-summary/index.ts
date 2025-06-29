@@ -13,13 +13,17 @@ interface StyleSummaryRequest {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
     const { userId, examples }: StyleSummaryRequest = await req.json();
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+
+    if (!geminiApiKey) {
+      throw new Error('Gemini API key not configured');
+    }
 
     // Initialize Supabase client
     const supabaseClient = createClient(
@@ -32,30 +36,71 @@ serve(async (req) => {
       }
     );
 
-    // For now, return a mock style summary
-    // In a real implementation, this would analyze the grading examples using AI
-    const mockStyleSummary = `Based on your grading examples, your teaching style shows:
+    // Build prompt from examples
+    const examplesText = examples.map((example, index) => 
+      `Example ${index + 1}:
+      Essay: ${example.essay?.substring(0, 300)}...
+      Rubric: ${example.rubric}
+      Your Feedback: ${example.feedback}
+      Your Grade: ${example.grade}`
+    ).join('\n\n');
 
-1. **Constructive Feedback Approach**: You provide specific, actionable feedback that helps students improve
-2. **Balanced Assessment**: You recognize both strengths and areas for improvement
-3. **Evidence-Based Grading**: You look for concrete examples and supporting details in student work
-4. **Encouraging Tone**: Your feedback is supportive while maintaining academic standards
-5. **Focus on Learning**: You emphasize the learning process and growth rather than just grades
+    const prompt = `Based on the following grading examples, analyze and summarize this teacher's grading style. Focus on:
+1. Feedback approach and tone
+2. Grading criteria emphasis
+3. Communication style
+4. Assessment patterns
+5. Areas of focus
 
-Your grading style is characterized by thorough analysis, clear communication, and a focus on student development. You tend to provide detailed explanations for your assessments and offer practical suggestions for improvement.`;
+Grading Examples:
+${examplesText}
+
+Provide a comprehensive summary of the teacher's grading style that can be used to train an AI to grade in a similar manner. Be specific about patterns you observe.`;
+
+    // Call Gemini API
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 1024,
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Gemini API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const summary = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!summary) {
+      throw new Error('No response from Gemini API');
+    }
 
     // Save the AI profile
     await supabaseClient
       .from('ai_profiles')
       .upsert({
         user_id: userId,
-        grading_style_summary: mockStyleSummary,
+        grading_style_summary: summary,
         last_trained: new Date().toISOString(),
         ai_model_id: `teacher_${userId}_${Date.now()}`
       });
 
     return new Response(
-      JSON.stringify({ summary: mockStyleSummary }),
+      JSON.stringify({ summary }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
