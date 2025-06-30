@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -44,6 +44,15 @@ interface ClassSchedule {
 
 type SortOption = 'time' | 'size' | 'grade' | 'name';
 
+// Cache for dashboard data to prevent disappearing items
+let dashboardCache: {
+  assignments: Assignment[];
+  classes: Class[];
+  lastFetch: number;
+} | null = null;
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 const Dashboard = () => {
   const { user } = useAuth();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -51,6 +60,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>('time');
+  const [hasAnimated, setHasAnimated] = useState(false);
+  const hasInitiallyLoaded = useRef(false);
 
   // Color schemes for different classes
   const colorSchemes = [
@@ -66,12 +77,40 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (user) {
-      fetchData();
+      // Check if we have fresh cached data first
+      const now = Date.now();
+      if (dashboardCache && (now - dashboardCache.lastFetch) < CACHE_DURATION) {
+        console.log('Loading from cache');
+        setAssignments(dashboardCache.assignments);
+        setClasses(dashboardCache.classes);
+        setLoading(false);
+        
+        // Trigger animations for first visit
+        if (!hasInitiallyLoaded.current) {
+          setTimeout(() => setHasAnimated(true), 100);
+          hasInitiallyLoaded.current = true;
+        }
+      } else {
+        fetchData();
+      }
+    }
+  }, [user]);
+
+  // Clear animation state when user logs out
+  useEffect(() => {
+    if (!user) {
+      setHasAnimated(false);
+      hasInitiallyLoaded.current = false;
+      dashboardCache = null;
     }
   }, [user]);
 
   const fetchData = async () => {
+    if (!user) return;
+    
     try {
+      console.log('Fetching fresh data from database');
+      
       // Fetch assignments with submission counts
       const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('assignments')
@@ -102,8 +141,6 @@ const Dashboard = () => {
         })
       );
 
-      setAssignments(assignmentsWithCounts);
-
       // Fetch classes
       const { data: classesData, error: classesError } = await supabase
         .from('classes')
@@ -119,10 +156,32 @@ const Dashboard = () => {
         details_jsonb: cls.details_jsonb as { grade: string; size: number; level: string; time: string; }
       })) || [];
 
+      // Update state
+      setAssignments(assignmentsWithCounts);
       setClasses(typedClasses);
+
+      // Update cache
+      dashboardCache = {
+        assignments: assignmentsWithCounts,
+        classes: typedClasses,
+        lastFetch: Date.now()
+      };
+
+      // Trigger animations for first visit
+      if (!hasInitiallyLoaded.current) {
+        setTimeout(() => setHasAnimated(true), 100);
+        hasInitiallyLoaded.current = true;
+      }
 
     } catch (error) {
       console.error('Error fetching data:', error);
+      
+      // Fallback to cache if available
+      if (dashboardCache) {
+        console.log('Falling back to cached data due to error');
+        setAssignments(dashboardCache.assignments);
+        setClasses(dashboardCache.classes);
+      }
     } finally {
       setLoading(false);
     }
@@ -184,7 +243,9 @@ const Dashboard = () => {
     : [];
 
   const handleClassCreated = () => {
-    fetchData(); // Refetch data when a new class is created
+    // Clear cache to force fresh data fetch
+    dashboardCache = null;
+    fetchData();
   };
 
   return (
@@ -192,7 +253,7 @@ const Dashboard = () => {
       <Navbar />
       
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className={`flex items-center justify-between mb-8 transition-all duration-700 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <h1 className="text-3xl font-bold text-gray-900">My Classes Dashboard</h1>
           <div className="flex gap-3">
             <Button 
@@ -215,7 +276,7 @@ const Dashboard = () => {
 
         {/* Sorting Controls */}
         {classes.length > 0 && (
-          <div className="flex items-center gap-4 mb-6">
+          <div className={`flex items-center gap-4 mb-6 transition-all duration-700 delay-100 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <div className="flex items-center gap-2">
               <SortAsc className="w-5 h-5 text-gray-600" />
               <span className="text-sm font-medium text-gray-700">Sort by:</span>
@@ -236,12 +297,12 @@ const Dashboard = () => {
 
         {loading ? (
           <div className="text-center py-12">
-            <div className="text-lg font-medium">Loading classes...</div>
+            <div className="text-lg font-medium animate-pulse">Loading classes...</div>
           </div>
         ) : (
           <div className="space-y-6">
             {finalClassSchedules.length === 0 ? (
-              <Card className="p-12 text-center">
+              <Card className={`p-12 text-center transition-all duration-700 delay-200 ${hasAnimated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'}`}>
                 <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h2 className="text-xl font-semibold text-gray-700 mb-2">
                   No classes created yet
@@ -255,10 +316,14 @@ const Dashboard = () => {
                 </Button>
               </Card>
             ) : (
-              finalClassSchedules.map((classSchedule) => (
-                <div key={classSchedule.id} className="space-y-4">
+              finalClassSchedules.map((classSchedule, index) => (
+                <div 
+                  key={classSchedule.id} 
+                  className={`space-y-4 transition-all duration-700 ${hasAnimated ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`}
+                  style={{ transitionDelay: `${200 + index * 100}ms` }}
+                >
                   {/* Class Header */}
-                  <Card className="bg-white shadow-lg">
+                  <Card className="bg-white shadow-lg hover:shadow-xl transition-shadow">
                     <CardHeader className={`bg-gradient-to-r ${classSchedule.colorScheme} text-white rounded-t-lg`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -299,7 +364,7 @@ const Dashboard = () => {
 
                   {/* Assignments for this Class */}
                   {classSchedule.assignments.length === 0 ? (
-                    <Card className="p-8 text-center">
+                    <Card className="p-8 text-center hover:shadow-md transition-shadow">
                       <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                       <h3 className="text-lg font-semibold text-gray-700 mb-2">
                         No assignments yet for {classSchedule.name}
@@ -320,8 +385,12 @@ const Dashboard = () => {
                         Assignments for {classSchedule.name}
                       </h3>
                       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {classSchedule.assignments.map((assignment) => (
-                          <Card key={assignment.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-blue-500">
+                        {classSchedule.assignments.map((assignment, assignmentIndex) => (
+                          <Card 
+                            key={assignment.id} 
+                            className={`hover:shadow-lg transition-all duration-500 border-l-4 border-l-blue-500 hover:scale-105 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                            style={{ transitionDelay: `${400 + index * 100 + assignmentIndex * 50}ms` }}
+                          >
                             <CardHeader>
                               <CardTitle className="text-lg font-semibold line-clamp-2">
                                 {assignment.title}
@@ -344,7 +413,7 @@ const Dashboard = () => {
                               </div>
 
                               <Link to={`/assignment/${assignment.id}`}>
-                                <Button variant="outline" className="w-full">
+                                <Button variant="outline" className="w-full hover:bg-blue-50 transition-colors">
                                   View Assignment
                                 </Button>
                               </Link>
