@@ -48,6 +48,7 @@ export type Database = {
         Row: {
           canvas_course_id: string | null
           canvas_id: string | null
+          class_id: string | null
           course_name: string | null
           created_at: string | null
           description: string | null
@@ -62,6 +63,7 @@ export type Database = {
         Insert: {
           canvas_course_id?: string | null
           canvas_id?: string | null
+          class_id?: string | null
           course_name?: string | null
           created_at?: string | null
           description?: string | null
@@ -76,6 +78,7 @@ export type Database = {
         Update: {
           canvas_course_id?: string | null
           canvas_id?: string | null
+          class_id?: string | null
           course_name?: string | null
           created_at?: string | null
           description?: string | null
@@ -88,6 +91,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "assignments_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "assignments_user_id_fkey"
             columns: ["user_id"]

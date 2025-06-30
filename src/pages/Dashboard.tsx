@@ -72,7 +72,7 @@ const Dashboard = () => {
 
   const fetchData = async () => {
     try {
-      // Fetch assignments
+      // Fetch assignments with submission counts
       const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('assignments')
         .select(`
@@ -80,20 +80,29 @@ const Dashboard = () => {
           title,
           description,
           created_at,
-          class_id,
-          submissions(count)
+          class_id
         `)
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
       if (assignmentsError) throw assignmentsError;
 
-      const assignmentsWithCount = assignmentsData?.map(assignment => ({
-        ...assignment,
-        submission_count: assignment.submissions?.[0]?.count || 0
-      })) || [];
+      // Get submission counts separately
+      const assignmentsWithCounts = await Promise.all(
+        (assignmentsData || []).map(async (assignment) => {
+          const { count } = await supabase
+            .from('submissions')
+            .select('*', { count: 'exact', head: true })
+            .eq('assignment_id', assignment.id);
 
-      setAssignments(assignmentsWithCount);
+          return {
+            ...assignment,
+            submission_count: count || 0
+          };
+        })
+      );
+
+      setAssignments(assignmentsWithCounts);
 
       // Fetch classes
       const { data: classesData, error: classesError } = await supabase
