@@ -2,27 +2,22 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Upload, FileText, Download } from 'lucide-react';
+import { ArrowLeft, Upload, Download } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { uploadFile } from '@/lib/fileUpload';
 import { useToast } from '@/hooks/use-toast';
+import { createSubmissionWithFile } from '@/lib/submissionApi';
 import Navbar from '@/components/Navbar';
+import SubmissionsList from '@/components/SubmissionsList';
 
 interface Assignment {
   id: string;
   title: string;
   description: string;
   rubric_url?: string;
-  created_at: string;
-}
-
-interface Submission {
-  id: string;
-  student_name: string;
-  file_url: string;
-  status: string;
+  rubric_text?: string;
   created_at: string;
 }
 
@@ -31,7 +26,6 @@ const AssignmentDetail = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [assignment, setAssignment] = useState<Assignment | null>(null);
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
@@ -54,16 +48,6 @@ const AssignmentDetail = () => {
 
       if (assignmentError) throw assignmentError;
       setAssignment(assignmentData);
-
-      // Fetch submissions
-      const { data: submissionsData, error: submissionsError } = await supabase
-        .from('submissions')
-        .select('*')
-        .eq('assignment_id', id)
-        .order('created_at', { ascending: false });
-
-      if (submissionsError) throw submissionsError;
-      setSubmissions(submissionsData || []);
     } catch (error) {
       console.error('Error fetching assignment data:', error);
       toast({
@@ -86,26 +70,15 @@ const AssignmentDetail = () => {
     setUploading(true);
     try {
       const uploadPromises = Array.from(selectedFiles).map(async (file) => {
-        // Upload file
-        const uploadResult = await uploadFile(file, 'submissions');
-        if (!uploadResult.success) {
-          throw new Error(`Failed to upload ${file.name}: ${uploadResult.error}`);
-        }
-
         // Extract student name from filename (remove extension)
         const studentName = file.name.replace(/\.[^/.]+$/, "");
 
-        // Create submission record
-        const { error } = await supabase
-          .from('submissions')
-          .insert({
-            assignment_id: assignment.id,
-            student_name: studentName,
-            file_url: uploadResult.url,
-            status: 'pending'
-          });
-
-        if (error) throw error;
+        // Create submission with enhanced file processing
+        await createSubmissionWithFile({
+          assignmentId: assignment.id,
+          studentName,
+          file
+        });
       });
 
       await Promise.all(uploadPromises);
@@ -115,12 +88,11 @@ const AssignmentDetail = () => {
         description: `${selectedFiles.length} essay(s) uploaded and ready for grading.`
       });
 
-      // Reset file input and refresh submissions
+      // Reset file input
       setSelectedFiles(null);
       const fileInput = document.getElementById('essay-upload') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
       
-      fetchAssignmentData();
     } catch (error) {
       console.error('Error uploading essays:', error);
       toast({
@@ -167,7 +139,7 @@ const AssignmentDetail = () => {
       <Navbar />
       
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-4 mb-8">
             <Link to="/dashboard">
               <Button variant="outline" size="sm">
@@ -178,131 +150,98 @@ const AssignmentDetail = () => {
             <h1 className="text-3xl font-bold text-gray-900">{assignment.title}</h1>
           </div>
 
-          {/* Assignment Details */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>Assignment Prompt & Rubric</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Assignment Prompt:</h3>
-                <p className="text-gray-700 whitespace-pre-wrap">{assignment.description}</p>
-              </div>
-              
-              {assignment.rubric_url && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Grading Rubric:</h3>
-                  <a 
-                    href={assignment.rubric_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800"
-                  >
-                    <Download className="w-4 h-4" />
-                    View Rubric
-                  </a>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Essay Upload Section */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>Upload Student Essays for Feedback</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
-                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <div className="text-lg font-medium text-gray-700 mb-2">
-                  Upload Student Essays
-                </div>
-                <div className="text-sm text-gray-600 mb-4">
-                  Upload one or more student essays (PDF or DOCX). GradeMirror will analyze them based on your style and the assignment's rubric.
-                </div>
-                <input
-                  id="essay-upload"
-                  type="file"
-                  accept=".pdf,.docx,.doc"
-                  multiple
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <label htmlFor="essay-upload" className="cursor-pointer">
-                  <Button variant="outline">
-                    Choose Files
-                  </Button>
-                </label>
-                
-                {selectedFiles && selectedFiles.length > 0 && (
-                  <div className="mt-4">
-                    <div className="text-sm text-green-600 mb-2">
-                      Selected {selectedFiles.length} file(s):
-                    </div>
-                    <div className="text-xs text-gray-600 max-h-20 overflow-y-auto">
-                      {Array.from(selectedFiles).map((file, index) => (
-                        <div key={index}>{file.name}</div>
-                      ))}
-                    </div>
-                    <Button
-                      onClick={handleUpload}
-                      disabled={uploading}
-                      className="mt-4"
-                    >
-                      {uploading ? 'Uploading...' : 'Get Feedback'}
-                    </Button>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column - Assignment Details & Upload */}
+            <div className="lg:col-span-1 space-y-6">
+              {/* Assignment Details */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Assignment Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Assignment Prompt:</h3>
+                    <p className="text-gray-700 whitespace-pre-wrap text-sm">{assignment.description}</p>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Submissions List */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Student Submissions ({submissions.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {submissions.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  No student submissions yet. Upload essays above to get started.
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {submissions.map((submission) => (
-                    <div
-                      key={submission.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-gray-400" />
-                        <div>
-                          <div className="font-medium">{submission.student_name}</div>
-                          <div className="text-sm text-gray-500">
-                            Uploaded {new Date(submission.created_at).toLocaleDateString()}
-                          </div>
-                        </div>
+                  
+                  {assignment.rubric_text && (
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-2">Grading Rubric:</h3>
+                      <div className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded">
+                        {assignment.rubric_text}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          submission.status === 'pending' 
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : submission.status === 'ai_graded'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}>
-                          {submission.status.replace('_', ' ').toUpperCase()}
-                        </span>
-                        <Button variant="outline" size="sm">
-                          View
+                    </div>
+                  )}
+
+                  {assignment.rubric_url && (
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-2">Rubric File:</h3>
+                      <a 
+                        href={assignment.rubric_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        <Download className="w-4 h-4" />
+                        View Rubric
+                      </a>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Upload Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Upload Student Essays</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
+                    <div className="text-sm font-medium text-gray-700 mb-2">
+                      Upload Student Essays
+                    </div>
+                    <div className="text-xs text-gray-600 mb-4">
+                      PDF or DOCX files. File names will be used as student names.
+                    </div>
+                    <input
+                      id="essay-upload"
+                      type="file"
+                      accept=".pdf,.docx,.doc"
+                      multiple
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <label htmlFor="essay-upload" className="cursor-pointer">
+                      <Button variant="outline" size="sm">
+                        Choose Files
+                      </Button>
+                    </label>
+                    
+                    {selectedFiles && selectedFiles.length > 0 && (
+                      <div className="mt-4">
+                        <div className="text-xs text-green-600 mb-2">
+                          Selected {selectedFiles.length} file(s)
+                        </div>
+                        <Button
+                          onClick={handleUpload}
+                          disabled={uploading}
+                          size="sm"
+                        >
+                          {uploading ? 'Uploading...' : 'Upload & Process'}
                         </Button>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Column - Submissions */}
+            <div className="lg:col-span-2">
+              <SubmissionsList assignmentId={assignment.id} />
+            </div>
+          </div>
         </div>
       </div>
     </div>

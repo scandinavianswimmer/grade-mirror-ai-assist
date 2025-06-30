@@ -1,6 +1,6 @@
 
 import { supabase } from './supabase';
-import { processSubmissionFile } from './fileProcessing';
+import { processSubmissionFileEnhanced } from './enhancedFileProcessing';
 import { generateGradingFeedback } from './geminiApi';
 
 export interface CreateSubmissionData {
@@ -25,7 +25,7 @@ export const createSubmissionWithFile = async (data: CreateSubmissionData) => {
 
     // Process file if provided
     if (file) {
-      const processResult = await processSubmissionFile(file, assignmentId, studentName);
+      const processResult = await processSubmissionFileEnhanced(file, assignmentId, studentName);
       
       if (!processResult.success) {
         throw new Error(processResult.error || 'File processing failed');
@@ -36,6 +36,13 @@ export const createSubmissionWithFile = async (data: CreateSubmissionData) => {
       
       // Use extracted text or provided essay text
       submissionData.essay = processResult.extractedText || essay;
+      
+      // Store processing metadata
+      if (processResult.metadata) {
+        submissionData.inline_comments = {
+          processing_metadata: processResult.metadata
+        };
+      }
     } else if (essay) {
       submissionData.essay = essay;
     }
