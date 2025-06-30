@@ -1,4 +1,3 @@
-
 import {
   Card,
   CardHeader,
@@ -15,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { MoreVertical, ExternalLink, CheckCircle2 } from "lucide-react";
+import { MoreVertical, ExternalLink, CheckCircle2, Check, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -34,7 +33,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Download, FileText } from 'lucide-react';
-import { finalizeSubmission } from '@/lib/finalizationApi';
+import { finalizeSubmission, type FinalizationOptions } from '@/lib/finalizationApi';
 
 interface SubmissionsListProps {
   submissions: any[];
@@ -46,9 +45,9 @@ const SubmissionsList = ({ submissions, onGradeSubmission, onViewSubmission }: S
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [submissionIdToDelete, setSubmissionIdToDelete] = useState<string | null>(null);
-
   const [finalScore, setFinalScore] = useState<string>('');
   const [submissionIdToUpdate, setSubmissionIdToUpdate] = useState<string | null>(null);
+  const [finalizingSubmissions, setFinalizingSubmissions] = useState<Set<string>>(new Set());
 
   const handleDeleteSubmission = async () => {
     if (!submissionIdToDelete) return;
@@ -159,6 +158,42 @@ const SubmissionsList = ({ submissions, onGradeSubmission, onViewSubmission }: S
     }
   };
 
+  const handleFinalizeSubmission = async (submissionId: string) => {
+    setFinalizingSubmissions(prev => new Set(prev).add(submissionId));
+    
+    try {
+      const options: FinalizationOptions = {
+        exportFormat: 'pdf',
+        includeComments: true,
+        pushToLMS: false,
+        sendNotification: false
+      };
+
+      const result = await finalizeSubmission(submissionId, options);
+      
+      toast({
+        title: "Submission finalized!",
+        description: "The submission has been successfully finalized and is ready for delivery.",
+      });
+
+      // Refresh the page to show updated status
+      window.location.reload();
+    } catch (error) {
+      console.error('Finalization error:', error);
+      toast({
+        title: "Finalization failed",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setFinalizingSubmissions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(submissionId);
+        return newSet;
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <CardHeader>
@@ -225,6 +260,27 @@ const SubmissionsList = ({ submissions, onGradeSubmission, onViewSubmission }: S
                 {submission.status !== "finalized" && (
                   <Button variant="default" size="sm" onClick={() => onGradeSubmission(submission.id)}>
                     Grade Now
+                  </Button>
+                )}
+                {submission.status === "ai_graded" && (
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    onClick={() => handleFinalizeSubmission(submission.id)}
+                    disabled={finalizingSubmissions.has(submission.id)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {finalizingSubmissions.has(submission.id) ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        Finalizing...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 mr-1" />
+                        Finalize
+                      </>
+                    )}
                   </Button>
                 )}
                 {submission.final_score === null && submission.status === "finalized" && (
