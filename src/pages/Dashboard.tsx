@@ -134,13 +134,13 @@ const Dashboard = () => {
         case 'time':
           const timeA = new Date(`1970/01/01 ${a.details_jsonb.time}`).getTime();
           const timeB = new Date(`1970/01/01 ${b.details_jsonb.time}`).getTime();
-          return timeA - timeB;
+          return timeA - timeB; // Always ascending for time
         case 'size':
-          return a.details_jsonb.size - b.details_jsonb.size;
+          return a.details_jsonb.size - b.details_jsonb.size; // Always ascending for size
         case 'grade':
-          return a.details_jsonb.grade.localeCompare(b.details_jsonb.grade);
+          return a.details_jsonb.grade.localeCompare(b.details_jsonb.grade); // Always ascending for grade
         case 'name':
-          return a.class_name.localeCompare(b.class_name);
+          return a.class_name.localeCompare(b.class_name); // Always ascending for name
         default:
           return 0;
       }
