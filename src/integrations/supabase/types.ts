@@ -355,13 +355,16 @@ export type Database = {
           created_at: string | null
           essay: string | null
           feedback: string | null
+          feedback_json: Json | null
           file_url: string | null
           final_score: number | null
           id: string
           inline_comments: Json | null
+          processing_status: string | null
           rubric: string | null
           status: string | null
           student_name: string
+          submission_storage_path: string | null
         }
         Insert: {
           ai_feedback?: string | null
@@ -372,13 +375,16 @@ export type Database = {
           created_at?: string | null
           essay?: string | null
           feedback?: string | null
+          feedback_json?: Json | null
           file_url?: string | null
           final_score?: number | null
           id?: string
           inline_comments?: Json | null
+          processing_status?: string | null
           rubric?: string | null
           status?: string | null
           student_name: string
+          submission_storage_path?: string | null
         }
         Update: {
           ai_feedback?: string | null
@@ -389,13 +395,16 @@ export type Database = {
           created_at?: string | null
           essay?: string | null
           feedback?: string | null
+          feedback_json?: Json | null
           file_url?: string | null
           final_score?: number | null
           id?: string
           inline_comments?: Json | null
+          processing_status?: string | null
           rubric?: string | null
           status?: string | null
           student_name?: string
+          submission_storage_path?: string | null
         }
         Relationships: [
           {
@@ -403,6 +412,51 @@ export type Database = {
             columns: ["assignment_id"]
             isOneToOne: false
             referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_edits: {
+        Row: {
+          action_type: string
+          comment_id: string
+          comment_text: string | null
+          created_at: string
+          id: string
+          submission_id: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          comment_id: string
+          comment_text?: string | null
+          created_at?: string
+          id?: string
+          submission_id: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          comment_id?: string
+          comment_text?: string | null
+          created_at?: string
+          id?: string
+          submission_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_edits_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_edits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -448,6 +502,38 @@ export type Database = {
           why_joining?: string | null
         }
         Relationships: []
+      }
+      teacher_profiles: {
+        Row: {
+          created_at: string
+          id: string
+          style_profile_json: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          style_profile_json: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          style_profile_json?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       training_data: {
         Row: {

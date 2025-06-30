@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Upload, FileText, X } from 'lucide-react';
+import { Upload, FileText, X, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface FileUploadProps {
@@ -10,16 +10,20 @@ interface FileUploadProps {
   acceptedTypes?: string[];
   maxSize?: number; // in MB
   placeholder?: string;
+  showTextExtraction?: boolean;
 }
 
 const FileUpload = ({ 
   onFileSelect, 
   acceptedTypes = ['.txt', '.docx', '.pdf'], 
   maxSize = 5,
-  placeholder = "Upload essay or document..."
+  placeholder = "Upload essay or document...",
+  showTextExtraction = false
 }: FileUploadProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [extractedText, setExtractedText] = useState<string>('');
+  const [processing, setProcessing] = useState(false);
   const { toast } = useToast();
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -72,10 +76,12 @@ const FileUpload = ({
     }
 
     setSelectedFile(file);
+    setProcessing(true);
 
     // Read file content
     try {
       const content = await readFileContent(file);
+      setExtractedText(content);
       onFileSelect(file, content);
       
       toast({
@@ -83,11 +89,14 @@ const FileUpload = ({
         description: `${file.name} has been processed`
       });
     } catch (error) {
+      console.error('Error processing file:', error);
       toast({
         title: "Error reading file",
         description: "Please try again or use a different file format",
         variant: "destructive"
       });
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -104,12 +113,22 @@ const FileUpload = ({
         reject(new Error('Failed to read file'));
       };
       
-      reader.readAsText(file);
+      // Handle different file types
+      if (file.type === 'text/plain') {
+        reader.readAsText(file);
+      } else if (file.type === 'application/json') {
+        reader.readAsText(file);
+      } else {
+        // For PDF/DOCX, return placeholder for now
+        // In production, you'd use libraries like pdf-parse or mammoth
+        resolve(`[File "${file.name}" uploaded successfully. Full text extraction requires server-side processing.]`);
+      }
     });
   };
 
   const removeFile = () => {
     setSelectedFile(null);
+    setExtractedText('');
   };
 
   return (
@@ -117,23 +136,43 @@ const FileUpload = ({
       isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300'
     }`}>
       {selectedFile ? (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <FileText className="w-8 h-8 text-blue-600" />
-            <div>
-              <p className="font-medium">{selectedFile.name}</p>
-              <p className="text-sm text-gray-500">
-                {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                {processing ? (
+                  <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <CheckCircle className="w-6 h-6 text-green-500" />
+                )}
+                <FileText className="w-8 h-8 text-blue-600" />
+              </div>
+              <div>
+                <p className="font-medium">{selectedFile.name}</p>
+                <p className="text-sm text-gray-500">
+                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  {processing && " • Processing..."}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={removeFile}
+              disabled={processing}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          {showTextExtraction && extractedText && (
+            <div className="p-3 bg-gray-50 rounded-md">
+              <p className="text-sm font-medium text-gray-700 mb-2">Extracted Text Preview:</p>
+              <p className="text-xs text-gray-600 line-clamp-3">
+                {extractedText.substring(0, 200)}...
               </p>
             </div>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={removeFile}
-          >
-            <X className="w-4 h-4" />
-          </Button>
+          )}
         </div>
       ) : (
         <div
