@@ -85,19 +85,26 @@ export const finalizeSubmission = async (
       }
     }
 
-    // Log finalization activity - fix JSON type issue
+    // Log finalization activity - fix type issues by simplifying
+    const logData = {
+      user_id: submission.assignments.user_id,
+      input_data: {
+        action: 'finalize_submission',
+        submissionId,
+        options: {
+          exportFormat,
+          includeComments,
+          pushToLMS,
+          sendNotification
+        }
+      },
+      output_data: results,
+      status: 'completed'
+    };
+
     await supabase
       .from('llm_sessions')
-      .insert({
-        user_id: submission.assignments.user_id,
-        input_data: { 
-          action: 'finalize_submission',
-          submissionId,
-          options: JSON.parse(JSON.stringify(options))
-        },
-        output_data: results,
-        status: 'completed'
-      });
+      .insert(logData);
 
     return results;
 
