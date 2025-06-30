@@ -1,10 +1,11 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
@@ -12,20 +13,64 @@ import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 
+interface Class {
+  id: string;
+  class_name: string;
+  details_jsonb: {
+    grade: string;
+    size: number;
+    level: string;
+    time: string;
+  };
+}
+
 const CreateAssignment = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [classes, setClasses] = useState<Class[]>([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    rubric: ''
+    rubric: '',
+    classId: ''
   });
+
+  useEffect(() => {
+    if (user) {
+      fetchClasses();
+    }
+  }, [user]);
+
+  const fetchClasses = async () => {
+    try {
+      const { data: classesData, error } = await supabase
+        .from('classes')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('class_name', { ascending: true });
+
+      if (error) throw error;
+
+      const typedClasses = classesData?.map(cls => ({
+        ...cls,
+        details_jsonb: cls.details_jsonb as { grade: string; size: number; level: string; time: string; }
+      })) || [];
+
+      setClasses(typedClasses);
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleClassSelect = (value: string) => {
+    setFormData(prev => ({ ...prev, classId: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,6 +82,7 @@ const CreateAssignment = () => {
       title: formData.title,
       description: formData.description,
       rubric_text: formData.rubric,
+      class_id: formData.classId || null,
       status: 'active'
     });
 
@@ -50,6 +96,7 @@ const CreateAssignment = () => {
           title: formData.title,
           description: formData.description,
           rubric_text: formData.rubric,
+          class_id: formData.classId || null,
           status: 'active'
         })
         .select()
@@ -112,6 +159,25 @@ const CreateAssignment = () => {
                     placeholder="e.g., Analysis of The Great Gatsby's Symbolism"
                     required
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="classId">Assign to Class (Optional)</Label>
+                  <Select value={formData.classId} onValueChange={handleClassSelect}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a class (leave blank for unassigned)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {classes.map((cls) => (
+                        <SelectItem key={cls.id} value={cls.id}>
+                          {cls.class_name} - {cls.details_jsonb.time}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">
+                    Choose a class to organize this assignment under. You can leave this blank if you prefer.
+                  </p>
                 </div>
 
                 <div className="space-y-2">

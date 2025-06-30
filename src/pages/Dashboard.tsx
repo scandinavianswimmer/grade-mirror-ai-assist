@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, FileText, Calendar, Clock, Users } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, FileText, Calendar, Clock, Users, SortAsc } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
@@ -15,6 +16,7 @@ interface Assignment {
   description: string;
   created_at: string;
   submission_count?: number;
+  class_id?: string;
 }
 
 interface Class {
@@ -24,6 +26,7 @@ interface Class {
     grade: string;
     size: number;
     level: string;
+    time: string;
   };
   created_at: string;
 }
@@ -36,7 +39,10 @@ interface ClassSchedule {
   level: string;
   size: number;
   assignments: Assignment[];
+  colorScheme: string;
 }
+
+type SortOption = 'time' | 'size' | 'grade' | 'name';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -44,6 +50,19 @@ const Dashboard = () => {
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('time');
+
+  // Color schemes for different classes
+  const colorSchemes = [
+    'from-blue-500 to-indigo-600',
+    'from-green-500 to-emerald-600',
+    'from-purple-500 to-violet-600',
+    'from-orange-500 to-red-600',
+    'from-teal-500 to-cyan-600',
+    'from-pink-500 to-rose-600',
+    'from-yellow-500 to-amber-600',
+    'from-gray-500 to-slate-600'
+  ];
 
   useEffect(() => {
     if (user) {
@@ -61,6 +80,7 @@ const Dashboard = () => {
           title,
           description,
           created_at,
+          class_id,
           submissions(count)
         `)
         .eq('user_id', user?.id)
@@ -87,7 +107,7 @@ const Dashboard = () => {
       // Type cast the data to ensure compatibility
       const typedClasses = classesData?.map(cls => ({
         ...cls,
-        details_jsonb: cls.details_jsonb as { grade: string; size: number; level: string; }
+        details_jsonb: cls.details_jsonb as { grade: string; size: number; level: string; time: string; }
       })) || [];
 
       setClasses(typedClasses);
@@ -99,26 +119,58 @@ const Dashboard = () => {
     }
   };
 
-  // Group assignments by class (for now, we'll put all assignments in the first class or create a default)
-  const classSchedules: ClassSchedule[] = classes.length > 0 
-    ? classes.map(cls => ({
-        id: cls.id,
-        name: cls.class_name,
-        time: "9:00 AM", // Default time for now
-        grade: cls.details_jsonb.grade,
-        level: cls.details_jsonb.level,
-        size: cls.details_jsonb.size,
-        assignments: assignments // For now, show all assignments in each class
-      }))
-    : assignments.length > 0 
+  const sortClasses = (classes: Class[], sortBy: SortOption): Class[] => {
+    return [...classes].sort((a, b) => {
+      switch (sortBy) {
+        case 'time':
+          const timeA = new Date(`1970/01/01 ${a.details_jsonb.time}`).getTime();
+          const timeB = new Date(`1970/01/01 ${b.details_jsonb.time}`).getTime();
+          return timeA - timeB;
+        case 'size':
+          return a.details_jsonb.size - b.details_jsonb.size;
+        case 'grade':
+          return a.details_jsonb.grade.localeCompare(b.details_jsonb.grade);
+        case 'name':
+          return a.class_name.localeCompare(b.class_name);
+        default:
+          return 0;
+      }
+    });
+  };
+
+  const sortedClasses = sortClasses(classes, sortBy);
+
+  // Group assignments by class and create class schedules
+  const classSchedules: ClassSchedule[] = sortedClasses.map((cls, index) => {
+    const classAssignments = assignments.filter(assignment => assignment.class_id === cls.id);
+    
+    return {
+      id: cls.id,
+      name: cls.class_name,
+      time: cls.details_jsonb.time,
+      grade: cls.details_jsonb.grade,
+      level: cls.details_jsonb.level,
+      size: cls.details_jsonb.size,
+      assignments: classAssignments,
+      colorScheme: colorSchemes[index % colorSchemes.length]
+    };
+  });
+
+  // Add unassigned assignments to a default class if no classes exist
+  const unassignedAssignments = assignments.filter(assignment => !assignment.class_id);
+  
+  const finalClassSchedules = classSchedules.length > 0 
+    ? classSchedules 
+    : unassignedAssignments.length > 0 
     ? [{
         id: 'default',
-        name: "English",
-        time: "9:00 AM",
-        grade: "10th Grade",
-        level: "Standard",
-        size: 25,
-        assignments: assignments
+        name: "Unassigned",
+        time: "N/A",
+        grade: "N/A",
+        level: "N/A",
+        size: 0,
+        assignments: unassignedAssignments,
+        colorScheme: colorSchemes[0]
       }]
     : [];
 
@@ -152,13 +204,34 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Sorting Controls */}
+        {classes.length > 0 && (
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center gap-2">
+              <SortAsc className="w-5 h-5 text-gray-600" />
+              <span className="text-sm font-medium text-gray-700">Sort by:</span>
+            </div>
+            <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="time">Class Time</SelectItem>
+                <SelectItem value="size">Class Size</SelectItem>
+                <SelectItem value="grade">Grade Level</SelectItem>
+                <SelectItem value="name">Class Name</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center py-12">
             <div className="text-lg font-medium">Loading classes...</div>
           </div>
         ) : (
           <div className="space-y-6">
-            {classSchedules.length === 0 ? (
+            {finalClassSchedules.length === 0 ? (
               <Card className="p-12 text-center">
                 <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h2 className="text-xl font-semibold text-gray-700 mb-2">
@@ -173,11 +246,11 @@ const Dashboard = () => {
                 </Button>
               </Card>
             ) : (
-              classSchedules.map((classSchedule) => (
+              finalClassSchedules.map((classSchedule) => (
                 <div key={classSchedule.id} className="space-y-4">
                   {/* Class Header */}
                   <Card className="bg-white shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-lg">
+                    <CardHeader className={`bg-gradient-to-r ${classSchedule.colorScheme} text-white rounded-t-lg`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
@@ -185,19 +258,29 @@ const Dashboard = () => {
                           </div>
                           <div>
                             <CardTitle className="text-xl font-bold">{classSchedule.name}</CardTitle>
-                            <div className="flex items-center gap-4 text-blue-100 mt-1">
+                            <div className="flex items-center gap-4 text-white/90 mt-1">
                               <div className="flex items-center gap-1">
                                 <Clock className="w-4 h-4" />
                                 <span>{classSchedule.time}</span>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Users className="w-4 h-4" />
-                                <span>{classSchedule.size} Students</span>
-                              </div>
-                              <span>•</span>
-                              <span>{classSchedule.grade}</span>
-                              <span>•</span>
-                              <span>{classSchedule.level}</span>
+                              {classSchedule.size > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <Users className="w-4 h-4" />
+                                  <span>{classSchedule.size} Students</span>
+                                </div>
+                              )}
+                              {classSchedule.grade !== "N/A" && (
+                                <>
+                                  <span>•</span>
+                                  <span>{classSchedule.grade}</span>
+                                </>
+                              )}
+                              {classSchedule.level !== "N/A" && (
+                                <>
+                                  <span>•</span>
+                                  <span>{classSchedule.level}</span>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>

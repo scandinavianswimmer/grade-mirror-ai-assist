@@ -35,12 +35,12 @@ Deno.serve(async (req) => {
     console.log('Authenticated user:', user.id)
 
     // Parse the request body
-    const { className, gradeLevel, classSize, classLevel } = await req.json()
+    const { className, gradeLevel, classSize, classLevel, classTime } = await req.json()
 
-    console.log('Creating class with data:', { className, gradeLevel, classSize, classLevel })
+    console.log('Creating class with data:', { className, gradeLevel, classSize, classLevel, classTime })
 
     // Validate required fields
-    if (!className || !gradeLevel || !classSize || !classLevel) {
+    if (!className || !gradeLevel || !classSize || !classLevel || !classTime) {
       throw new Error('Missing required fields')
     }
 
@@ -48,7 +48,8 @@ Deno.serve(async (req) => {
     const detailsJsonb = {
       grade: gradeLevel,
       size: parseInt(classSize),
-      level: classLevel
+      level: classLevel,
+      time: classTime
     }
 
     // Insert the new class into the database

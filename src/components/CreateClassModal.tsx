@@ -23,7 +23,8 @@ const CreateClassModal = ({ isOpen, onClose, onClassCreated }: CreateClassModalP
     className: '',
     gradeLevel: '',
     classSize: '',
-    classLevel: ''
+    classLevel: '',
+    classTime: ''
   });
 
   const gradeOptions = [
@@ -46,6 +47,12 @@ const CreateClassModal = ({ isOpen, onClose, onClassCreated }: CreateClassModalP
     'English Language Learner (ELL)'
   ];
 
+  const timeOptions = [
+    '7:00 AM', '7:30 AM', '8:00 AM', '8:30 AM', '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM',
+    '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM', '2:00 PM', '2:30 PM',
+    '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM', '6:00 PM'
+  ];
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -63,7 +70,8 @@ const CreateClassModal = ({ isOpen, onClose, onClassCreated }: CreateClassModalP
           className: formData.className,
           gradeLevel: formData.gradeLevel,
           classSize: formData.classSize,
-          classLevel: formData.classLevel
+          classLevel: formData.classLevel,
+          classTime: formData.classTime
         }
       });
 
@@ -84,7 +92,8 @@ const CreateClassModal = ({ isOpen, onClose, onClassCreated }: CreateClassModalP
         className: '',
         gradeLevel: '',
         classSize: '',
-        classLevel: ''
+        classLevel: '',
+        classTime: ''
       });
       
       onClassCreated();
@@ -107,7 +116,8 @@ const CreateClassModal = ({ isOpen, onClose, onClassCreated }: CreateClassModalP
       className: '',
       gradeLevel: '',
       classSize: '',
-      classLevel: ''
+      classLevel: '',
+      classTime: ''
     });
     onClose();
   };
@@ -141,6 +151,22 @@ const CreateClassModal = ({ isOpen, onClose, onClassCreated }: CreateClassModalP
                 {gradeOptions.map((grade) => (
                   <SelectItem key={grade} value={grade}>
                     {grade}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="classTime">Class Time</Label>
+            <Select value={formData.classTime} onValueChange={(value) => handleInputChange('classTime', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select class time" />
+              </SelectTrigger>
+              <SelectContent>
+                {timeOptions.map((time) => (
+                  <SelectItem key={time} value={time}>
+                    {time}
                   </SelectItem>
                 ))}
               </SelectContent>
