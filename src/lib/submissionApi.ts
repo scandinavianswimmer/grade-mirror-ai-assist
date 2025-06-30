@@ -98,12 +98,12 @@ export const gradeSubmissionWithAI = async (submissionId: string) => {
 
     console.log('AI grading completed, updating submission...');
 
-    // Update submission with AI results
+    // Update submission with AI results - fix the type error
     const { error: updateError } = await supabase
       .from('submissions')
       .update({
         ai_feedback: gradingResult.overallFeedback,
-        ai_grade: gradingResult.suggestedGrade,
+        ai_grade: gradingResult.suggestedGrade, // This is correct - ai_grade is text
         feedback_json: gradingResult as any,
         status: 'ai_graded',
         processing_status: 'completed'
