@@ -5,11 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Upload } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
-import { uploadFile } from '@/lib/fileUpload';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 
@@ -20,20 +19,13 @@ const CreateAssignment = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
-    description: ''
+    description: '',
+    rubric: ''
   });
-  const [rubricFile, setRubricFile] = useState<File | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setRubricFile(file);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,17 +34,6 @@ const CreateAssignment = () => {
 
     setLoading(true);
     try {
-      let rubricUrl = '';
-      
-      // Upload rubric file if provided
-      if (rubricFile) {
-        const uploadResult = await uploadFile(rubricFile, 'rubrics');
-        if (!uploadResult.success) {
-          throw new Error(uploadResult.error || 'Failed to upload rubric');
-        }
-        rubricUrl = uploadResult.url || '';
-      }
-
       // Create assignment in database
       const { data, error } = await supabase
         .from('assignments')
@@ -60,7 +41,7 @@ const CreateAssignment = () => {
           user_id: user.id,
           title: formData.title,
           description: formData.description,
-          rubric_url: rubricUrl,
+          rubric_text: formData.rubric,
           status: 'active'
         })
         .select()
@@ -135,31 +116,16 @@ const CreateAssignment = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="rubric">Grading Rubric (Optional)</Label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <div className="text-sm text-gray-600 mb-2">
-                      Upload your grading rubric (PDF or DOCX)
-                    </div>
-                    <input
-                      id="rubric"
-                      type="file"
-                      accept=".pdf,.docx,.doc"
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                    <Label htmlFor="rubric" className="cursor-pointer">
-                      <Button type="button" variant="outline" size="sm">
-                        Choose File
-                      </Button>
-                    </Label>
-                    {rubricFile && (
-                      <div className="mt-2 text-sm text-green-600">
-                        Selected: {rubricFile.name}
-                      </div>
-                    )}
-                  </div>
+                  <Textarea
+                    id="rubric"
+                    name="rubric"
+                    value={formData.rubric}
+                    onChange={handleInputChange}
+                    placeholder="Enter your grading rubric here. Include criteria, point values, and expectations for different performance levels."
+                    rows={6}
+                  />
                   <p className="text-xs text-gray-500">
-                    Please upload the grading rubric for this specific assignment. A clear, analytic rubric in PDF or DOCX format works best.
+                    Please enter the grading rubric for this specific assignment. A clear, analytic rubric with specific criteria and performance levels works best.
                   </p>
                 </div>
 
