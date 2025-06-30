@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -12,17 +12,32 @@ interface TechnicalComfortStepProps {
 }
 
 const TechnicalComfortStep: React.FC<TechnicalComfortStepProps> = ({ data, onNext, onBack }) => {
-  const [comfortLevel, setComfortLevel] = useState<number[]>(data?.comfortLevel || [3]);
+  const [comfortLevel, setComfortLevel] = useState<number[]>([3]);
   const [needsGuidedTour, setNeedsGuidedTour] = useState(data?.needsGuidedTour || '');
+
+  // Ensure comfortLevel is always a valid array
+  useEffect(() => {
+    if (data?.comfortLevel !== undefined) {
+      const level = typeof data.comfortLevel === 'number' ? data.comfortLevel : 3;
+      setComfortLevel([level]);
+    }
+  }, [data]);
 
   const getComfortLabel = (value: number) => {
     const labels = ['Not Comfortable', 'Slightly Comfortable', 'Moderately Comfortable', 'Comfortable', 'Very Comfortable'];
     return labels[value - 1] || 'Moderately Comfortable';
   };
 
+  const handleSliderChange = (value: number[]) => {
+    // Ensure we always have a valid array
+    if (Array.isArray(value) && value.length > 0) {
+      setComfortLevel(value);
+    }
+  };
+
   const handleNext = () => {
     onNext({
-      comfortLevel: comfortLevel[0],
+      comfortLevel: comfortLevel[0] || 3,
       needsGuidedTour
     });
   };
@@ -36,7 +51,7 @@ const TechnicalComfortStep: React.FC<TechnicalComfortStepProps> = ({ data, onNex
         <div className="px-4">
           <Slider
             value={comfortLevel}
-            onValueChange={setComfortLevel}
+            onValueChange={handleSliderChange}
             max={5}
             min={1}
             step={1}
@@ -44,7 +59,7 @@ const TechnicalComfortStep: React.FC<TechnicalComfortStepProps> = ({ data, onNex
           />
           <div className="text-center">
             <span className="text-sm font-medium text-blue-600">
-              {getComfortLabel(comfortLevel[0])}
+              {getComfortLabel(comfortLevel[0] || 3)}
             </span>
           </div>
         </div>
