@@ -53,6 +53,7 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          rubric_text: string | null
           rubric_url: string | null
           status: string | null
           title: string
@@ -66,6 +67,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          rubric_text?: string | null
           rubric_url?: string | null
           status?: string | null
           title: string
@@ -79,6 +81,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          rubric_text?: string | null
           rubric_url?: string | null
           status?: string | null
           title?: string

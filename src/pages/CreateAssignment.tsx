@@ -32,6 +32,14 @@ const CreateAssignment = () => {
     e.preventDefault();
     if (!user) return;
 
+    console.log('Creating assignment with data:', {
+      user_id: user.id,
+      title: formData.title,
+      description: formData.description,
+      rubric_text: formData.rubric,
+      status: 'active'
+    });
+
     setLoading(true);
     try {
       // Create assignment in database
@@ -47,7 +55,12 @@ const CreateAssignment = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Assignment created successfully:', data);
 
       toast({
         title: "Assignment created successfully!",
