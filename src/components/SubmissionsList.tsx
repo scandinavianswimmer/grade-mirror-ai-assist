@@ -1,325 +1,336 @@
-
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
-import { createBatchProcessor, BatchProcessingStatus } from '@/lib/batchProcessing';
-import BatchProcessingModal from './BatchProcessingModal';
-import { 
-  FileText, 
-  Search, 
-  Filter, 
-  Play, 
-  RefreshCw, 
-  Download,
-  CheckCircle,
-  AlertCircle,
-  Clock,
-  Brain
-} from 'lucide-react';
-
-interface Submission {
-  id: string;
-  student_name: string;
-  status: string;
-  processing_status: string;
-  ai_grade?: string;
-  created_at: string;
-  file_url?: string;
-}
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
+import { MoreVertical, ExternalLink, CheckCircle2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/lib/supabase";
+import { Link } from "@remix-run/react";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Download, FileText } from 'lucide-react';
+import { finalizeSubmission } from '@/lib/finalizationApi';
 
 interface SubmissionsListProps {
-  assignmentId: string;
+  submissions: any[];
+  onGradeSubmission: (submissionId: string) => void;
+  onViewSubmission: (submissionId: string) => void;
 }
 
-const SubmissionsList = ({ assignmentId }: SubmissionsListProps) => {
+const SubmissionsList = ({ submissions, onGradeSubmission, onViewSubmission }: SubmissionsListProps) => {
   const { toast } = useToast();
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [filteredSubmissions, setFilteredSubmissions] = useState<Submission[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedSubmissions, setSelectedSubmissions] = useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processingStatuses, setProcessingStatuses] = useState<BatchProcessingStatus[]>([]);
-  const [showProcessingModal, setShowProcessingModal] = useState(false);
-  const [processingResult, setProcessingResult] = useState<any>(null);
+  const [open, setOpen] = useState(false);
+  const [submissionIdToDelete, setSubmissionIdToDelete] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchSubmissions();
-  }, [assignmentId]);
+  const [finalScore, setFinalScore] = useState<string>('');
+  const [submissionIdToUpdate, setSubmissionIdToUpdate] = useState<string | null>(null);
 
-  useEffect(() => {
-    filterSubmissions();
-  }, [submissions, searchTerm, statusFilter]);
+  const handleDeleteSubmission = async () => {
+    if (!submissionIdToDelete) return;
 
-  const fetchSubmissions = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('submissions')
-        .select('*')
-        .eq('assignment_id', assignmentId)
-        .order('created_at', { ascending: false });
+    const { error } = await supabase
+      .from('submissions')
+      .delete()
+      .eq('id', submissionIdToDelete);
 
-      if (error) throw error;
-      setSubmissions(data || []);
-    } catch (error) {
-      console.error('Error fetching submissions:', error);
+    if (error) {
       toast({
-        title: "Error loading submissions",
-        description: "Please try refreshing the page.",
-        variant: "destructive"
+        title: "Error deleting submission",
+        description: error.message,
+        variant: "destructive",
       });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterSubmissions = () => {
-    let filtered = submissions;
-
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(sub => 
-        sub.student_name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(sub => sub.status === statusFilter);
-    }
-
-    setFilteredSubmissions(filtered);
-  };
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedSubmissions(filteredSubmissions.map(sub => sub.id));
     } else {
-      setSelectedSubmissions([]);
-    }
-  };
-
-  const handleSelectSubmission = (submissionId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedSubmissions(prev => [...prev, submissionId]);
-    } else {
-      setSelectedSubmissions(prev => prev.filter(id => id !== submissionId));
-    }
-  };
-
-  const handleBatchProcess = async () => {
-    if (selectedSubmissions.length === 0) {
       toast({
-        title: "No submissions selected",
-        description: "Please select submissions to process.",
-        variant: "destructive"
+        title: "Submission deleted",
+        description: "Submission has been deleted successfully.",
+      });
+      // Refresh submissions list or update state accordingly
+      window.location.reload();
+    }
+
+    setOpen(false);
+    setSubmissionIdToDelete(null);
+  };
+
+  const handleOpenDeleteDialog = (submissionId: string) => {
+    setSubmissionIdToDelete(submissionId);
+    setOpen(true);
+  };
+
+  const handleUpdateFinalScore = async () => {
+    if (!submissionIdToUpdate) return;
+
+    const parsedScore = parseFloat(finalScore);
+    if (isNaN(parsedScore)) {
+      toast({
+        title: "Invalid score",
+        description: "Please enter a valid number for the final score.",
+        variant: "destructive",
       });
       return;
     }
 
-    setIsProcessing(true);
-    setShowProcessingModal(true);
-    setProcessingStatuses([]);
-    setProcessingResult(null);
+    const { error } = await supabase
+      .from('submissions')
+      .update({ final_score: parsedScore })
+      .eq('id', submissionIdToUpdate);
 
-    const batchProcessor = createBatchProcessor((statuses) => {
-      setProcessingStatuses([...statuses]);
-    });
-
-    try {
-      const result = await batchProcessor.processSubmissionsBatch(selectedSubmissions);
-      setProcessingResult(result);
-      
+    if (error) {
       toast({
-        title: "Batch processing completed",
-        description: `${result.processedSuccessfully} submissions processed successfully.`,
+        title: "Error updating final score",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Final score updated",
+        description: "Final score has been updated successfully.",
+      });
+      window.location.reload();
+    }
+    setSubmissionIdToUpdate(null);
+    setFinalScore('');
+  };
+
+  const handleOpenScoreDialog = (submissionId: string) => {
+    setSubmissionIdToUpdate(submissionId);
+  };
+
+  const handleExportSubmission = async (submissionId: string, format: 'pdf' | 'docx' = 'pdf') => {
+    try {
+      const { data, error } = await supabase.functions.invoke('export-graded-pdf', {
+        body: {
+          submissionId,
+          includeComments: true,
+          format
+        }
       });
 
-      // Refresh submissions
-      await fetchSubmissions();
-      setSelectedSubmissions([]);
+      if (error) throw error;
 
-    } catch (error) {
-      console.error('Batch processing error:', error);
+      // Create download link
+      const blob = new Blob([data], { 
+        type: format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `graded_submission.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
       toast({
-        title: "Batch processing failed",
-        description: "Please try again or contact support.",
+        title: "Export successful",
+        description: `Submission exported as ${format.toUpperCase()}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Export failed",
+        description: error.message,
         variant: "destructive"
       });
-    } finally {
-      setIsProcessing(false);
     }
   };
-
-  const getStatusIcon = (submission: Submission) => {
-    if (submission.status === 'ai_graded' || submission.status === 'finalized') {
-      return <CheckCircle className="w-4 h-4 text-green-600" />;
-    } else if (submission.processing_status === 'error') {
-      return <AlertCircle className="w-4 h-4 text-red-600" />;
-    } else if (submission.processing_status === 'processing') {
-      return <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />;
-    } else {
-      return <Clock className="w-4 h-4 text-gray-400" />;
-    }
-  };
-
-  const getStatusBadge = (submission: Submission) => {
-    const status = submission.status;
-    const processingStatus = submission.processing_status;
-
-    if (status === 'finalized') {
-      return <Badge className="bg-green-100 text-green-800">Finalized</Badge>;
-    } else if (status === 'ai_graded') {
-      return <Badge className="bg-blue-100 text-blue-800">AI Graded</Badge>;
-    } else if (processingStatus === 'error') {
-      return <Badge className="bg-red-100 text-red-800">Error</Badge>;
-    } else if (processingStatus === 'processing') {
-      return <Badge className="bg-yellow-100 text-yellow-800">Processing</Badge>;
-    } else {
-      return <Badge className="bg-gray-100 text-gray-800">Pending</Badge>;
-    }
-  };
-
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="p-8 text-center">
-          <div className="text-lg font-medium">Loading submissions...</div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Submissions ({filteredSubmissions.length})</span>
-            <div className="flex items-center gap-2">
-              {selectedSubmissions.length > 0 && (
-                <Button
-                  onClick={handleBatchProcess}
-                  disabled={isProcessing}
-                  className="flex items-center gap-2"
-                >
-                  <Brain className="w-4 h-4" />
-                  Process with AI ({selectedSubmissions.length})
-                </Button>
-              )}
-            </div>
-          </CardTitle>
-          
-          {/* Filters */}
-          <div className="flex gap-4 items-center">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
-              <Input
-                placeholder="Search students..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="ai_graded">AI Graded</SelectItem>
-                <SelectItem value="finalized">Finalized</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
+    <div className="space-y-4">
+      <CardHeader>
+        <CardTitle>Submissions</CardTitle>
+        <CardDescription>
+          Here are the submissions for this assignment
+        </CardDescription>
+      </CardHeader>
 
-        <CardContent>
-          {filteredSubmissions.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              {submissions.length === 0 
-                ? "No submissions yet. Upload essays to get started."
-                : "No submissions match your filters."
-              }
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {/* Select All Header */}
-              <div className="flex items-center gap-3 p-3 border-b font-medium text-sm text-gray-600">
-                <Checkbox
-                  checked={selectedSubmissions.length === filteredSubmissions.length}
-                  onCheckedChange={handleSelectAll}
-                />
-                <span>Student Name</span>
-                <span className="ml-auto">Status</span>
-                <span className="w-20">Grade</span>
-                <span className="w-24">Actions</span>
+      <div className="space-y-3">
+        {submissions.map((submission) => (
+          <Card key={submission.id} className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Avatar>
+                  <AvatarImage src="https://github.com/shadcn.png" />
+                  <AvatarFallback>CN</AvatarFallback>
+                </Avatar>
+                <div>
+                  <CardTitle>{submission.student_name}</CardTitle>
+                  <CardDescription>
+                    {submission.status === "pending" ? "Awaiting AI Grading" : submission.status === "ai_graded" ? "AI Graded" : submission.status === "finalized" ? "Finalized" : "Graded"}
+                  </CardDescription>
+                  {submission.ai_grade && (
+                    <Badge variant="secondary">AI Grade: {submission.ai_grade}</Badge>
+                  )}
+                  {submission.final_score && (
+                    <Badge variant="default">Final Score: {submission.final_score}</Badge>
+                  )}
+                  {submission.canvas_submission_id && (
+                    <Badge variant="outline">
+                      <a
+                        href={`https://canvas.instructure.com/courses/2447178/assignments/${submission.assignment_id}/submissions/${submission.canvas_submission_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center"
+                      >
+                        View in Canvas
+                        <ExternalLink className="h-4 w-4 ml-1" />
+                      </a>
+                    </Badge>
+                  )}
+                  {submission.status === "pushed_to_lms" && (
+                    <Badge variant="success" className="flex items-center">
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      Pushed to LMS
+                    </Badge>
+                  )}
+                </div>
               </div>
 
-              {/* Submissions List */}
-              {filteredSubmissions.map((submission) => (
-                <div
-                  key={submission.id}
-                  className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <Checkbox
-                    checked={selectedSubmissions.includes(submission.id)}
-                    onCheckedChange={(checked) => 
-                      handleSelectSubmission(submission.id, checked as boolean)
-                    }
-                  />
-                  
-                  <div className="flex items-center gap-3 flex-1">
-                    <FileText className="w-5 h-5 text-gray-400" />
-                    <div>
-                      <div className="font-medium">{submission.student_name}</div>
-                      <div className="text-sm text-gray-500">
-                        Submitted {new Date(submission.created_at).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {getStatusIcon(submission)}
-                    {getStatusBadge(submission)}
-                  </div>
-
-                  <div className="w-20 text-center">
-                    {submission.ai_grade && (
-                      <span className="font-bold text-lg">{submission.ai_grade}</span>
-                    )}
-                  </div>
-
-                  <div className="w-24">
-                    <Button variant="outline" size="sm">
-                      View
+              {/* Actions */}
+              <div className="flex items-center gap-2">
+                {submission.status === "pending" && (
+                  <Button variant="secondary" size="sm" disabled>
+                    Grading...
+                  </Button>
+                )}
+                {submission.status !== "pending" && (
+                  <Button variant="outline" size="sm" onClick={() => onViewSubmission(submission.id)}>
+                    View
+                  </Button>
+                )}
+                {submission.status !== "finalized" && (
+                  <Button variant="default" size="sm" onClick={() => onGradeSubmission(submission.id)}>
+                    Grade Now
+                  </Button>
+                )}
+                {submission.final_score === null && submission.status === "finalized" && (
+                  <Button variant="ghost" size="sm" onClick={() => handleOpenScoreDialog(submission.id)}>
+                    Add Score
+                  </Button>
+                )}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreVertical />
                     </Button>
-                  </div>
-                </div>
-              ))}
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete
+                        the submission from our servers.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteSubmission}>
+                        Continue
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                {(submission.status === 'ai_graded' || submission.status === 'finalized') && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Download className="w-4 h-4 mr-1" />
+                        Export
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => handleExportSubmission(submission.id, 'pdf')}>
+                        <FileText className="w-4 h-4 mr-2" />
+                        Export as PDF
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleExportSubmission(submission.id, 'docx')}>
+                        <FileText className="w-4 h-4 mr-2" />
+                        Export as DOCX
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </Card>
+        ))}
+      </div>
 
-      <BatchProcessingModal
-        isOpen={showProcessingModal}
-        onClose={() => setShowProcessingModal(false)}
-        statuses={processingStatuses}
-        result={processingResult}
-        isProcessing={isProcessing}
-      />
-    </>
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              submission from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteSubmission}>
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {submissionIdToUpdate && (
+        <AlertDialog open={!!submissionIdToUpdate} onOpenChange={() => setSubmissionIdToUpdate(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Update Final Score</AlertDialogTitle>
+              <AlertDialogDescription>
+                Enter the final score for this submission.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <CardContent className="grid gap-4">
+              <div className="flex items-center space-x-4">
+                <Label htmlFor="score">Final Score:</Label>
+                <Input
+                  type="number"
+                  id="score"
+                  placeholder="Enter score"
+                  value={finalScore}
+                  onChange={(e) => setFinalScore(e.target.value)}
+                />
+              </div>
+            </CardContent>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setSubmissionIdToUpdate(null)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleUpdateFinalScore}>
+                Update Score
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+    </div>
   );
 };
 
