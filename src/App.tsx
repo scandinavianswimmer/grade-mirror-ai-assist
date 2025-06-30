@@ -47,8 +47,6 @@ const AppContent = () => {
       setShowLoginOverlay(false);
       
       // Check if this is a new user who needs onboarding
-      // You can add logic here to check if user has completed onboarding
-      // For now, we'll assume new users need onboarding
       const needsOnboarding = !user.user_metadata?.onboarding_complete;
       if (needsOnboarding) {
         setShowOnboarding(true);
@@ -65,6 +63,7 @@ const AppContent = () => {
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
     setIsNewUser(false);
+    // User will now see the main dashboard
   };
 
   if (loading) {
@@ -80,7 +79,7 @@ const AppContent = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         {/* Background content (blurred) */}
-        <div className="opacity-50">
+        <div className="opacity-50 blur-sm">
           <FreemiumDashboard />
         </div>
         
@@ -100,74 +99,89 @@ const AppContent = () => {
       {/* Protected routes */}
       <Route path="/" element={
         <AuthGuard>
-          <FreemiumDashboard />
+          <Dashboard />
         </AuthGuard>
       } />
+      
       <Route path="/dashboard" element={
         <AuthGuard>
           <Dashboard />
         </AuthGuard>
       } />
+      
       <Route path="/create-assignment" element={
         <AuthGuard>
           <CreateAssignment />
         </AuthGuard>
       } />
+      
       <Route path="/assignment/:id" element={
         <AuthGuard>
           <AssignmentDetail />
         </AuthGuard>
       } />
+      
       <Route path="/onboarding" element={
         <AuthGuard>
           <Onboarding />
         </AuthGuard>
       } />
+      
       <Route path="/onboarding-flow" element={
         <AuthGuard>
           <OnboardingFlow />
         </AuthGuard>
       } />
+      
       <Route path="/upload-training" element={
         <AuthGuard>
           <UploadTraining />
         </AuthGuard>
       } />
+      
       <Route path="/submit-assignment" element={
         <AuthGuard>
           <SubmitAssignment />
         </AuthGuard>
       } />
+      
       <Route path="/upload" element={
         <AuthGuard>
           <Upload />
         </AuthGuard>
       } />
+      
       <Route path="/grading/preview" element={
         <AuthGuard>
           <GradingPreview />
         </AuthGuard>
       } />
+      
       <Route path="/training" element={
         <AuthGuard>
           <Training />
         </AuthGuard>
       } />
+      
       <Route path="/lms" element={
         <AuthGuard>
           <LMSIntegration />
         </AuthGuard>
       } />
+      
       <Route path="/lms/callback" element={
         <AuthGuard>
           <LMSCallback />
         </AuthGuard>
       } />
+      
       <Route path="/privacy" element={
         <AuthGuard>
           <PrivacySettings />
         </AuthGuard>
       } />
+      
+      <Route path="/auth" element={<Auth />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

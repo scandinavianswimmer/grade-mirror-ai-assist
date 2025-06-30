@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
+import { CheckCircle, Sparkles } from 'lucide-react';
 import BasicInfoStep from './BasicInfoStep';
 import TeachingEnvironmentStep from './TeachingEnvironmentStep';
 import GoalsStep from './GoalsStep';
@@ -39,6 +40,7 @@ interface TeacherOnboardingProps {
 
 const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [showWelcome, setShowWelcome] = useState(false);
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     basicInfo: {},
     teachingEnvironment: {},
@@ -70,12 +72,17 @@ const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => 
       // Save onboarding data to user profile
       console.log('Onboarding completed with data:', onboardingData);
       
-      toast({
-        title: "Welcome to GradeMirror!",
-        description: "Your account has been set up successfully."
-      });
-
-      onComplete();
+      // Show welcome screen first
+      setShowWelcome(true);
+      
+      // After 3 seconds, fade to dashboard
+      setTimeout(() => {
+        toast({
+          title: "Welcome to GradeMirror! ✨",
+          description: "Your teaching journey just got a whole lot easier!"
+        });
+        onComplete();
+      }, 3000);
     } catch (error) {
       console.error('Error saving onboarding data:', error);
       toast({
@@ -104,6 +111,44 @@ const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => 
       setCurrentStep(currentStep - 1);
     }
   };
+
+  // Welcome completion screen
+  if (showWelcome) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center animate-fade-in">
+        <Card className="max-w-lg mx-4 shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
+          <CardContent className="p-12 text-center">
+            <div className="mb-8">
+              <div className="relative">
+                <Sparkles className="w-16 h-16 text-blue-500 mx-auto mb-4 animate-pulse" />
+                <div className="absolute inset-0 w-16 h-16 mx-auto bg-blue-200 rounded-full blur-xl opacity-50"></div>
+              </div>
+              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-6" />
+            </div>
+            
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              Welcome to GradeMirror! 🎉
+            </h1>
+            
+            <p className="text-lg text-gray-600 mb-6 leading-relaxed">
+              You're all set up! Get ready to transform your grading experience with AI that understands your teaching style.
+            </p>
+            
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg mb-6">
+              <p className="text-sm text-blue-800 font-medium">
+                Taking you to your dashboard...
+              </p>
+              <div className="mt-3">
+                <div className="w-full bg-blue-200 rounded-full h-2">
+                  <div className="bg-blue-500 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const CurrentStepComponent = STEPS[currentStep - 1].component;
   const currentStepKey = getCurrentStepKey();
