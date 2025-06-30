@@ -97,6 +97,30 @@ export type Database = {
           },
         ]
       }
+      classes: {
+        Row: {
+          class_name: string
+          created_at: string
+          details_jsonb: Json
+          id: string
+          user_id: string
+        }
+        Insert: {
+          class_name: string
+          created_at?: string
+          details_jsonb: Json
+          id?: string
+          user_id: string
+        }
+        Update: {
+          class_name?: string
+          created_at?: string
+          details_jsonb?: Json
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       enterprise_contacts: {
         Row: {
           contact_name: string
