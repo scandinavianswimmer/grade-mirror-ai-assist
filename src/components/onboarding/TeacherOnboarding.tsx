@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, Sparkles } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import BasicInfoStep from './BasicInfoStep';
 import TeachingEnvironmentStep from './TeachingEnvironmentStep';
 import GoalsStep from './GoalsStep';
@@ -68,10 +68,46 @@ const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => 
   };
 
   const handleOnboardingComplete = async () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "User not found. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
-      // Save onboarding data to user profile
-      console.log('Onboarding completed with data:', onboardingData);
+      console.log('Saving onboarding data:', onboardingData);
       
+      // Save onboarding data to the users table
+      const { error: userUpdateError } = await supabase
+        .from('users')
+        .update({
+          full_name: onboardingData.basicInfo.fullName,
+          onboarding_complete: true,
+          // Store additional onboarding data as JSON in user_metadata if needed
+        })
+        .eq('id', user.id);
+
+      if (userUpdateError) {
+        console.error('Error updating user:', userUpdateError);
+        throw userUpdateError;
+      }
+
+      // Update the user's metadata in auth to include onboarding completion
+      const { error: authUpdateError } = await supabase.auth.updateUser({
+        data: {
+          onboarding_complete: true,
+          onboarding_data: onboardingData
+        }
+      });
+
+      if (authUpdateError) {
+        console.error('Error updating auth metadata:', authUpdateError);
+        // Don't throw here as the database update succeeded
+      }
+
       // Show welcome screen first
       setShowWelcome(true);
       

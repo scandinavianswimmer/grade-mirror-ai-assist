@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/components/AuthProvider";
 import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import AuthGuard from "@/components/AuthGuard";
 import LoginOverlay from "@/components/LoginOverlay";
 import TeacherOnboarding from "@/components/onboarding/TeacherOnboarding";
@@ -34,6 +34,8 @@ const AppContent = () => {
   const [showLoginOverlay, setShowLoginOverlay] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
 
   console.log('AppContent: Auth state:', { user: !!user, session: !!session, loading });
 
@@ -43,30 +45,73 @@ const AppContent = () => {
     if (!user && !session) {
       setShowLoginOverlay(true);
       setShowOnboarding(false);
+      setCheckingOnboarding(false);
     } else if (user && session) {
       setShowLoginOverlay(false);
-      
-      // Check if this is a new user who needs onboarding
-      const needsOnboarding = !user.user_metadata?.onboarding_complete;
-      if (needsOnboarding) {
-        setShowOnboarding(true);
-        setIsNewUser(true);
-      }
+      checkOnboardingStatus();
     }
   }, [user, session, loading]);
 
+  const checkOnboardingStatus = async () => {
+    if (!user) return;
+
+    try {
+      setCheckingOnboarding(true);
+      
+      // Check both auth metadata and database
+      const authOnboardingComplete = user.user_metadata?.onboarding_complete;
+      
+      // Also check the database
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('onboarding_complete')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error checking onboarding status:', error);
+        // Fallback to auth metadata only
+        const needsOnboarding = !authOnboardingComplete;
+        setOnboardingComplete(!needsOnboarding);
+        setShowOnboarding(needsOnboarding);
+        setIsNewUser(needsOnboarding);
+      } else {
+        const dbOnboardingComplete = userData?.onboarding_complete;
+        const completed = authOnboardingComplete || dbOnboardingComplete;
+        
+        setOnboardingComplete(completed);
+        setShowOnboarding(!completed);
+        setIsNewUser(!completed);
+      }
+    } catch (error) {
+      console.error('Error checking onboarding status:', error);
+      // Default to not showing onboarding on error
+      setOnboardingComplete(true);
+      setShowOnboarding(false);
+      setIsNewUser(false);
+    } finally {
+      setCheckingOnboarding(false);
+    }
+  };
+
   const handleLoginSuccess = () => {
     setShowLoginOverlay(false);
-    // Onboarding will be shown based on user state
+    // Onboarding status will be checked in the useEffect
   };
 
-  const handleOnboardingComplete = () => {
+  const handleOnboardingComplete = async () => {
     setShowOnboarding(false);
     setIsNewUser(false);
-    // User will now see the main dashboard
+    setOnboardingComplete(true);
+    
+    // Refresh the user session to get updated metadata
+    const { data: { session: refreshedSession } } = await supabase.auth.getSession();
+    if (refreshedSession) {
+      // The auth state will be updated automatically via the auth state listener
+    }
   };
 
-  if (loading) {
+  if (loading || checkingOnboarding) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-lg font-medium">Loading...</div>
