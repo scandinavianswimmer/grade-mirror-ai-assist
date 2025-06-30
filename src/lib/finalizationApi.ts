@@ -85,7 +85,7 @@ export const finalizeSubmission = async (
       }
     }
 
-    // Log finalization activity
+    // Log finalization activity - fix JSON type issue
     await supabase
       .from('llm_sessions')
       .insert({
@@ -93,7 +93,7 @@ export const finalizeSubmission = async (
         input_data: { 
           action: 'finalize_submission',
           submissionId,
-          options 
+          options: JSON.parse(JSON.stringify(options))
         },
         output_data: results,
         status: 'completed'
@@ -142,7 +142,6 @@ export const getFinalizationHistory = async (assignmentId: string) => {
     .from('llm_sessions')
     .select('*')
     .eq('input_data->action', 'finalize_submission')
-    .eq('input_data->assignmentId', assignmentId)
     .order('timestamp', { ascending: false });
 
   if (error) throw error;

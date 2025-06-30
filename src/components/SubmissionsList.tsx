@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardHeader,
@@ -17,7 +18,6 @@ import { useToast } from "@/hooks/use-toast";
 import { MoreVertical, ExternalLink, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase";
-import { Link } from "@remix-run/react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import {
@@ -202,7 +202,7 @@ const SubmissionsList = ({ submissions, onGradeSubmission, onViewSubmission }: S
                     </Badge>
                   )}
                   {submission.status === "pushed_to_lms" && (
-                    <Badge variant="success" className="flex items-center">
+                    <Badge variant="default" className="flex items-center bg-green-500 hover:bg-green-600">
                       <CheckCircle2 className="h-4 w-4 mr-1" />
                       Pushed to LMS
                     </Badge>

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, Book, Loader2, PlusCircle, Edit, FileText } from "lucide-react";
+import { CheckCircle, Book, Loader2, PlusCircle, Edit, FileText, Brain } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAssignment, getSubmissions } from "@/lib/api";
 import { createSubmissionWithFile } from "@/lib/submissionApi";
