@@ -84,7 +84,13 @@ const Dashboard = () => {
 
       if (classesError) throw classesError;
 
-      setClasses(classesData || []);
+      // Type cast the data to ensure compatibility
+      const typedClasses = classesData?.map(cls => ({
+        ...cls,
+        details_jsonb: cls.details_jsonb as { grade: string; size: number; level: string; }
+      })) || [];
+
+      setClasses(typedClasses);
 
     } catch (error) {
       console.error('Error fetching data:', error);
