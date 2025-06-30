@@ -145,12 +145,13 @@ export const bulkFinalizeSubmissions = async (
 };
 
 export const getFinalizationHistory = async (assignmentId: string) => {
+  // Simplify the query to avoid type instantiation issues
   const { data, error } = await supabase
     .from('llm_sessions')
     .select('*')
-    .eq('input_data->action', 'finalize_submission')
+    .contains('input_data', { action: 'finalize_submission' })
     .order('timestamp', { ascending: false });
 
   if (error) throw error;
-  return data;
+  return data || [];
 };
