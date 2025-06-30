@@ -158,7 +158,7 @@ export const saveSubmissionFeedback = async (submissionId: string, feedback: str
       .from('submissions')
       .update({
         feedback: feedback,
-        final_score: grade,
+        ai_grade: grade, // Save letter grade as text to ai_grade field
         status: 'finalized'
       })
       .eq('id', submissionId);
