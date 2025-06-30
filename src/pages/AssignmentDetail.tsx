@@ -118,10 +118,12 @@ const AssignmentDetail = () => {
   };
 
   const handleGradeSubmission = (submissionId: string) => {
+    console.log('Navigating to grade submission:', submissionId);
     navigate(`/grade/${submissionId}`);
   };
 
   const handleViewSubmission = (submissionId: string) => {
+    console.log('Navigating to view submission:', submissionId);
     navigate(`/submission/${submissionId}`);
   };
 
