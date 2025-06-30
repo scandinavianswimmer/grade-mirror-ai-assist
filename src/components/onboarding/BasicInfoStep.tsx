@@ -21,11 +21,10 @@ const GRADE_OPTIONS = [
   'Other'
 ];
 
-const SUBJECT_OPTIONS = [
+const ACTIVE_SUBJECTS = ['English', 'History'];
+const COMING_SOON_SUBJECTS = [
   'Math',
-  'English',
   'Science',
-  'History',
   'Art',
   'Physical Education',
   'Music',
@@ -100,14 +99,26 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, onNext, onBack }) =
       <div>
         <Label className="text-base font-medium">What subject(s) do you teach?</Label>
         <div className="grid grid-cols-2 gap-3 mt-3">
-          {SUBJECT_OPTIONS.map((subject) => (
+          {ACTIVE_SUBJECTS.map((subject) => (
             <div key={subject} className="flex items-center space-x-2">
               <Checkbox
                 id={`subject-${subject}`}
                 checked={subjects.includes(subject)}
                 onCheckedChange={(checked) => handleSubjectChange(subject, checked as boolean)}
               />
-              <Label htmlFor={`subject-${subject}`} className="text-sm">{subject}</Label>
+              <Label htmlFor={`subject-${subject}`} className="text-sm font-medium">{subject}</Label>
+            </div>
+          ))}
+          {COMING_SOON_SUBJECTS.map((subject) => (
+            <div key={subject} className="flex items-center space-x-2 opacity-50">
+              <Checkbox
+                id={`subject-${subject}`}
+                disabled
+                className="cursor-not-allowed"
+              />
+              <Label htmlFor={`subject-${subject}`} className="text-sm text-gray-400 cursor-not-allowed">
+                {subject} <span className="text-xs">(Coming Soon)</span>
+              </Label>
             </div>
           ))}
         </div>

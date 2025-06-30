@@ -12,12 +12,12 @@ interface AccountSetupStepProps {
 
 const AccountSetupStep: React.FC<AccountSetupStepProps> = ({ data, onNext, onBack }) => {
   const [inviteColleagues, setInviteColleagues] = useState(data?.inviteColleagues || '');
-  const [syncLMS, setSyncLMS] = useState(data?.syncLMS || '');
+  const [syncLMS, setSyncLMS] = useState('independent'); // Default to independent
 
   const handleNext = () => {
     onNext({
       inviteColleagues,
-      syncLMS
+      syncLMS: 'independent'
     });
   };
 
@@ -41,20 +41,18 @@ const AccountSetupStep: React.FC<AccountSetupStepProps> = ({ data, onNext, onBac
 
       <div>
         <Label className="text-base font-medium mb-4 block">
-          Would you like to sync with your Google Classroom / LMS now?
+          How would you like to use GradeMirror?
         </Label>
         <RadioGroup value={syncLMS} onValueChange={setSyncLMS}>
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="yes" id="sync-yes" />
-            <Label htmlFor="sync-yes">Yes, set up sync now</Label>
+            <RadioGroupItem value="independent" id="independent" />
+            <Label htmlFor="independent" className="font-medium">I will use it independently</Label>
           </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="no" id="sync-no" />
-            <Label htmlFor="sync-no">No, I'll do this later</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="na" id="sync-na" />
-            <Label htmlFor="sync-na">I don't use an LMS</Label>
+          <div className="flex items-center space-x-2 opacity-50">
+            <RadioGroupItem value="sync-yes" id="sync-yes" disabled className="cursor-not-allowed" />
+            <Label htmlFor="sync-yes" className="text-gray-400 cursor-not-allowed">
+              Sync with Google Classroom / LMS <span className="text-xs">(Coming Soon)</span>
+            </Label>
           </div>
         </RadioGroup>
       </div>
@@ -67,7 +65,7 @@ const AccountSetupStep: React.FC<AccountSetupStepProps> = ({ data, onNext, onBac
         )}
         <Button 
           onClick={handleNext}
-          disabled={!inviteColleagues || !syncLMS}
+          disabled={!inviteColleagues}
           className="ml-auto"
         >
           Next

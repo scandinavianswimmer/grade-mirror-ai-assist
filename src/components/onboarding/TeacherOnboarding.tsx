@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,8 +12,8 @@ import TeachingEnvironmentStep from './TeachingEnvironmentStep';
 import GoalsStep from './GoalsStep';
 import TechnicalComfortStep from './TechnicalComfortStep';
 import AccountSetupStep from './AccountSetupStep';
-import PersonalizationStep from './PersonalizationStep';
 import ReferralStep from './ReferralStep';
+import GuidedTour from './GuidedTour';
 
 const STEPS = [
   { id: 1, title: 'Basic Information', component: BasicInfoStep },
@@ -20,8 +21,7 @@ const STEPS = [
   { id: 3, title: 'Goals & Use Cases', component: GoalsStep },
   { id: 4, title: 'Technical Comfort', component: TechnicalComfortStep },
   { id: 5, title: 'Account Setup', component: AccountSetupStep },
-  { id: 6, title: 'Personalization', component: PersonalizationStep },
-  { id: 7, title: 'How did you hear about us?', component: ReferralStep }
+  { id: 6, title: 'How did you hear about us?', component: ReferralStep }
 ];
 
 interface OnboardingData {
@@ -30,7 +30,6 @@ interface OnboardingData {
   goals: any;
   technicalComfort: any;
   accountSetup: any;
-  personalization: any;
   referral: any;
 }
 
@@ -41,13 +40,13 @@ interface TeacherOnboardingProps {
 const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showGuidedTour, setShowGuidedTour] = useState(false);
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     basicInfo: {},
     teachingEnvironment: {},
     goals: {},
     technicalComfort: {},
     accountSetup: {},
-    personalization: {},
     referral: {}
   });
   const { user } = useAuth();
@@ -86,7 +85,6 @@ const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => 
         .update({
           full_name: onboardingData.basicInfo.fullName,
           onboarding_complete: true,
-          // Store additional onboarding data as JSON in user_metadata if needed
         })
         .eq('id', user.id);
 
@@ -105,19 +103,24 @@ const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => 
 
       if (authUpdateError) {
         console.error('Error updating auth metadata:', authUpdateError);
-        // Don't throw here as the database update succeeded
       }
 
       // Show welcome screen first
       setShowWelcome(true);
       
-      // After 3 seconds, fade to dashboard
+      // After 3 seconds, show guided tour or complete
       setTimeout(() => {
-        toast({
-          title: "Welcome to GradeMirror! ✨",
-          description: "Your teaching journey just got a whole lot easier!"
-        });
-        onComplete();
+        const needsGuidedTour = onboardingData.technicalComfort?.needsGuidedTour === 'guided';
+        if (needsGuidedTour) {
+          setShowWelcome(false);
+          setShowGuidedTour(true);
+        } else {
+          toast({
+            title: "Welcome to GradeMirror! ✨",
+            description: "Your teaching journey just got a whole lot easier!"
+          });
+          onComplete();
+        }
       }, 3000);
     } catch (error) {
       console.error('Error saving onboarding data:', error);
@@ -136,8 +139,7 @@ const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => 
       3: 'goals',
       4: 'technicalComfort',
       5: 'accountSetup',
-      6: 'personalization',
-      7: 'referral'
+      6: 'referral'
     };
     return keyMap[currentStep];
   };
@@ -147,6 +149,20 @@ const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => 
       setCurrentStep(currentStep - 1);
     }
   };
+
+  const handleTourComplete = () => {
+    setShowGuidedTour(false);
+    toast({
+      title: "Welcome to GradeMirror! ✨",
+      description: "Your teaching journey just got a whole lot easier!"
+    });
+    onComplete();
+  };
+
+  // Show guided tour
+  if (showGuidedTour) {
+    return <GuidedTour onComplete={handleTourComplete} />;
+  }
 
   // Welcome completion screen
   if (showWelcome) {
@@ -172,7 +188,9 @@ const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => 
             
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg mb-6">
               <p className="text-sm text-blue-800 font-medium">
-                Taking you to your dashboard...
+                {onboardingData.technicalComfort?.needsGuidedTour === 'guided' 
+                  ? 'Preparing your guided tour...' 
+                  : 'Taking you to your dashboard...'}
               </p>
               <div className="mt-3">
                 <div className="w-full bg-blue-200 rounded-full h-2">

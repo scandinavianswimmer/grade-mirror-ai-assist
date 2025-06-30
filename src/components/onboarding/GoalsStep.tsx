@@ -10,14 +10,14 @@ interface GoalsStepProps {
   onBack?: () => void;
 }
 
-const GOAL_OPTIONS = [
+const ACTIVE_GOALS = ['AI support (e.g., grading, summaries, etc.)'];
+const COMING_SOON_GOALS = [
   'Lesson planning',
   'Student progress tracking',
   'Classroom engagement',
   'Parent communication',
   'Sharing resources',
-  'Behavior management',
-  'AI support (e.g., grading, summaries, etc.)'
+  'Behavior management'
 ];
 
 const GoalsStep: React.FC<GoalsStepProps> = ({ data, onNext, onBack }) => {
@@ -48,14 +48,26 @@ const GoalsStep: React.FC<GoalsStepProps> = ({ data, onNext, onBack }) => {
           What are you hoping to use GradeMirror for? (Choose all that apply)
         </Label>
         <div className="space-y-3">
-          {GOAL_OPTIONS.map((goal) => (
+          {ACTIVE_GOALS.map((goal) => (
             <div key={goal} className="flex items-center space-x-2">
               <Checkbox
                 id={`goal-${goal}`}
                 checked={goals.includes(goal)}
                 onCheckedChange={(checked) => handleGoalChange(goal, checked as boolean)}
               />
-              <Label htmlFor={`goal-${goal}`} className="text-sm">{goal}</Label>
+              <Label htmlFor={`goal-${goal}`} className="text-sm font-medium">{goal}</Label>
+            </div>
+          ))}
+          {COMING_SOON_GOALS.map((goal) => (
+            <div key={goal} className="flex items-center space-x-2 opacity-50">
+              <Checkbox
+                id={`goal-${goal}`}
+                disabled
+                className="cursor-not-allowed"
+              />
+              <Label htmlFor={`goal-${goal}`} className="text-sm text-gray-400 cursor-not-allowed">
+                {goal} <span className="text-xs">(Coming Soon)</span>
+              </Label>
             </div>
           ))}
         </div>

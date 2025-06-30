@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -13,7 +12,7 @@ interface TechnicalComfortStepProps {
 
 const TechnicalComfortStep: React.FC<TechnicalComfortStepProps> = ({ data, onNext, onBack }) => {
   const [comfortLevel, setComfortLevel] = useState<number[]>([3]);
-  const [needsGuidedTour, setNeedsGuidedTour] = useState(data?.needsGuidedTour || '');
+  const [needsGuidedTour, setNeedsGuidedTour] = useState(data?.needsGuidedTour || 'guided'); // Default to guided
 
   // Ensure comfortLevel is always a valid array
   useEffect(() => {
@@ -67,18 +66,21 @@ const TechnicalComfortStep: React.FC<TechnicalComfortStepProps> = ({ data, onNex
 
       <div>
         <Label className="text-base font-medium mb-4 block">
-          Would you like a guided tour or to explore on your own?
+          How would you like to get started?
         </Label>
         <RadioGroup value={needsGuidedTour} onValueChange={setNeedsGuidedTour}>
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="guided" id="guided" />
-            <Label htmlFor="guided">I'd like a guided tour</Label>
+            <Label htmlFor="guided" className="font-medium">Take me on a guided tour</Label>
           </div>
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="explore" id="explore" />
             <Label htmlFor="explore">I'll explore on my own</Label>
           </div>
         </RadioGroup>
+        <p className="text-sm text-gray-600 mt-2">
+          We recommend the guided tour to help you discover all of GradeMirror's features quickly.
+        </p>
       </div>
 
       <div className="flex justify-between pt-6">
