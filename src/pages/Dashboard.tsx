@@ -300,7 +300,7 @@ const Dashboard = () => {
             <div className="text-lg font-medium animate-pulse">Loading classes...</div>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {finalClassSchedules.length === 0 ? (
               <Card className={`p-12 text-center transition-all duration-700 delay-200 ${hasAnimated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'}`}>
                 <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -319,79 +319,81 @@ const Dashboard = () => {
               finalClassSchedules.map((classSchedule, index) => (
                 <div 
                   key={classSchedule.id} 
-                  className={`space-y-4 transition-all duration-700 ${hasAnimated ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`}
+                  className={`space-y-6 transition-all duration-700 ${hasAnimated ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`}
                   style={{ transitionDelay: `${200 + index * 100}ms` }}
                 >
-                  {/* Class Header */}
-                  <Card className="bg-white shadow-lg hover:shadow-xl transition-shadow">
-                    <CardHeader className={`bg-gradient-to-r ${classSchedule.colorScheme} text-white rounded-t-lg`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                            <FileText className="w-6 h-6" />
-                          </div>
-                          <div>
-                            <CardTitle className="text-xl font-bold">{classSchedule.name}</CardTitle>
-                            <div className="flex items-center gap-4 text-white/90 mt-1">
-                              <div className="flex items-center gap-1">
-                                <Clock className="w-4 h-4" />
-                                <span>{classSchedule.time}</span>
-                              </div>
-                              {classSchedule.size > 0 && (
-                                <div className="flex items-center gap-1">
-                                  <Users className="w-4 h-4" />
-                                  <span>{classSchedule.size} Students</span>
-                                </div>
-                              )}
-                              {classSchedule.grade !== "N/A" && (
-                                <>
-                                  <span>•</span>
-                                  <span>{classSchedule.grade}</span>
-                                </>
-                              )}
-                              {classSchedule.level !== "N/A" && (
-                                <>
-                                  <span>•</span>
-                                  <span>{classSchedule.level}</span>
-                                </>
-                              )}
+                  {/* Full-width Class Bar */}
+                  <div className={`w-full bg-gradient-to-r ${classSchedule.colorScheme} rounded-lg p-6 text-white shadow-lg`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                          <FileText className="w-8 h-8" />
+                        </div>
+                        <div>
+                          <h2 className="text-2xl font-bold">{classSchedule.name}</h2>
+                          <div className="flex items-center gap-6 text-white/90 mt-2">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-5 h-5" />
+                              <span className="text-lg">{classSchedule.time}</span>
                             </div>
+                            {classSchedule.size > 0 && (
+                              <div className="flex items-center gap-2">
+                                <Users className="w-5 h-5" />
+                                <span className="text-lg">{classSchedule.size} Students</span>
+                              </div>
+                            )}
+                            {classSchedule.grade !== "N/A" && (
+                              <span className="text-lg">{classSchedule.grade}</span>
+                            )}
+                            {classSchedule.level !== "N/A" && (
+                              <span className="text-lg">{classSchedule.level}</span>
+                            )}
                           </div>
                         </div>
                       </div>
-                    </CardHeader>
-                  </Card>
+                      <div className="text-right">
+                        <div className="text-3xl font-bold">{classSchedule.assignments.length}</div>
+                        <div className="text-white/90">Assignment{classSchedule.assignments.length !== 1 ? 's' : ''}</div>
+                      </div>
+                    </div>
+                  </div>
 
-                  {/* Assignments for this Class */}
-                  {classSchedule.assignments.length === 0 ? (
-                    <Card className="p-8 text-center hover:shadow-md transition-shadow">
-                      <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                        No assignments yet for {classSchedule.name}
-                      </h3>
-                      <p className="text-gray-600 mb-4">
-                        Create your first assignment for this class!
-                      </p>
-                      <Link to="/create-assignment">
-                        <Button>
-                          <Plus className="w-4 h-4 mr-2" />
-                          Create Assignment
-                        </Button>
-                      </Link>
-                    </Card>
-                  ) : (
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-800">
+                  {/* Assignments Section */}
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-semibold text-gray-800">
                         Assignments for {classSchedule.name}
                       </h3>
-                      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                      <Link to="/create-assignment">
+                        <Button size="sm">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Assignment
+                        </Button>
+                      </Link>
+                    </div>
+
+                    {classSchedule.assignments.length === 0 ? (
+                      <div className="text-center py-8">
+                        <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                        <p className="text-gray-600 mb-4">
+                          No assignments yet for this class
+                        </p>
+                        <Link to="/create-assignment">
+                          <Button>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Create First Assignment
+                          </Button>
+                        </Link>
+                      </div>
+                    ) : (
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {classSchedule.assignments.map((assignment, assignmentIndex) => (
                           <Card 
                             key={assignment.id} 
-                            className={`hover:shadow-lg transition-all duration-500 border-l-4 border-l-blue-500 hover:scale-105 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                            className={`hover:shadow-md transition-all duration-300 border-l-4 border-l-blue-500 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                             style={{ transitionDelay: `${400 + index * 100 + assignmentIndex * 50}ms` }}
                           >
-                            <CardHeader>
+                            <CardHeader className="pb-3">
                               <CardTitle className="text-lg font-semibold line-clamp-2">
                                 {assignment.title}
                               </CardTitle>
@@ -421,8 +423,8 @@ const Dashboard = () => {
                           </Card>
                         ))}
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               ))
             )}
