@@ -37,7 +37,7 @@ const TeacherProfileSetup = ({ onProfileCreated, existingProfile }: TeacherProfi
 
   useEffect(() => {
     if (existingProfile?.style_profile_json) {
-      setProfile(existingProfile.style_profile_json as TeacherProfile);
+      setProfile(existingProfile.style_profile_json);
     }
   }, [existingProfile]);
 
@@ -48,7 +48,7 @@ const TeacherProfileSetup = ({ onProfileCreated, existingProfile }: TeacherProfi
     try {
       const profileData = {
         user_id: user.id,
-        style_profile_json: profile as any, // Cast to any to satisfy Json type
+        style_profile_json: profile,
         updated_at: new Date().toISOString()
       };
 

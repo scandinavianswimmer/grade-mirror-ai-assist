@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -150,12 +149,6 @@ const AppContent = () => {
       } />
       
       <Route path="/dashboard" element={
-        <AuthGuard>
-          <Dashboard />
-        </AuthGuard>
-      } />
-      
-      <Route path="/assignments" element={
         <AuthGuard>
           <Dashboard />
         </AuthGuard>

@@ -49,11 +49,9 @@ In conclusion, Shakespeare masterfully weaves the theme of appearance versus rea
 
     setIsLoading(true);
     try {
-      // Fix: Pass all 4 required arguments including submissionId
       const response = await generateGradingFeedback(
         sampleEssay,
         sampleRubric,
-        'sample-submission-id', // Add submissionId parameter
         user.id
       );
       

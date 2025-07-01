@@ -1,366 +1,309 @@
+
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, Book, Loader2, PlusCircle, Edit, FileText, Brain } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { getAssignment, getSubmissions } from "@/lib/api";
-import { createSubmissionWithFile } from "@/lib/submissionApi";
-import { processSubmissionFile } from "@/lib/fileProcessing";
-import SubmissionsList from "@/components/SubmissionsList";
-import CreateSubmissionModal from "@/components/CreateSubmissionModal";
-import BatchProcessingModal from '@/components/BatchProcessingModal';
-import { createBatchProcessor } from '@/lib/batchProcessing';
-import FinalizationModal from '@/components/FinalizationModal';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Upload, FileText, Download } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { useAuth } from '@/components/AuthProvider';
+import { supabase } from '@/lib/supabase';
+import { uploadFile } from '@/lib/fileUpload';
+import { useToast } from '@/hooks/use-toast';
+import Navbar from '@/components/Navbar';
+
+interface Assignment {
+  id: string;
+  title: string;
+  description: string;
+  rubric_url?: string;
+  created_at: string;
+}
 
 interface Submission {
   id: string;
-  created_at: string;
   student_name: string;
-  essay: string;
-  ai_feedback: string;
-  ai_grade: string;
+  file_url: string;
   status: string;
+  created_at: string;
 }
 
 const AssignmentDetail = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const { toast } = useToast();
-
-  // Use 'id' instead of 'assignmentId' to match the route parameter
-  const assignmentId = id;
-
-  console.log('AssignmentDetail: assignmentId from params:', assignmentId);
-
-  const [assignment, setAssignment] = useState<any>(null);
+  const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showBatchModal, setShowBatchModal] = useState(false);
-  const [batchStatuses, setBatchStatuses] = useState<any[]>([]);
-  const [batchResult, setBatchResult] = useState<any>(null);
-  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
-  const [showFinalizationModal, setShowFinalizationModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
 
   useEffect(() => {
-    console.log('AssignmentDetail: useEffect triggered with assignmentId:', assignmentId);
-    
-    if (!assignmentId) {
-      console.log('AssignmentDetail: No assignmentId found, showing toast and navigating');
-      toast({
-        title: "Missing Assignment ID",
-        description: "Please select a valid assignment.",
-        variant: "destructive",
-      });
-      navigate('/dashboard');
-      return;
+    if (id && user) {
+      fetchAssignmentData();
     }
+  }, [id, user]);
 
-    fetchAssignment();
-    fetchSubmissions();
-  }, [assignmentId, navigate, toast]);
-
-  const fetchAssignment = async () => {
-    if (!assignmentId) return;
-    
-    console.log('AssignmentDetail: Fetching assignment with ID:', assignmentId);
-    setIsLoading(true);
+  const fetchAssignmentData = async () => {
     try {
-      const assignmentData = await getAssignment(assignmentId);
-      console.log('AssignmentDetail: Assignment data received:', assignmentData);
+      // Fetch assignment details
+      const { data: assignmentData, error: assignmentError } = await supabase
+        .from('assignments')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user?.id)
+        .single();
+
+      if (assignmentError) throw assignmentError;
       setAssignment(assignmentData);
-    } catch (error: any) {
-      console.error('AssignmentDetail: Error fetching assignment:', error);
+
+      // Fetch submissions
+      const { data: submissionsData, error: submissionsError } = await supabase
+        .from('submissions')
+        .select('*')
+        .eq('assignment_id', id)
+        .order('created_at', { ascending: false });
+
+      if (submissionsError) throw submissionsError;
+      setSubmissions(submissionsData || []);
+    } catch (error) {
+      console.error('Error fetching assignment data:', error);
       toast({
-        title: "Error fetching assignment",
-        description: error.message,
-        variant: "destructive",
+        title: "Error loading assignment",
+        description: "Please try refreshing the page.",
+        variant: "destructive"
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const fetchSubmissions = async () => {
-    if (!assignmentId) return;
-    
-    console.log('AssignmentDetail: Fetching submissions for assignment:', assignmentId);
-    setIsLoading(true);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedFiles(e.target.files);
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFiles || !assignment || !user) return;
+
+    setUploading(true);
     try {
-      const submissionsData = await getSubmissions(assignmentId);
-      console.log('AssignmentDetail: Submissions data received:', submissionsData);
-      setSubmissions(submissionsData);
-    } catch (error: any) {
-      console.error('AssignmentDetail: Error fetching submissions:', error);
+      const uploadPromises = Array.from(selectedFiles).map(async (file) => {
+        // Upload file
+        const uploadResult = await uploadFile(file, 'submissions');
+        if (!uploadResult.success) {
+          throw new Error(`Failed to upload ${file.name}: ${uploadResult.error}`);
+        }
+
+        // Extract student name from filename (remove extension)
+        const studentName = file.name.replace(/\.[^/.]+$/, "");
+
+        // Create submission record
+        const { error } = await supabase
+          .from('submissions')
+          .insert({
+            assignment_id: assignment.id,
+            student_name: studentName,
+            file_url: uploadResult.url,
+            status: 'pending'
+          });
+
+        if (error) throw error;
+      });
+
+      await Promise.all(uploadPromises);
+
       toast({
-        title: "Error fetching submissions",
-        description: error.message,
-        variant: "destructive",
+        title: "Essays uploaded successfully!",
+        description: `${selectedFiles.length} essay(s) uploaded and ready for grading.`
+      });
+
+      // Reset file input and refresh submissions
+      setSelectedFiles(null);
+      const fileInput = document.getElementById('essay-upload') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+      
+      fetchAssignmentData();
+    } catch (error) {
+      console.error('Error uploading essays:', error);
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive"
       });
     } finally {
-      setIsLoading(false);
+      setUploading(false);
     }
   };
 
-  const handleCreateSubmission = async (data: any, file: File | null) => {
-    setIsSubmitting(true);
-    try {
-      await createSubmissionWithFile({
-        assignmentId: assignmentId || '',
-        studentName: data.studentName,
-        essay: data.essay,
-        file: file || undefined
-      });
-
-      toast({
-        title: "Submission created",
-        description: "The submission has been successfully created.",
-      });
-      setShowCreateModal(false);
-      fetchSubmissions();
-    } catch (error: any) {
-      toast({
-        title: "Error creating submission",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleGradeSubmission = (submissionId: string) => {
-    console.log('Navigating to grade submission:', submissionId);
-    navigate(`/grade/${submissionId}`);
-  };
-
-  const handleViewSubmission = (submissionId: string) => {
-    console.log('Navigating to view submission:', submissionId);
-    navigate(`/submission/${submissionId}`);
-  };
-
-  const handleBatchGrade = async () => {
-    setIsBatchProcessing(true);
-    setShowBatchModal(true);
-
-    const submissionIds = submissions.map(sub => sub.id);
-    const batchProcessor = createBatchProcessor((status) => {
-      setBatchStatuses([...status]);
-    });
-
-    try {
-      const result = await batchProcessor.processSubmissionsBatch(submissionIds);
-      setBatchResult(result);
-      toast({
-        title: "Batch grading complete",
-        description: `${result.processedSuccessfully} submissions graded successfully, ${result.failed} failed.`,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Batch grading error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsBatchProcessing(false);
-      fetchSubmissions();
-    }
-  };
-
-  const handleFinalization = () => {
-    setShowFinalizationModal(false);
-    fetchSubmissions();
-  };
-
-  const getFinalizableSubmissions = () => {
-    return submissions.filter(sub => sub.status === 'ai_graded' || sub.status === 'graded');
-  };
-
-  console.log('AssignmentDetail: Rendering with assignment:', assignment, 'isLoading:', isLoading);
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <Button variant="ghost" onClick={() => navigate('/dashboard')}>
-                <Book className="w-5 h-5 mr-2" />
-                Back to Dashboard
-              </Button>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" onClick={() => navigate(`/assignment/edit/${assignmentId}`)}>
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Assignment
-              </Button>
-            </div>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-12">
+            <div className="text-lg font-medium">Loading assignment...</div>
           </div>
         </div>
       </div>
+    );
+  }
 
-      <div className="container mx-auto px-4 py-8">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-48">
-            <Loader2 className="w-6 h-6 animate-spin" />
+  if (!assignment) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-12">
+            <div className="text-lg font-medium text-red-600">Assignment not found</div>
+            <Link to="/dashboard">
+              <Button className="mt-4">Back to Dashboard</Button>
+            </Link>
           </div>
-        ) : (
-          <>
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">{assignment?.title || 'Loading...'}</h1>
-              <p className="text-gray-600">{assignment?.description || 'Loading description...'}</p>
-            </div>
+        </div>
+      </div>
+    );
+  }
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {/* Assignment Details Sidebar */}
-              <div className="lg:col-span-1 space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Assignment Details</CardTitle>
-                    <CardDescription>Information about this assignment.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div>
-                      <Label>Due Date</Label>
-                      <p className="text-sm font-medium">{assignment?.due_date ? new Date(assignment?.due_date).toLocaleDateString() : 'No due date'}</p>
-                    </div>
-                    <div>
-                      <Label>Rubric</Label>
-                      <Textarea
-                        readOnly
-                        value={assignment?.rubric_text || 'No rubric provided'}
-                        className="mt-1 resize-none"
-                        rows={4}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Quick Stats</CardTitle>
-                    <CardDescription>Overview of submissions.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label>Total Submissions</Label>
-                        <p className="text-sm font-medium">{submissions.length}</p>
-                      </div>
-                      <div>
-                        <Label>AI Graded</Label>
-                        <p className="text-sm font-medium">{submissions.filter(sub => sub.status === 'ai_graded').length}</p>
-                      </div>
-                      <div>
-                        <Label>Finalized</Label>
-                        <p className="text-sm font-medium">{submissions.filter(sub => sub.status === 'finalized').length}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <Navbar />
+      
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center gap-4 mb-8">
+            <Link to="/dashboard">
+              <Button variant="outline" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Dashboard
+              </Button>
+            </Link>
+            <h1 className="text-3xl font-bold text-gray-900">{assignment.title}</h1>
+          </div>
+
+          {/* Assignment Details */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Assignment Prompt & Rubric</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Assignment Prompt:</h3>
+                <p className="text-gray-700 whitespace-pre-wrap">{assignment.description}</p>
               </div>
-
-              {/* Main Content */}
-              <div className="lg:col-span-3 space-y-6">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Total Submissions</CardTitle>
-                      <CardDescription>All student submissions.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{submissions.length}</div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Needs Grading</CardTitle>
-                      <CardDescription>Submissions awaiting AI grading.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{submissions.filter(sub => sub.status === 'pending').length}</div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>AI Graded</CardTitle>
-                      <CardDescription>Submissions graded by AI.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{submissions.filter(sub => sub.status === 'ai_graded').length}</div>
-                    </CardContent>
-                  </Card>
+              
+              {assignment.rubric_url && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Grading Rubric:</h3>
+                  <a 
+                    href={assignment.rubric_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800"
+                  >
+                    <Download className="w-4 h-4" />
+                    View Rubric
+                  </a>
                 </div>
+              )}
+            </CardContent>
+          </Card>
 
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-3">
-                  <Button
-                    onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-2"
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    Add Submission
-                  </Button>
-                  <Button
-                    onClick={handleBatchGrade}
-                    disabled={submissions.length === 0}
-                    className="flex items-center gap-2"
-                  >
-                    <Brain className="w-4 h-4" />
-                    Grade All Submissions
-                  </Button>
-                  
-                  <Button
-                    onClick={() => setShowFinalizationModal(true)}
-                    disabled={getFinalizableSubmissions().length === 0}
-                    className="flex items-center gap-2"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Finalize Submissions ({getFinalizableSubmissions().length})
-                  </Button>
+          {/* Essay Upload Section */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Upload Student Essays for Feedback</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
+                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <div className="text-lg font-medium text-gray-700 mb-2">
+                  Upload Student Essays
                 </div>
-
-                {/* Submissions List */}
-                <SubmissionsList
-                  submissions={submissions}
-                  onGradeSubmission={handleGradeSubmission}
-                  onViewSubmission={handleViewSubmission}
+                <div className="text-sm text-gray-600 mb-4">
+                  Upload one or more student essays (PDF or DOCX). GradeMirror will analyze them based on your style and the assignment's rubric.
+                </div>
+                <input
+                  id="essay-upload"
+                  type="file"
+                  accept=".pdf,.docx,.doc"
+                  multiple
+                  onChange={handleFileChange}
+                  className="hidden"
                 />
+                <label htmlFor="essay-upload" className="cursor-pointer">
+                  <Button variant="outline">
+                    Choose Files
+                  </Button>
+                </label>
+                
+                {selectedFiles && selectedFiles.length > 0 && (
+                  <div className="mt-4">
+                    <div className="text-sm text-green-600 mb-2">
+                      Selected {selectedFiles.length} file(s):
+                    </div>
+                    <div className="text-xs text-gray-600 max-h-20 overflow-y-auto">
+                      {Array.from(selectedFiles).map((file, index) => (
+                        <div key={index}>{file.name}</div>
+                      ))}
+                    </div>
+                    <Button
+                      onClick={handleUpload}
+                      disabled={uploading}
+                      className="mt-4"
+                    >
+                      {uploading ? 'Uploading...' : 'Get Feedback'}
+                    </Button>
+                  </div>
+                )}
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Create Submission Modal */}
-            <CreateSubmissionModal
-              isOpen={showCreateModal}
-              onClose={() => setShowCreateModal(false)}
-              onSubmit={handleCreateSubmission}
-              isLoading={isSubmitting}
-            />
-
-            {/* Batch Processing Modal */}
-            <BatchProcessingModal
-              isOpen={showBatchModal}
-              onClose={() => setShowBatchModal(false)}
-              statuses={batchStatuses}
-              result={batchResult}
-              isProcessing={isBatchProcessing}
-            />
-          </>
-        )}
-
-        {/* Finalization Modal */}
-        <FinalizationModal
-          isOpen={showFinalizationModal}
-          onClose={() => setShowFinalizationModal(false)}
-          submissions={getFinalizableSubmissions()}
-          onFinalized={handleFinalization}
-        />
+          {/* Submissions List */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Student Submissions ({submissions.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {submissions.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No student submissions yet. Upload essays above to get started.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {submissions.map((submission) => (
+                    <div
+                      key={submission.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-gray-400" />
+                        <div>
+                          <div className="font-medium">{submission.student_name}</div>
+                          <div className="text-sm text-gray-500">
+                            Uploaded {new Date(submission.created_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          submission.status === 'pending' 
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : submission.status === 'ai_graded'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {submission.status.replace('_', ' ').toUpperCase()}
+                        </span>
+                        <Button variant="outline" size="sm">
+                          View
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
