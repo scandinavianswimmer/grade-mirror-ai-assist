@@ -155,6 +155,12 @@ const AppContent = () => {
         </AuthGuard>
       } />
       
+      <Route path="/assignments" element={
+        <AuthGuard>
+          <Dashboard />
+        </AuthGuard>
+      } />
+      
       <Route path="/create-assignment" element={
         <AuthGuard>
           <CreateAssignment />
