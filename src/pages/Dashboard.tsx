@@ -1,16 +1,14 @@
 
 import { useState, useEffect, useRef } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, FileText, Calendar, Clock, Users, SortAsc } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import CreateClassModal from '@/components/CreateClassModal';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, GraduationCap, Users, FileText, Calendar } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { SortAsc } from 'lucide-react';
 
 interface Assignment {
   id: string;
@@ -31,7 +29,17 @@ interface Class {
     time: string;
   };
   created_at: string;
-  assignment_count?: number;
+}
+
+interface ClassSchedule {
+  id: string;
+  name: string;
+  time: string;
+  grade: string;
+  level: string;
+  size: number;
+  assignments: Assignment[];
+  colorScheme: string;
 }
 
 type SortOption = 'time' | 'size' | 'grade' | 'name';
@@ -54,6 +62,18 @@ const Dashboard = () => {
   const [sortBy, setSortBy] = useState<SortOption>('time');
   const [hasAnimated, setHasAnimated] = useState(false);
   const hasInitiallyLoaded = useRef(false);
+
+  // Color schemes for different classes
+  const colorSchemes = [
+    'from-blue-500 to-indigo-600',
+    'from-green-500 to-emerald-600',
+    'from-purple-500 to-violet-600',
+    'from-orange-500 to-red-600',
+    'from-teal-500 to-cyan-600',
+    'from-pink-500 to-rose-600',
+    'from-yellow-500 to-amber-600',
+    'from-gray-500 to-slate-600'
+  ];
 
   useEffect(() => {
     if (user) {
@@ -91,7 +111,7 @@ const Dashboard = () => {
     try {
       console.log('Fetching fresh data from database');
       
-      // Fetch assignments
+      // Fetch assignments with submission counts
       const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('assignments')
         .select(`
@@ -130,18 +150,11 @@ const Dashboard = () => {
 
       if (classesError) throw classesError;
 
-      // Type cast and add assignment counts to classes
-      const typedClasses = await Promise.all(
-        (classesData || []).map(async (cls) => {
-          const assignmentCount = assignmentsWithCounts.filter(a => a.class_id === cls.id).length;
-          
-          return {
-            ...cls,
-            details_jsonb: cls.details_jsonb as { grade: string; size: number; level: string; time: string; },
-            assignment_count: assignmentCount
-          };
-        })
-      );
+      // Type cast the data to ensure compatibility
+      const typedClasses = classesData?.map(cls => ({
+        ...cls,
+        details_jsonb: cls.details_jsonb as { grade: string; size: number; level: string; time: string; }
+      })) || [];
 
       // Update state
       setAssignments(assignmentsWithCounts);
@@ -180,13 +193,13 @@ const Dashboard = () => {
         case 'time':
           const timeA = new Date(`1970/01/01 ${a.details_jsonb.time}`).getTime();
           const timeB = new Date(`1970/01/01 ${b.details_jsonb.time}`).getTime();
-          return timeA - timeB;
+          return timeA - timeB; // Always ascending for time
         case 'size':
-          return a.details_jsonb.size - b.details_jsonb.size;
+          return a.details_jsonb.size - b.details_jsonb.size; // Always ascending for size
         case 'grade':
-          return a.details_jsonb.grade.localeCompare(b.details_jsonb.grade);
+          return a.details_jsonb.grade.localeCompare(b.details_jsonb.grade); // Always ascending for grade
         case 'name':
-          return a.class_name.localeCompare(b.class_name);
+          return a.class_name.localeCompare(b.class_name); // Always ascending for name
         default:
           return 0;
       }
@@ -195,47 +208,53 @@ const Dashboard = () => {
 
   const sortedClasses = sortClasses(classes, sortBy);
 
+  // Group assignments by class and create class schedules
+  const classSchedules: ClassSchedule[] = sortedClasses.map((cls, index) => {
+    const classAssignments = assignments.filter(assignment => assignment.class_id === cls.id);
+    
+    return {
+      id: cls.id,
+      name: cls.class_name,
+      time: cls.details_jsonb.time,
+      grade: cls.details_jsonb.grade,
+      level: cls.details_jsonb.level,
+      size: cls.details_jsonb.size,
+      assignments: classAssignments,
+      colorScheme: colorSchemes[index % colorSchemes.length]
+    };
+  });
+
+  // Add unassigned assignments to a default class if no classes exist
+  const unassignedAssignments = assignments.filter(assignment => !assignment.class_id);
+  
+  const finalClassSchedules = classSchedules.length > 0 
+    ? classSchedules 
+    : unassignedAssignments.length > 0 
+    ? [{
+        id: 'default',
+        name: "Unassigned",
+        time: "N/A",
+        grade: "N/A",
+        level: "N/A",
+        size: 0,
+        assignments: unassignedAssignments,
+        colorScheme: colorSchemes[0]
+      }]
+    : [];
+
   const handleClassCreated = () => {
     // Clear cache to force fresh data fetch
     dashboardCache = null;
     fetchData();
   };
 
-  // Color schemes for different classes
-  const colorSchemes = [
-    'from-blue-500 to-indigo-600',
-    'from-green-500 to-emerald-600',
-    'from-purple-500 to-violet-600',
-    'from-orange-500 to-red-600',
-    'from-teal-500 to-cyan-600',
-    'from-pink-500 to-rose-600',
-    'from-yellow-500 to-amber-600',
-    'from-gray-500 to-slate-600'
-  ];
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center py-12">
-            <div className="text-lg font-medium animate-pulse">Loading dashboard...</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Navbar />
       
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
         <div className={`flex items-center justify-between mb-8 transition-all duration-700 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Classes Dashboard</h1>
-          </div>
+          <h1 className="text-3xl font-bold text-gray-900">My Classes Dashboard</h1>
           <div className="flex gap-3">
             <Button 
               size="lg" 
@@ -247,7 +266,7 @@ const Dashboard = () => {
               Create New Class
             </Button>
             <Link to="/create-assignment">
-              <Button size="lg" className="flex items-center gap-2 bg-gray-900">
+              <Button size="lg" className="flex items-center gap-2">
                 <Plus className="w-5 h-5" />
                 Create New Assignment
               </Button>
@@ -256,8 +275,8 @@ const Dashboard = () => {
         </div>
 
         {/* Sorting Controls */}
-        {sortedClasses.length > 0 && (
-          <div className={`flex items-center gap-4 mb-8 transition-all duration-700 delay-200 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        {classes.length > 0 && (
+          <div className={`flex items-center gap-4 mb-6 transition-all duration-700 delay-100 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <div className="flex items-center gap-2">
               <SortAsc className="w-5 h-5 text-gray-600" />
               <span className="text-sm font-medium text-gray-700">Sort by:</span>
@@ -276,109 +295,125 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Classes and Assignments */}
-        {sortedClasses.length === 0 ? (
-          <Card className={`p-12 text-center transition-all duration-700 delay-400 ${hasAnimated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'}`}>
-            <GraduationCap className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              No classes created yet
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Create your first class to get started with organizing your assignments!
-            </p>
-            <Button onClick={() => setShowCreateModal(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Your First Class
-            </Button>
-          </Card>
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="text-lg font-medium animate-pulse">Loading classes...</div>
+          </div>
         ) : (
-          <div className="space-y-8">
-            {sortedClasses.map((classItem, index) => {
-              const classAssignments = assignments.filter(a => a.class_id === classItem.id);
-              
-              return (
+          <div className="space-y-6">
+            {finalClassSchedules.length === 0 ? (
+              <Card className={`p-12 text-center transition-all duration-700 delay-200 ${hasAnimated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'}`}>
+                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h2 className="text-xl font-semibold text-gray-700 mb-2">
+                  No classes created yet
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  Create your first class to get started with organizing your assignments!
+                </p>
+                <Button onClick={() => setShowCreateModal(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Your First Class
+                </Button>
+              </Card>
+            ) : (
+              finalClassSchedules.map((classSchedule, index) => (
                 <div 
-                  key={classItem.id}
-                  className={`transition-all duration-500 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                  style={{ transitionDelay: `${400 + index * 100}ms` }}
+                  key={classSchedule.id} 
+                  className={`space-y-4 transition-all duration-700 ${hasAnimated ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`}
+                  style={{ transitionDelay: `${200 + index * 100}ms` }}
                 >
-                  {/* Class Header Bar */}
-                  <Link to={`/class/${classItem.id}`}>
-                    <div className={`bg-gradient-to-r ${colorSchemes[index % colorSchemes.length]} text-white p-6 rounded-lg hover:shadow-lg transition-shadow cursor-pointer`}>
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                          <GraduationCap className="w-6 h-6" />
-                        </div>
-                        <div className="flex-1">
-                          <h2 className="text-2xl font-bold mb-2">{classItem.class_name}</h2>
-                          <div className="flex items-center gap-6 text-white/90">
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4" />
-                              <span>{classItem.details_jsonb.time}</span>
+                  {/* Class Header */}
+                  <Card className="bg-white shadow-lg hover:shadow-xl transition-shadow">
+                    <CardHeader className={`bg-gradient-to-r ${classSchedule.colorScheme} text-white rounded-t-lg`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                            <FileText className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-xl font-bold">{classSchedule.name}</CardTitle>
+                            <div className="flex items-center gap-4 text-white/90 mt-1">
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-4 h-4" />
+                                <span>{classSchedule.time}</span>
+                              </div>
+                              {classSchedule.size > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <Users className="w-4 h-4" />
+                                  <span>{classSchedule.size} Students</span>
+                                </div>
+                              )}
+                              {classSchedule.grade !== "N/A" && (
+                                <>
+                                  <span>•</span>
+                                  <span>{classSchedule.grade}</span>
+                                </>
+                              )}
+                              {classSchedule.level !== "N/A" && (
+                                <>
+                                  <span>•</span>
+                                  <span>{classSchedule.level}</span>
+                                </>
+                              )}
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Users className="w-4 h-4" />
-                              <span>{classItem.details_jsonb.size} Students</span>
-                            </div>
-                            <span>•</span>
-                            <span>{classItem.details_jsonb.grade}</span>
-                            <span>•</span>
-                            <span>{classItem.details_jsonb.level}</span>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </Link>
+                    </CardHeader>
+                  </Card>
 
-                  {/* Assignments Section */}
-                  <div className="mt-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                      Assignments for {classItem.class_name}
-                    </h3>
-                    
-                    {classAssignments.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">
-                        <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                        <p>No assignments created for this class yet.</p>
-                        <Link to={`/create-assignment?classId=${classItem.id}`}>
-                          <Button variant="outline" className="mt-4">
-                            <Plus className="w-4 h-4 mr-2" />
-                            Create Assignment
-                          </Button>
-                        </Link>
-                      </div>
-                    ) : (
-                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {classAssignments.map((assignment) => (
-                          <Card key={assignment.id} className="border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
-                            <CardHeader className="pb-3">
-                              <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-2">
-                                  <FileText className="w-5 h-5 text-blue-600" />
-                                  <CardTitle className="text-lg font-semibold line-clamp-1">
-                                    {assignment.title}
-                                  </CardTitle>
-                                </div>
-                              </div>
+                  {/* Assignments for this Class */}
+                  {classSchedule.assignments.length === 0 ? (
+                    <Card className="p-8 text-center hover:shadow-md transition-shadow">
+                      <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                        No assignments yet for {classSchedule.name}
+                      </h3>
+                      <p className="text-gray-600 mb-4">
+                        Create your first assignment for this class!
+                      </p>
+                      <Link to="/create-assignment">
+                        <Button>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Create Assignment
+                        </Button>
+                      </Link>
+                    </Card>
+                  ) : (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        Assignments for {classSchedule.name}
+                      </h3>
+                      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {classSchedule.assignments.map((assignment, assignmentIndex) => (
+                          <Card 
+                            key={assignment.id} 
+                            className={`hover:shadow-lg transition-all duration-500 border-l-4 border-l-blue-500 hover:scale-105 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                            style={{ transitionDelay: `${400 + index * 100 + assignmentIndex * 50}ms` }}
+                          >
+                            <CardHeader>
+                              <CardTitle className="text-lg font-semibold line-clamp-2">
+                                {assignment.title}
+                              </CardTitle>
                             </CardHeader>
                             <CardContent>
-                              <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                              <p className="text-gray-600 text-sm mb-4 line-clamp-3">
                                 {assignment.description}
                               </p>
                               
-                              <div className="space-y-2 mb-4">
-                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                                <div className="flex items-center gap-1">
                                   <Calendar className="w-4 h-4" />
-                                  <span>{new Date(assignment.created_at).toLocaleDateString()}</span>
+                                  {new Date(assignment.created_at).toLocaleDateString()}
                                 </div>
-                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <div className="flex items-center gap-1">
                                   <FileText className="w-4 h-4" />
-                                  <span>{assignment.submission_count} submissions</span>
+                                  {assignment.submission_count} submissions
                                 </div>
                               </div>
 
                               <Link to={`/assignment/${assignment.id}`}>
-                                <Button variant="outline" className="w-full">
+                                <Button variant="outline" className="w-full hover:bg-blue-50 transition-colors">
                                   View Assignment
                                 </Button>
                               </Link>
@@ -386,11 +421,11 @@ const Dashboard = () => {
                           </Card>
                         ))}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
-              );
-            })}
+              ))
+            )}
           </div>
         )}
 
