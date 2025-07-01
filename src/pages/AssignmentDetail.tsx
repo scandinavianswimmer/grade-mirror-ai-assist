@@ -28,9 +28,12 @@ interface Submission {
 }
 
 const AssignmentDetail = () => {
-  const { assignmentId } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Use 'id' instead of 'assignmentId' to match the route parameter
+  const assignmentId = id;
 
   const [assignment, setAssignment] = useState<any>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -50,7 +53,7 @@ const AssignmentDetail = () => {
         description: "Please select a valid assignment.",
         variant: "destructive",
       });
-      navigate('/assignments');
+      navigate('/dashboard');
       return;
     }
 
@@ -59,6 +62,8 @@ const AssignmentDetail = () => {
   }, [assignmentId, navigate, toast]);
 
   const fetchAssignment = async () => {
+    if (!assignmentId) return;
+    
     setIsLoading(true);
     try {
       const assignmentData = await getAssignment(assignmentId);
@@ -75,6 +80,8 @@ const AssignmentDetail = () => {
   };
 
   const fetchSubmissions = async () => {
+    if (!assignmentId) return;
+    
     setIsLoading(true);
     try {
       const submissionsData = await getSubmissions(assignmentId);
@@ -170,9 +177,9 @@ const AssignmentDetail = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <Button variant="ghost" onClick={() => navigate('/assignments')}>
+              <Button variant="ghost" onClick={() => navigate('/dashboard')}>
                 <Book className="w-5 h-5 mr-2" />
-                Back to Assignments
+                Back to Dashboard
               </Button>
             </div>
             <div className="flex items-center space-x-4">
