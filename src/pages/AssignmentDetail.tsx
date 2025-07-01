@@ -35,6 +35,8 @@ const AssignmentDetail = () => {
   // Use 'id' instead of 'assignmentId' to match the route parameter
   const assignmentId = id;
 
+  console.log('AssignmentDetail: assignmentId from params:', assignmentId);
+
   const [assignment, setAssignment] = useState<any>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,7 +49,10 @@ const AssignmentDetail = () => {
   const [showFinalizationModal, setShowFinalizationModal] = useState(false);
 
   useEffect(() => {
+    console.log('AssignmentDetail: useEffect triggered with assignmentId:', assignmentId);
+    
     if (!assignmentId) {
+      console.log('AssignmentDetail: No assignmentId found, showing toast and navigating');
       toast({
         title: "Missing Assignment ID",
         description: "Please select a valid assignment.",
@@ -64,11 +69,14 @@ const AssignmentDetail = () => {
   const fetchAssignment = async () => {
     if (!assignmentId) return;
     
+    console.log('AssignmentDetail: Fetching assignment with ID:', assignmentId);
     setIsLoading(true);
     try {
       const assignmentData = await getAssignment(assignmentId);
+      console.log('AssignmentDetail: Assignment data received:', assignmentData);
       setAssignment(assignmentData);
     } catch (error: any) {
+      console.error('AssignmentDetail: Error fetching assignment:', error);
       toast({
         title: "Error fetching assignment",
         description: error.message,
@@ -82,11 +90,14 @@ const AssignmentDetail = () => {
   const fetchSubmissions = async () => {
     if (!assignmentId) return;
     
+    console.log('AssignmentDetail: Fetching submissions for assignment:', assignmentId);
     setIsLoading(true);
     try {
       const submissionsData = await getSubmissions(assignmentId);
+      console.log('AssignmentDetail: Submissions data received:', submissionsData);
       setSubmissions(submissionsData);
     } catch (error: any) {
+      console.error('AssignmentDetail: Error fetching submissions:', error);
       toast({
         title: "Error fetching submissions",
         description: error.message,
@@ -171,6 +182,8 @@ const AssignmentDetail = () => {
     return submissions.filter(sub => sub.status === 'ai_graded' || sub.status === 'graded');
   };
 
+  console.log('AssignmentDetail: Rendering with assignment:', assignment, 'isLoading:', isLoading);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b">
@@ -200,8 +213,8 @@ const AssignmentDetail = () => {
         ) : (
           <>
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">{assignment?.title}</h1>
-              <p className="text-gray-600">{assignment?.description}</p>
+              <h1 className="text-2xl font-bold text-gray-900">{assignment?.title || 'Loading...'}</h1>
+              <p className="text-gray-600">{assignment?.description || 'Loading description...'}</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
