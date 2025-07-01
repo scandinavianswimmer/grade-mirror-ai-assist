@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, ArrowLeft, FileText, Clock } from 'lucide-react';
+import { CalendarIcon, ArrowLeft, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
@@ -17,6 +16,9 @@ import { createAssignment } from '@/lib/assignmentApi';
 import Navbar from '@/components/Navbar';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
+import type { Tables } from '@/integrations/supabase/types';
+
+type ClassData = Tables<'classes'>;
 
 interface Class {
   id: string;
@@ -71,7 +73,13 @@ const CreateAssignment = () => {
 
       if (error) throw error;
 
-      setClasses(data || []);
+      // Cast the raw data to our expected Class type
+      const classesData: Class[] = (data || []).map(rawClass => ({
+        ...rawClass,
+        details_jsonb: rawClass.details_jsonb as Class['details_jsonb']
+      }));
+
+      setClasses(classesData);
     } catch (error) {
       console.error('Error fetching classes:', error);
       toast({

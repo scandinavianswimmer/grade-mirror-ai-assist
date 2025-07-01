@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +8,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import { useToast } from '@/hooks/use-toast';
+import type { Tables } from '@/integrations/supabase/types';
 
 interface Assignment {
   id: string;
@@ -19,6 +19,8 @@ interface Assignment {
   status: string;
   submission_count?: number;
 }
+
+type ClassData = Tables<'classes'>;
 
 interface Class {
   id: string;
@@ -52,7 +54,7 @@ const ClassDetail = () => {
 
     try {
       // Fetch class details
-      const { data: classData, error: classError } = await supabase
+      const { data: rawClassData, error: classError } = await supabase
         .from('classes')
         .select('*')
         .eq('id', id)
@@ -71,6 +73,12 @@ const ClassDetail = () => {
         }
         throw classError;
       }
+
+      // Cast the raw data to our expected Class type
+      const classData: Class = {
+        ...rawClassData,
+        details_jsonb: rawClassData.details_jsonb as Class['details_jsonb']
+      };
 
       setClassData(classData);
 
