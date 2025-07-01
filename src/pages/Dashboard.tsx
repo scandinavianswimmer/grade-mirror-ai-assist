@@ -7,11 +7,8 @@ import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import CreateClassModal from '@/components/CreateClassModal';
-import DashboardStats from '@/components/dashboard/DashboardStats';
-import RecentAssignments from '@/components/dashboard/RecentAssignments';
-import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, GraduationCap, Users, ChevronRight } from 'lucide-react';
+import { Clock, GraduationCap, Users, FileText, Calendar } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SortAsc } from 'lucide-react';
 
@@ -216,15 +213,28 @@ const Dashboard = () => {
     'from-gray-500 to-slate-600'
   ];
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-12">
+            <div className="text-lg font-medium animate-pulse">Loading dashboard...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
       
       <div className="container mx-auto px-4 py-8">
+        {/* Header */}
         <div className={`flex items-center justify-between mb-8 transition-all duration-700 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Classes</h1>
-            <p className="text-gray-600 mt-1">Manage your classes and assignments</p>
+            <h1 className="text-3xl font-bold text-gray-900">My Classes Dashboard</h1>
           </div>
           <div className="flex gap-3">
             <Button 
@@ -234,128 +244,153 @@ const Dashboard = () => {
               onClick={() => setShowCreateModal(true)}
             >
               <Plus className="w-5 h-5" />
-              Create Class
+              Create New Class
             </Button>
             <Link to="/create-assignment">
-              <Button size="lg" className="flex items-center gap-2">
+              <Button size="lg" className="flex items-center gap-2 bg-gray-900">
                 <Plus className="w-5 h-5" />
-                Create Assignment
+                Create New Assignment
               </Button>
             </Link>
           </div>
         </div>
 
-        <DashboardStats 
-          classes={classes}
-          assignments={assignments}
-          hasAnimated={hasAnimated}
-        />
-
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="text-lg font-medium animate-pulse">Loading classes...</div>
+        {/* Sorting Controls */}
+        {sortedClasses.length > 0 && (
+          <div className={`flex items-center gap-4 mb-8 transition-all duration-700 delay-200 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <div className="flex items-center gap-2">
+              <SortAsc className="w-5 h-5 text-gray-600" />
+              <span className="text-sm font-medium text-gray-700">Sort by:</span>
+            </div>
+            <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="time">Class Time</SelectItem>
+                <SelectItem value="size">Class Size</SelectItem>
+                <SelectItem value="grade">Grade Level</SelectItem>
+                <SelectItem value="name">Class Name</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+        )}
+
+        {/* Classes and Assignments */}
+        {sortedClasses.length === 0 ? (
+          <Card className={`p-12 text-center transition-all duration-700 delay-400 ${hasAnimated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'}`}>
+            <GraduationCap className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">
+              No classes created yet
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Create your first class to get started with organizing your assignments!
+            </p>
+            <Button onClick={() => setShowCreateModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Create Your First Class
+            </Button>
+          </Card>
         ) : (
           <div className="space-y-8">
-            {/* Classes Section */}
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className={`text-2xl font-bold text-gray-900 transition-all duration-700 delay-300 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                  Your Classes
-                </h2>
-                
-                {/* Sorting Controls */}
-                {sortedClasses.length > 0 && (
-                  <div className={`flex items-center gap-4 transition-all duration-700 delay-200 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                    <div className="flex items-center gap-2">
-                      <SortAsc className="w-5 h-5 text-gray-600" />
-                      <span className="text-sm font-medium text-gray-700">Sort by:</span>
-                    </div>
-                    <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
-                      <SelectTrigger className="w-48">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="time">Class Time</SelectItem>
-                        <SelectItem value="size">Class Size</SelectItem>
-                        <SelectItem value="grade">Grade Level</SelectItem>
-                        <SelectItem value="name">Class Name</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
+            {sortedClasses.map((classItem, index) => {
+              const classAssignments = assignments.filter(a => a.class_id === classItem.id);
               
-              {sortedClasses.length === 0 ? (
-                <Card className={`p-12 text-center transition-all duration-700 delay-400 ${hasAnimated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'}`}>
-                  <GraduationCap className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                    No classes created yet
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    Create your first class to get started with organizing your assignments!
-                  </p>
-                  <Button onClick={() => setShowCreateModal(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Your First Class
-                  </Button>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {sortedClasses.map((classItem, index) => (
-                    <Card 
-                      key={classItem.id} 
-                      className={`hover:shadow-xl transition-all duration-500 cursor-pointer group ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                      style={{ transitionDelay: `${400 + index * 100}ms` }}
-                    >
-                      <Link to={`/class/${classItem.id}`}>
-                        <CardHeader className={`bg-gradient-to-r ${colorSchemes[index % colorSchemes.length]} text-white rounded-t-lg`}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                                <GraduationCap className="w-8 h-8" />
-                              </div>
-                              <div>
-                                <CardTitle className="text-2xl font-bold">{classItem.class_name}</CardTitle>
-                                <div className="flex items-center gap-6 text-white/90 mt-2">
-                                  <div className="flex items-center gap-2">
-                                    <Clock className="w-5 h-5" />
-                                    <span>{classItem.details_jsonb.time}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Users className="w-5 h-5" />
-                                    <span>{classItem.details_jsonb.size} Students</span>
-                                  </div>
-                                  <span>•</span>
-                                  <span>{classItem.details_jsonb.grade}</span>
-                                  <span>•</span>
-                                  <span>{classItem.details_jsonb.level}</span>
+              return (
+                <div 
+                  key={classItem.id}
+                  className={`transition-all duration-500 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                  style={{ transitionDelay: `${400 + index * 100}ms` }}
+                >
+                  {/* Class Header Bar */}
+                  <Link to={`/class/${classItem.id}`}>
+                    <div className={`bg-gradient-to-r ${colorSchemes[index % colorSchemes.length]} text-white p-6 rounded-lg hover:shadow-lg transition-shadow cursor-pointer`}>
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                          <GraduationCap className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1">
+                          <h2 className="text-2xl font-bold mb-2">{classItem.class_name}</h2>
+                          <div className="flex items-center gap-6 text-white/90">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4" />
+                              <span>{classItem.details_jsonb.time}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Users className="w-4 h-4" />
+                              <span>{classItem.details_jsonb.size} Students</span>
+                            </div>
+                            <span>•</span>
+                            <span>{classItem.details_jsonb.grade}</span>
+                            <span>•</span>
+                            <span>{classItem.details_jsonb.level}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+
+                  {/* Assignments Section */}
+                  <div className="mt-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                      Assignments for {classItem.class_name}
+                    </h3>
+                    
+                    {classAssignments.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                        <p>No assignments created for this class yet.</p>
+                        <Link to={`/create-assignment?classId=${classItem.id}`}>
+                          <Button variant="outline" className="mt-4">
+                            <Plus className="w-4 h-4 mr-2" />
+                            Create Assignment
+                          </Button>
+                        </Link>
+                      </div>
+                    ) : (
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {classAssignments.map((assignment) => (
+                          <Card key={assignment.id} className="border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
+                            <CardHeader className="pb-3">
+                              <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-2">
+                                  <FileText className="w-5 h-5 text-blue-600" />
+                                  <CardTitle className="text-lg font-semibold line-clamp-1">
+                                    {assignment.title}
+                                  </CardTitle>
                                 </div>
                               </div>
-                            </div>
-                            <div className="text-right flex items-center gap-4">
-                              <div>
-                                <div className="text-white/90 text-sm">Assignments</div>
-                                <div className="text-2xl font-bold">{classItem.assignment_count || 0}</div>
+                            </CardHeader>
+                            <CardContent>
+                              <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                                {assignment.description}
+                              </p>
+                              
+                              <div className="space-y-2 mb-4">
+                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                                  <Calendar className="w-4 h-4" />
+                                  <span>{new Date(assignment.created_at).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                                  <FileText className="w-4 h-4" />
+                                  <span>{assignment.submission_count} submissions</span>
+                                </div>
                               </div>
-                              <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-                            </div>
-                          </div>
-                        </CardHeader>
-                      </Link>
-                    </Card>
-                  ))}
+
+                              <Link to={`/assignment/${assignment.id}`}>
+                                <Button variant="outline" className="w-full">
+                                  View Assignment
+                                </Button>
+                              </Link>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-
-            <Separator className="my-8" />
-
-            <RecentAssignments
-              assignments={assignments}
-              classes={classes}
-              hasAnimated={hasAnimated}
-            />
+              );
+            })}
           </div>
         )}
 
