@@ -158,18 +158,32 @@ const SubmissionDetail = () => {
   const handleGenerateAIFeedback = async () => {
     if (!submission || !assignment || !user) return;
 
+    // If we don't have essay content, try to use the example text for demo
+    let essayContent = submission.essay;
+    if (!essayContent || essayContent.includes('[File')) {
+      console.log('No essay content found, check if we should extract text first');
+      toast({
+        title: "No essay content",
+        description: "Please extract text from the document first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log('Generating AI feedback for essay:', essayContent.substring(0, 100) + '...');
     setGenerating(true);
     try {
       const response = await generateGradingFeedback(
-        submission.essay || '',
+        essayContent,
         assignment.rubric_text || '',
         user.id
       );
 
+      console.log('AI Response received:', response);
       setAiResponse(response);
 
       // Save AI response to database
-      await supabase
+      const { error: updateError } = await supabase
         .from('submissions')
         .update({
           ai_grade: response.suggestedGrade,
@@ -179,9 +193,13 @@ const SubmissionDetail = () => {
         })
         .eq('id', submission.id);
 
+      if (updateError) {
+        console.error('Error saving AI response:', updateError);
+      }
+
       toast({
         title: "AI feedback generated!",
-        description: `Generated with ${Math.round(response.confidence * 100)}% confidence`,
+        description: `Generated ${response.inlineComments?.length || 0} comments with ${Math.round(response.confidence * 100)}% confidence`,
       });
 
     } catch (error) {
