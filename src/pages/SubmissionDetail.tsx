@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Brain, Loader2, FileText } from 'lucide-react';
+import { ArrowLeft, Brain, Loader2, FileText, MessageSquare } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
@@ -45,14 +43,20 @@ const SubmissionDetail = () => {
   const [generating, setGenerating] = useState(false);
   const [extractingText, setExtractingText] = useState(false);
   const [aiResponse, setAiResponse] = useState<GradingResponse | null>(null);
-  const [finalGrade, setFinalGrade] = useState('');
-  const [finalFeedback, setFinalFeedback] = useState('');
+  const [hoveredCommentId, setHoveredCommentId] = useState<string | null>(null);
 
   useEffect(() => {
     if (id && user) {
       fetchSubmissionData();
     }
   }, [id, user]);
+
+  useEffect(() => {
+    // Auto-extract text if we have a file but no essay content
+    if (submission && submission.submission_storage_path && !submission.essay && !extractingText) {
+      handleExtractText();
+    }
+  }, [submission]);
 
   const fetchSubmissionData = async () => {
     try {
@@ -65,8 +69,6 @@ const SubmissionDetail = () => {
 
       if (submissionError) throw submissionError;
       setSubmission(submissionData);
-      setFinalGrade(submissionData.ai_grade || '');
-      setFinalFeedback(submissionData.ai_feedback || '');
 
       // Parse existing AI response if available
       if (submissionData.feedback_json && typeof submissionData.feedback_json === 'object') {
@@ -142,8 +144,6 @@ const SubmissionDetail = () => {
       );
 
       setAiResponse(response);
-      setFinalGrade(response.suggestedGrade);
-      setFinalFeedback(response.overallFeedback);
 
       // Save AI response to database
       await supabase
@@ -216,11 +216,16 @@ const SubmissionDetail = () => {
     // Apply highlights for each inline comment
     aiResponse.inlineComments.forEach((comment, index) => {
       const commentId = `comment-${index}`;
-      const highlightClass = "bg-yellow-100 border-b-2 border-yellow-400 cursor-pointer hover:bg-yellow-200 transition-colors";
+      const isHovered = hoveredCommentId === commentId;
+      const highlightClass = `cursor-pointer transition-all duration-200 border-b-2 ${
+        isHovered 
+          ? 'bg-yellow-200 border-yellow-500 shadow-md' 
+          : 'bg-yellow-100 border-yellow-400 hover:bg-yellow-200'
+      }`;
       
       highlightedText = highlightedText.replace(
         comment.text,
-        `<span class="${highlightClass}" data-comment-id="${commentId}" title="${comment.comment}">${comment.text}</span>`
+        `<span class="${highlightClass}" data-comment-id="${commentId}" title="${comment.comment}" onmouseenter="this.style.backgroundColor='rgb(254 240 138)'" onmouseleave="this.style.backgroundColor='rgb(254 249 195)'">${comment.text}</span>`
       );
     });
 
@@ -329,71 +334,73 @@ const SubmissionDetail = () => {
             </Card>
           </div>
 
-          {/* Feedback Panel */}
-          <div className="space-y-6">
-            {/* AI Grade and Feedback */}
-            <Card>
+          {/* Comments Panel */}
+          <div>
+            <Card className="h-full">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Brain className="w-5 h-5 text-blue-600" />
-                  AI Assessment
+                  <MessageSquare className="w-5 h-5 text-blue-600" />
+                  Areas for Comments
+                  {aiResponse?.inlineComments && (
+                    <Badge variant="secondary" className="ml-2">
+                      {aiResponse.inlineComments.length}
+                    </Badge>
+                  )}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="grade">Suggested Grade</Label>
-                  <Input
-                    id="grade"
-                    value={finalGrade}
-                    onChange={(e) => setFinalGrade(e.target.value)}
-                    className="text-2xl font-bold text-center"
-                    placeholder="No grade yet"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="feedback">Overall Feedback</Label>
-                  <Textarea
-                    id="feedback"
-                    value={finalFeedback}
-                    onChange={(e) => setFinalFeedback(e.target.value)}
-                    rows={8}
-                    placeholder="AI feedback will appear here..."
-                  />
-                </div>
-
-                {aiResponse?.reasoning && (
-                  <div className="p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                      <strong>AI Reasoning:</strong> {aiResponse.reasoning}
-                    </p>
+              <CardContent>
+                {aiResponse?.inlineComments && aiResponse.inlineComments.length > 0 ? (
+                  <div className="space-y-4">
+                    {aiResponse.inlineComments.map((comment, index) => {
+                      const commentId = `comment-${index}`;
+                      return (
+                        <HoverCard key={index}>
+                          <HoverCardTrigger asChild>
+                            <div 
+                              className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
+                                hoveredCommentId === commentId 
+                                  ? 'bg-yellow-50 border-yellow-300 shadow-md' 
+                                  : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
+                              }`}
+                              onMouseEnter={() => setHoveredCommentId(commentId)}
+                              onMouseLeave={() => setHoveredCommentId(null)}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
+                                  {index + 1}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="text-sm font-medium text-gray-600 mb-2">
+                                    "{comment.text.length > 60 ? comment.text.substring(0, 60) + '...' : comment.text}"
+                                  </div>
+                                  <div className="text-sm text-gray-800">
+                                    {comment.comment}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </HoverCardTrigger>
+                          <HoverCardContent className="w-80">
+                            <div className="space-y-2">
+                              <h4 className="text-sm font-semibold">Full Text Excerpt</h4>
+                              <p className="text-sm text-gray-600 italic">"{comment.text}"</p>
+                              <h4 className="text-sm font-semibold">Suggested Comment</h4>
+                              <p className="text-sm">{comment.comment}</p>
+                            </div>
+                          </HoverCardContent>
+                        </HoverCard>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 mb-4">No comments generated yet</p>
+                    <p className="text-sm text-gray-400">Generate AI feedback to see suggested comments</p>
                   </div>
                 )}
               </CardContent>
             </Card>
-
-            {/* Inline Comments Summary */}
-            {aiResponse?.inlineComments && aiResponse.inlineComments.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Inline Comments ({aiResponse.inlineComments.length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {aiResponse.inlineComments.map((comment, index) => (
-                      <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                        <div className="text-sm font-medium text-gray-600 mb-1">
-                          "{comment.text.substring(0, 50)}..."
-                        </div>
-                        <div className="text-sm text-gray-800">
-                          {comment.comment}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       </div>
