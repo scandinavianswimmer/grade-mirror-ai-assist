@@ -80,19 +80,31 @@ export const processSubmissionFile = async (
 
 export const getTextFromStoredFile = async (storagePath: string): Promise<string> => {
   try {
+    console.log('Downloading file from storage path:', storagePath);
+    
     const { data, error } = await supabase.storage
       .from('submissions')
       .download(storagePath);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Storage download error:', error);
+      throw error;
+    }
+
+    console.log('File downloaded successfully, size:', data.size, 'type:', data.type);
 
     // Convert blob to file for text extraction
     const fileName = storagePath.split('/').pop() || 'file';
     const file = new File([data], fileName, { type: data.type });
     
-    return await extractTextFromFile(file);
+    console.log('Created file object:', { name: fileName, size: file.size, type: file.type });
+    
+    const extractedText = await extractTextFromFile(file);
+    console.log('Text extraction completed, length:', extractedText.length);
+    
+    return extractedText;
   } catch (error) {
     console.error('Error getting text from stored file:', error);
-    return '';
+    throw error;
   }
 };

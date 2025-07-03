@@ -99,25 +99,43 @@ const SubmissionDetail = () => {
   };
 
   const handleExtractText = async () => {
-    if (!submission?.submission_storage_path) return;
+    if (!submission?.submission_storage_path) {
+      console.log('No storage path found:', submission);
+      return;
+    }
 
+    console.log('Starting text extraction for:', submission.submission_storage_path);
     setExtractingText(true);
     try {
       const extractedText = await getTextFromStoredFile(submission.submission_storage_path);
+      console.log('Extracted text length:', extractedText?.length);
+      console.log('Extracted text preview:', extractedText?.substring(0, 200));
       
-      if (extractedText) {
+      if (extractedText && extractedText.trim()) {
         // Update the submission in the database
-        await supabase
+        const { error: updateError } = await supabase
           .from('submissions')
           .update({ essay: extractedText })
           .eq('id', submission.id);
+
+        if (updateError) {
+          console.error('Error updating submission:', updateError);
+          throw updateError;
+        }
 
         // Update local state
         setSubmission(prev => prev ? { ...prev, essay: extractedText } : null);
 
         toast({
           title: "Text extracted successfully!",
-          description: "The essay text is now available for grading.",
+          description: `Extracted ${extractedText.length} characters from the document.`,
+        });
+      } else {
+        console.warn('No text extracted or empty text');
+        toast({
+          title: "No text found",
+          description: "The document appears to be empty or text extraction failed.",
+          variant: "destructive"
         });
       }
     } catch (error) {
@@ -174,30 +192,39 @@ const SubmissionDetail = () => {
   };
 
   const renderEssayWithHighlights = () => {
-    if (!submission?.essay) {
+    if (!submission?.essay || submission.essay.trim() === '') {
       return (
         <div className="text-center py-8">
           <p className="text-gray-500 mb-4">
-            {submission?.essay?.includes('[File') 
-              ? 'Text extraction is required to view the essay content.'
+            {submission?.submission_storage_path 
+              ? 'Document uploaded but text not extracted yet.'
               : 'No essay content available.'
             }
           </p>
           {submission?.submission_storage_path && (
-            <Button 
-              onClick={handleExtractText}
-              disabled={extractingText}
-              variant="outline"
-            >
-              {extractingText ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Extracting Text...
-                </>
-              ) : (
-                'Extract Text from Document'
-              )}
-            </Button>
+            <div className="space-y-2">
+              <p className="text-sm text-gray-400 mb-4">
+                Storage path: {submission.submission_storage_path}
+              </p>
+              <Button 
+                onClick={handleExtractText}
+                disabled={extractingText}
+                variant="outline"
+                size="lg"
+              >
+                {extractingText ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Extracting Text...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-4 h-4 mr-2" />
+                    Extract Text from Document
+                  </>
+                )}
+              </Button>
+            </div>
           )}
         </div>
       );
