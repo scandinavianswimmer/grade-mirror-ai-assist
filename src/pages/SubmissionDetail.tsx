@@ -53,7 +53,12 @@ const SubmissionDetail = () => {
 
   useEffect(() => {
     // Auto-extract text if we have a file but no essay content
-    if (submission && submission.submission_storage_path && !submission.essay && !extractingText) {
+    if (submission && submission.submission_storage_path && (!submission.essay || submission.essay.includes('[File'))) {
+      console.log('Auto-extracting text for submission:', {
+        id: submission.id,
+        storagePath: submission.submission_storage_path,
+        currentEssay: submission.essay?.substring(0, 100)
+      });
       handleExtractText();
     }
   }, [submission]);
@@ -192,7 +197,15 @@ const SubmissionDetail = () => {
   };
 
   const renderEssayWithHighlights = () => {
-    if (!submission?.essay || submission.essay.trim() === '') {
+    console.log('Rendering essay, current state:', {
+      hasEssay: !!submission?.essay,
+      essayLength: submission?.essay?.length,
+      essayPreview: submission?.essay?.substring(0, 100),
+      hasStoragePath: !!submission?.submission_storage_path,
+      storagePath: submission?.submission_storage_path
+    });
+
+    if (!submission?.essay || submission.essay.trim() === '' || submission.essay.includes('[File')) {
       return (
         <div className="text-center py-8">
           <p className="text-gray-500 mb-4">
@@ -203,8 +216,11 @@ const SubmissionDetail = () => {
           </p>
           {submission?.submission_storage_path && (
             <div className="space-y-2">
-              <p className="text-sm text-gray-400 mb-4">
+              <p className="text-sm text-gray-400 mb-2">
                 Storage path: {submission.submission_storage_path}
+              </p>
+              <p className="text-sm text-gray-400 mb-4">
+                Current essay field: {submission.essay ? `"${submission.essay.substring(0, 100)}..."` : 'null/empty'}
               </p>
               <Button 
                 onClick={handleExtractText}

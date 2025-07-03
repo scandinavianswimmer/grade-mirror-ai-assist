@@ -81,10 +81,22 @@ export const extractTextFromFile = async (file: File): Promise<string> => {
     if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
         fileType === 'application/msword') {
       // Extract text from DOCX files using mammoth
+      console.log('Processing DOCX file with mammoth...');
       const arrayBuffer = await file.arrayBuffer();
+      console.log('Array buffer size:', arrayBuffer.byteLength);
+      
       const result = await mammoth.extractRawText({ arrayBuffer });
-      console.log('DOCX text extracted:', result.value.substring(0, 100) + '...');
-      return result.value;
+      console.log('Mammoth extraction result:', {
+        value: result.value.substring(0, 200) + '...',
+        length: result.value.length,
+        messages: result.messages
+      });
+      
+      if (result.value && result.value.trim()) {
+        return result.value;
+      } else {
+        throw new Error('No text content found in document');
+      }
     }
 
     if (fileType === 'application/pdf') {
