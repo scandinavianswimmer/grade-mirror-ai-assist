@@ -13,6 +13,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import CreateAssignment from "./pages/CreateAssignment";
 import AssignmentDetail from "./pages/AssignmentDetail";
+import SubmissionDetail from "./pages/SubmissionDetail";
 import Upload from "./pages/Upload";
 import GradingPreview from "./pages/GradingPreview";
 import Training from "./pages/Training";
@@ -163,6 +164,12 @@ const AppContent = () => {
       <Route path="/assignment/:id" element={
         <AuthGuard>
           <AssignmentDetail />
+        </AuthGuard>
+      } />
+      
+      <Route path="/submission/:id" element={
+        <AuthGuard>
+          <SubmissionDetail />
         </AuthGuard>
       } />
       
