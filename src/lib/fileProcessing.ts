@@ -26,7 +26,10 @@ export const processSubmissionFile = async (
 
     // Create storage path: user_id/assignments/assignment_id/submissions/filename
     const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${studentName.replace(/\s+/g, '_')}.${fileExt}`;
+    // Sanitize student name and filename to remove special characters
+    const sanitizedStudentName = studentName.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const fileName = `${Date.now()}-${sanitizedFileName}`;
     const storagePath = `${user.id}/assignments/${assignmentId}/submissions/${fileName}`;
 
     console.log('Uploading to storage path:', storagePath);
