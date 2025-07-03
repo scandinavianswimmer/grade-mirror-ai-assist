@@ -240,9 +240,11 @@ const AssignmentDetail = () => {
                         }`}>
                           {submission.status.replace('_', ' ').toUpperCase()}
                         </span>
-                        <Button variant="outline" size="sm">
-                          View
-                        </Button>
+                        <Link to={`/submission/${submission.id}`}>
+                          <Button variant="outline" size="sm">
+                            View
+                          </Button>
+                        </Link>
                       </div>
                     </div>
                   ))}
