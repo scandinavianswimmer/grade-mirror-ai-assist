@@ -23,6 +23,12 @@ interface GradingResponse {
   suggestedGrade: string;
   reasoning: string;
   confidence: number;
+  rubricBreakdown: Array<{
+    criterion: string;
+    evidenceQuote: string;
+    commentSuggestion: string;
+    score: number;
+  }>;
 }
 
 serve(async (req) => {
@@ -69,8 +75,26 @@ serve(async (req) => {
   "overallFeedback": "comprehensive feedback paragraph",
   "suggestedGrade": "letter grade (A, B+, C-, etc.)",
   "reasoning": "explanation for the grade",
-  "confidence": 0.85
+  "confidence": 0.85,
+  "rubricBreakdown": [
+    {
+      "criterion": "CLARITY",
+      "evidenceQuote": "exact text excerpt from essay that demonstrates this criterion",
+      "commentSuggestion": "specific feedback comment about this excerpt",
+      "score": 8
+    }
+  ]
 }
+
+For the rubricBreakdown array, identify 4-6 specific areas of the essay that need feedback. Use these criteria types:
+- CLARITY (clear expression of ideas)
+- USE OF EVIDENCE (supporting examples and quotes)
+- GRAMMAR (sentence structure and mechanics)
+- ANALYSIS (depth of thinking and argument)
+- ORGANIZATION (structure and flow)
+- THESIS (strength of main argument)
+
+For each criterion, find a specific quote from the essay (evidenceQuote) and provide constructive feedback (commentSuggestion).
 
 Essay to grade:
 ${essayText}
@@ -125,7 +149,8 @@ Please respond with ONLY the JSON object, no additional text.`;
         overallFeedback: generatedText,
         suggestedGrade: "B",
         reasoning: "AI-generated feedback based on essay analysis",
-        confidence: 0.8
+        confidence: 0.8,
+        rubricBreakdown: []
       };
     }
 
