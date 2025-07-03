@@ -63,6 +63,14 @@ const SubmissionDetail = () => {
     }
   }, [submission]);
 
+  useEffect(() => {
+    // Auto-generate AI feedback if we have essay content but no AI response
+    if (submission && submission.essay && !submission.essay.includes('[File') && !aiResponse && !generating) {
+      console.log('Auto-generating AI feedback for extracted text');
+      handleGenerateAIFeedback();
+    }
+  }, [submission?.essay, aiResponse]);
+
   const fetchSubmissionData = async () => {
     try {
       // Fetch submission
