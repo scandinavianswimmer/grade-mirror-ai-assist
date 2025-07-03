@@ -12,6 +12,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { generateGradingFeedback, type GradingResponse } from '@/lib/geminiApi';
+import { getTextFromStoredFile } from '@/lib/fileProcessing';
 
 interface Submission {
   id: string;
@@ -19,6 +20,7 @@ interface Submission {
   student_name: string;
   essay: string;
   file_url: string;
+  submission_storage_path?: string;
   status: string;
   created_at: string;
   ai_feedback?: string;
@@ -41,6 +43,7 @@ const SubmissionDetail = () => {
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [extractingText, setExtractingText] = useState(false);
   const [aiResponse, setAiResponse] = useState<GradingResponse | null>(null);
   const [finalGrade, setFinalGrade] = useState('');
   const [finalFeedback, setFinalFeedback] = useState('');
@@ -93,6 +96,40 @@ const SubmissionDetail = () => {
     }
   };
 
+  const handleExtractText = async () => {
+    if (!submission?.submission_storage_path) return;
+
+    setExtractingText(true);
+    try {
+      const extractedText = await getTextFromStoredFile(submission.submission_storage_path);
+      
+      if (extractedText) {
+        // Update the submission in the database
+        await supabase
+          .from('submissions')
+          .update({ essay: extractedText })
+          .eq('id', submission.id);
+
+        // Update local state
+        setSubmission(prev => prev ? { ...prev, essay: extractedText } : null);
+
+        toast({
+          title: "Text extracted successfully!",
+          description: "The essay text is now available for grading.",
+        });
+      }
+    } catch (error) {
+      console.error('Error extracting text:', error);
+      toast({
+        title: "Text extraction failed",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setExtractingText(false);
+    }
+  };
+
   const handleGenerateAIFeedback = async () => {
     if (!submission || !assignment || !user) return;
 
@@ -137,10 +174,39 @@ const SubmissionDetail = () => {
   };
 
   const renderEssayWithHighlights = () => {
-    if (!submission?.essay || !aiResponse?.inlineComments) {
+    if (!submission?.essay) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-gray-500 mb-4">
+            {submission?.essay?.includes('[File') 
+              ? 'Text extraction is required to view the essay content.'
+              : 'No essay content available.'
+            }
+          </p>
+          {submission?.submission_storage_path && (
+            <Button 
+              onClick={handleExtractText}
+              disabled={extractingText}
+              variant="outline"
+            >
+              {extractingText ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Extracting Text...
+                </>
+              ) : (
+                'Extract Text from Document'
+              )}
+            </Button>
+          )}
+        </div>
+      );
+    }
+
+    if (!aiResponse?.inlineComments) {
       return (
         <div className="prose max-w-none">
-          <p className="whitespace-pre-wrap">{submission?.essay || 'No essay content available.'}</p>
+          <p className="whitespace-pre-wrap">{submission.essay}</p>
         </div>
       );
     }
