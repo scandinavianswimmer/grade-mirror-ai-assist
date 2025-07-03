@@ -54,6 +54,8 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          prompt_instructions: string | null
+          rubric_json: Json | null
           rubric_text: string | null
           rubric_url: string | null
           status: string | null
@@ -69,6 +71,8 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          prompt_instructions?: string | null
+          rubric_json?: Json | null
           rubric_text?: string | null
           rubric_url?: string | null
           status?: string | null
@@ -84,6 +88,8 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          prompt_instructions?: string | null
+          rubric_json?: Json | null
           rubric_text?: string | null
           rubric_url?: string | null
           status?: string | null

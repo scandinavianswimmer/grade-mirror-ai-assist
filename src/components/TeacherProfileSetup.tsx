@@ -48,7 +48,7 @@ const TeacherProfileSetup = ({ onProfileCreated, existingProfile }: TeacherProfi
     try {
       const profileData = {
         user_id: user.id,
-        style_profile_json: profile,
+        style_profile_json: profile as any,
         updated_at: new Date().toISOString()
       };
 

@@ -2,13 +2,14 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Upload, FileText, Download } from 'lucide-react';
+import { ArrowLeft, FileText, Download } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
-import { uploadFile } from '@/lib/fileUpload';
+import { createSubmissionWithFile } from '@/lib/submissionApi';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
+import FileUpload from '@/components/FileUpload';
 
 interface Assignment {
   id: string;
@@ -34,7 +35,6 @@ const AssignmentDetail = () => {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
 
   useEffect(() => {
     if (id && user) {
@@ -76,53 +76,30 @@ const AssignmentDetail = () => {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedFiles(e.target.files);
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFiles || !assignment || !user) return;
+  const handleFileSelect = async (file: File, content: string) => {
+    if (!assignment || !user) return;
 
     setUploading(true);
     try {
-      const uploadPromises = Array.from(selectedFiles).map(async (file) => {
-        // Upload file
-        const uploadResult = await uploadFile(file, 'submissions');
-        if (!uploadResult.success) {
-          throw new Error(`Failed to upload ${file.name}: ${uploadResult.error}`);
-        }
+      // Extract student name from filename (remove extension)
+      const studentName = file.name.replace(/\.[^/.]+$/, "");
 
-        // Extract student name from filename (remove extension)
-        const studentName = file.name.replace(/\.[^/.]+$/, "");
-
-        // Create submission record
-        const { error } = await supabase
-          .from('submissions')
-          .insert({
-            assignment_id: assignment.id,
-            student_name: studentName,
-            file_url: uploadResult.url,
-            status: 'pending'
-          });
-
-        if (error) throw error;
+      // Create submission using the API
+      await createSubmissionWithFile({
+        assignmentId: assignment.id,
+        studentName,
+        file
       });
-
-      await Promise.all(uploadPromises);
 
       toast({
-        title: "Essays uploaded successfully!",
-        description: `${selectedFiles.length} essay(s) uploaded and ready for grading.`
+        title: "Essay uploaded successfully!",
+        description: `${file.name} uploaded and ready for grading.`
       });
 
-      // Reset file input and refresh submissions
-      setSelectedFiles(null);
-      const fileInput = document.getElementById('essay-upload') as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
-      
+      // Refresh submissions
       fetchAssignmentData();
     } catch (error) {
-      console.error('Error uploading essays:', error);
+      console.error('Error uploading essay:', error);
       toast({
         title: "Upload failed",
         description: error instanceof Error ? error.message : "Please try again.",
@@ -212,48 +189,18 @@ const AssignmentDetail = () => {
               <CardTitle>Upload Student Essays for Feedback</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
-                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <div className="text-lg font-medium text-gray-700 mb-2">
-                  Upload Student Essays
+              <FileUpload
+                onFileSelect={handleFileSelect}
+                acceptedTypes={['.pdf', '.docx', '.doc', '.txt']}
+                maxSize={10}
+                placeholder="Upload student essays (PDF, DOCX, or TXT files)"
+                showTextExtraction={false}
+              />
+              {uploading && (
+                <div className="mt-4 text-center">
+                  <div className="text-sm text-gray-600">Processing file...</div>
                 </div>
-                <div className="text-sm text-gray-600 mb-4">
-                  Upload one or more student essays (PDF or DOCX). GradeMirror will analyze them based on your style and the assignment's rubric.
-                </div>
-                <input
-                  id="essay-upload"
-                  type="file"
-                  accept=".pdf,.docx,.doc"
-                  multiple
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <label htmlFor="essay-upload" className="cursor-pointer">
-                  <Button variant="outline">
-                    Choose Files
-                  </Button>
-                </label>
-                
-                {selectedFiles && selectedFiles.length > 0 && (
-                  <div className="mt-4">
-                    <div className="text-sm text-green-600 mb-2">
-                      Selected {selectedFiles.length} file(s):
-                    </div>
-                    <div className="text-xs text-gray-600 max-h-20 overflow-y-auto">
-                      {Array.from(selectedFiles).map((file, index) => (
-                        <div key={index}>{file.name}</div>
-                      ))}
-                    </div>
-                    <Button
-                      onClick={handleUpload}
-                      disabled={uploading}
-                      className="mt-4"
-                    >
-                      {uploading ? 'Uploading...' : 'Get Feedback'}
-                    </Button>
-                  </div>
-                )}
-              </div>
+              )}
             </CardContent>
           </Card>
 
