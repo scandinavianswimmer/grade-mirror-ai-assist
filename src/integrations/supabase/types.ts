@@ -289,6 +289,54 @@ export type Database = {
           },
         ]
       }
+      podcast_episodes: {
+        Row: {
+          audio_url: string | null
+          created_at: string
+          id: string
+          input_notes: string | null
+          script: string | null
+          status: string
+          summary: string | null
+          tags: string[] | null
+          title: string
+          transcript: string | null
+          updated_at: string
+          user_id: string
+          voice_style: string | null
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string
+          id?: string
+          input_notes?: string | null
+          script?: string | null
+          status?: string
+          summary?: string | null
+          tags?: string[] | null
+          title: string
+          transcript?: string | null
+          updated_at?: string
+          user_id: string
+          voice_style?: string | null
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string
+          id?: string
+          input_notes?: string | null
+          script?: string | null
+          status?: string
+          summary?: string | null
+          tags?: string[] | null
+          title?: string
+          transcript?: string | null
+          updated_at?: string
+          user_id?: string
+          voice_style?: string | null
+        }
+        Relationships: []
+      }
       privacy_settings: {
         Row: {
           allow_training_on_content: boolean | null

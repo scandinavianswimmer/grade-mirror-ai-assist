@@ -27,6 +27,8 @@ import UploadTraining from "./pages/UploadTraining";
 import SubmitAssignment from "./pages/SubmitAssignment";
 import Onboarding from "./pages/Onboarding";
 import OnboardingFlow from "./pages/OnboardingFlow";
+import PodcastGenerator from "./pages/PodcastGenerator";
+import PodcastDetail from "./pages/PodcastDetail";
 
 const queryClient = new QueryClient();
 
@@ -230,6 +232,18 @@ const AppContent = () => {
       <Route path="/privacy" element={
         <AuthGuard>
           <PrivacySettings />
+        </AuthGuard>
+      } />
+      
+      <Route path="/podcast-generator" element={
+        <AuthGuard>
+          <PodcastGenerator />
+        </AuthGuard>
+      } />
+      
+      <Route path="/podcast/:id" element={
+        <AuthGuard>
+          <PodcastDetail />
         </AuthGuard>
       } />
       
