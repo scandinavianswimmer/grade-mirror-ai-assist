@@ -74,9 +74,48 @@ const GradingInterface = () => {
     }
   };
 
+  // Parse feedback data correctly - handle both ai_feedback and feedback_json formats
+  let suggestionsList: any[] = [];
+  let parsedFeedback = null;
+  
+  console.log('Submission data:', submission);
+  console.log('AI feedback:', submission?.ai_feedback);
+  console.log('Feedback JSON:', submission?.feedback_json);
+  
+  // Try to get feedback from ai_feedback field first (properly formatted JSON)
+  if (submission?.ai_feedback) {
+    try {
+      parsedFeedback = JSON.parse(submission.ai_feedback.replace(/```json\n|\n```/g, ''));
+      suggestionsList = parsedFeedback.rubricBreakdown || [];
+      console.log('Parsed from ai_feedback:', parsedFeedback);
+      console.log('Suggestions list:', suggestionsList);
+    } catch (error) {
+      console.error('Error parsing ai_feedback:', error);
+    }
+  }
+  
+  // Fallback to feedback_json if no ai_feedback or rubricBreakdown is empty
+  if (suggestionsList.length === 0 && submission?.feedback_json) {
+    // Check if overallFeedback contains JSON string
+    if (submission.feedback_json.overallFeedback && submission.feedback_json.overallFeedback.includes('rubricBreakdown')) {
+      try {
+        const jsonContent = submission.feedback_json.overallFeedback.replace(/```json\n|\n```/g, '');
+        parsedFeedback = JSON.parse(jsonContent);
+        suggestionsList = parsedFeedback.rubricBreakdown || [];
+        console.log('Parsed from feedback_json.overallFeedback:', parsedFeedback);
+      } catch (error) {
+        console.error('Error parsing feedback_json.overallFeedback:', error);
+      }
+    } else {
+      suggestionsList = submission.feedback_json.rubricBreakdown || [];
+    }
+  }
+  
+  console.log('Final suggestions list length:', suggestionsList.length);
+
   const handleTeacherAction = async (index: number, action: 'accept' | 'dismiss') => {
     try {
-      const suggestionItem = submission?.feedback_json?.rubricBreakdown?.[index];
+      const suggestionItem = suggestionsList[index];
       if (!suggestionItem || !submission || !user) return;
 
       await supabase
@@ -142,7 +181,10 @@ const GradingInterface = () => {
         switch (criterion?.toLowerCase()) {
           case 'grammar': return 'decoration-red-500';
           case 'clarity': return 'decoration-blue-500';
-          case 'structure': return 'decoration-green-500';
+          case 'organization': return 'decoration-green-500';
+          case 'analysis': return 'decoration-purple-500';
+          case 'thesis': return 'decoration-orange-500';
+          case 'use of evidence': return 'decoration-pink-500';
           default: return 'decoration-purple-500';
         }
       };
@@ -202,35 +244,6 @@ const GradingInterface = () => {
     );
   }
 
-  // Parse feedback data correctly - handle both ai_feedback and feedback_json formats
-  let suggestionsList = [];
-  let parsedFeedback = null;
-  
-  // Try to get feedback from ai_feedback field first (properly formatted JSON)
-  if (submission.ai_feedback) {
-    try {
-      parsedFeedback = JSON.parse(submission.ai_feedback.replace(/```json\n|\n```/g, ''));
-      suggestionsList = parsedFeedback.rubricBreakdown || [];
-    } catch (error) {
-      console.error('Error parsing ai_feedback:', error);
-    }
-  }
-  
-  // Fallback to feedback_json if no ai_feedback or rubricBreakdown is empty
-  if (suggestionsList.length === 0 && submission.feedback_json) {
-    // Check if overallFeedback contains JSON string
-    if (submission.feedback_json.overallFeedback && submission.feedback_json.overallFeedback.includes('rubricBreakdown')) {
-      try {
-        const jsonContent = submission.feedback_json.overallFeedback.replace(/```json\n|\n```/g, '');
-        parsedFeedback = JSON.parse(jsonContent);
-        suggestionsList = parsedFeedback.rubricBreakdown || [];
-      } catch (error) {
-        console.error('Error parsing feedback_json.overallFeedback:', error);
-      }
-    } else {
-      suggestionsList = submission.feedback_json.rubricBreakdown || [];
-    }
-  }
   
   // Calculate issue counts by category
   const issueCategories = {
@@ -272,11 +285,48 @@ const GradingInterface = () => {
       </header>
 
       {/* Main Grammarly-style Layout */}
-      <div className="flex h-[calc(100vh-80px)]">
+      <div className="flex h-[calc(100vh-80px)] relative">
         {/* Essay Content - Grammarly Style */}
         <div className="flex-1 max-w-4xl mx-auto px-12 py-8 overflow-y-auto">
-          <div className="max-w-3xl">
+          <div className="max-w-3xl relative">
             {renderEssayWithHighlights()}
+            
+            {/* Floating Comment Popup */}
+            {selectedSuggestion !== null && suggestionsList[selectedSuggestion] && (
+              <div className="fixed z-50 bg-white border border-gray-300 rounded-lg shadow-lg p-4 max-w-sm">
+                <div className="text-xs font-medium text-gray-600 uppercase mb-2">
+                  {suggestionsList[selectedSuggestion].criterion}
+                </div>
+                <div className="text-sm text-gray-900 mb-3">
+                  {suggestionsList[selectedSuggestion].commentSuggestion}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      handleTeacherAction(selectedSuggestion, 'accept');
+                      setSelectedSuggestion(null);
+                    }}
+                    className="text-xs flex-1"
+                  >
+                    <Check className="w-3 h-3 mr-1" />
+                    Accept
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      handleTeacherAction(selectedSuggestion, 'dismiss');
+                      setSelectedSuggestion(null);
+                    }}
+                    className="text-xs flex-1"
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Dismiss
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
