@@ -14,6 +14,7 @@ interface Submission {
   student_name: string;
   essay: string;
   feedback_json?: any;
+  ai_feedback?: string;
   ai_score?: number;
 }
 
@@ -120,7 +121,7 @@ const GradingInterface = () => {
   };
 
   const renderEssayWithHighlights = () => {
-    if (!submission?.essay || !submission?.feedback_json?.rubricBreakdown) {
+    if (!submission?.essay || suggestionsList.length === 0) {
       return (
         <div className="prose max-w-none text-gray-800 leading-7 font-light text-base">
           {submission?.essay?.split('\n').map((paragraph, index) => (
@@ -131,9 +132,8 @@ const GradingInterface = () => {
     }
 
     let highlightedText = submission.essay;
-    const breakdown = submission.feedback_json.rubricBreakdown;
     
-    breakdown.forEach((item, index) => {
+    suggestionsList.forEach((item: any, index: number) => {
       const commentId = `comment-${index}`;
       const isSelected = selectedSuggestion === index;
       const isHovered = hoveredCommentId === commentId;
@@ -202,25 +202,55 @@ const GradingInterface = () => {
     );
   }
 
-  const suggestionsList = submission.feedback_json?.rubricBreakdown || [];
+  // Parse feedback data correctly - handle both ai_feedback and feedback_json formats
+  let suggestionsList = [];
+  let parsedFeedback = null;
+  
+  // Try to get feedback from ai_feedback field first (properly formatted JSON)
+  if (submission.ai_feedback) {
+    try {
+      parsedFeedback = JSON.parse(submission.ai_feedback.replace(/```json\n|\n```/g, ''));
+      suggestionsList = parsedFeedback.rubricBreakdown || [];
+    } catch (error) {
+      console.error('Error parsing ai_feedback:', error);
+    }
+  }
+  
+  // Fallback to feedback_json if no ai_feedback or rubricBreakdown is empty
+  if (suggestionsList.length === 0 && submission.feedback_json) {
+    // Check if overallFeedback contains JSON string
+    if (submission.feedback_json.overallFeedback && submission.feedback_json.overallFeedback.includes('rubricBreakdown')) {
+      try {
+        const jsonContent = submission.feedback_json.overallFeedback.replace(/```json\n|\n```/g, '');
+        parsedFeedback = JSON.parse(jsonContent);
+        suggestionsList = parsedFeedback.rubricBreakdown || [];
+      } catch (error) {
+        console.error('Error parsing feedback_json.overallFeedback:', error);
+      }
+    } else {
+      suggestionsList = submission.feedback_json.rubricBreakdown || [];
+    }
+  }
   
   // Calculate issue counts by category
   const issueCategories = {
-    'Grammar': { color: 'text-red-600', count: 0 },
-    'Clarity': { color: 'text-blue-600', count: 0 },
-    'Structure': { color: 'text-green-600', count: 0 },
-    'Style': { color: 'text-purple-600', count: 0 }
+    'GRAMMAR': { color: 'text-red-600', count: 0 },
+    'CLARITY': { color: 'text-blue-600', count: 0 },
+    'ORGANIZATION': { color: 'text-green-600', count: 0 },
+    'ANALYSIS': { color: 'text-purple-600', count: 0 },
+    'THESIS': { color: 'text-orange-600', count: 0 },
+    'USE OF EVIDENCE': { color: 'text-pink-600', count: 0 }
   };
 
-  suggestionsList.forEach((suggestion) => {
-    const category = suggestion.criterion || 'Style';
-    if (issueCategories[category]) {
-      issueCategories[category].count++;
+  suggestionsList.forEach((suggestion: any) => {
+    const category = suggestion.criterion || 'ANALYSIS';
+    if (issueCategories[category as keyof typeof issueCategories]) {
+      issueCategories[category as keyof typeof issueCategories].count++;
     }
   });
 
   const totalIssues = Object.values(issueCategories).reduce((sum, cat) => sum + cat.count, 0);
-  const overallScore = submission?.ai_score || 85;
+  const overallScore = submission?.ai_score || parsedFeedback?.confidence ? Math.round((parsedFeedback.confidence * 100)) : 85;
 
   return (
     <div className="min-h-screen bg-white">
