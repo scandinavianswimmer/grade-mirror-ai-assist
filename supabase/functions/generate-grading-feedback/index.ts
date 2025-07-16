@@ -40,7 +40,13 @@ serve(async (req) => {
     const { essayText, rubricText, trainingData, userId }: GradingRequest = await req.json();
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
+    console.log('Processing grading request for user:', userId);
+    console.log('Essay length:', essayText?.length || 0);
+    console.log('Rubric provided:', !!rubricText);
+    console.log('Gemini API key available:', !!geminiApiKey);
+
     if (!geminiApiKey) {
+      console.error('Gemini API key not configured');
       throw new Error('Gemini API key not configured');
     }
 

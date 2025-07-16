@@ -41,12 +41,24 @@ export const generateGradingFeedback = async (
     });
 
     if (error) {
-      throw new Error(error.message);
+      console.error('Edge function error details:', error);
+      throw new Error(`Edge function error: ${error.message}`);
+    }
+
+    if (!data) {
+      throw new Error('No data received from edge function');
     }
 
     return data as GradingResponse;
   } catch (error) {
     console.error('Gemini API error:', error);
-    throw new Error(error instanceof Error ? error.message : 'Failed to generate feedback');
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('Gemini API key not configured')) {
+        throw new Error('Gemini API key is not configured. Please contact your administrator.');
+      }
+      throw new Error(error.message);
+    }
+    throw new Error('Failed to generate feedback');
   }
 };
