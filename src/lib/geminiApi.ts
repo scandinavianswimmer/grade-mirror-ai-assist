@@ -5,6 +5,12 @@ export interface GradingResponse {
   inlineComments: Array<{
     text: string;
     comment: string;
+    category: string;
+    startIndex?: number;
+    endIndex?: number;
+    commentId?: string;
+    status?: 'pending' | 'accepted' | 'edited' | 'dismissed';
+    popupText?: string;
   }>;
   overallFeedback: string;
   suggestedGrade: string;

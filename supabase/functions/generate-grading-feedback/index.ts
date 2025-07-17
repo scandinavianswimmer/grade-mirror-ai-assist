@@ -18,6 +18,12 @@ interface GradingResponse {
   inlineComments: Array<{
     text: string;
     comment: string;
+    category: string;
+    startIndex?: number;
+    endIndex?: number;
+    commentId?: string;
+    status?: 'pending' | 'accepted' | 'edited' | 'dismissed';
+    popupText?: string;
   }>;
   overallFeedback: string;
   suggestedGrade: string;
@@ -69,13 +75,16 @@ serve(async (req) => {
       ).join('\n\n')}`;
     }
 
-    const prompt = `You are an expert teacher grading a student essay. Please provide detailed feedback following this exact JSON format:
+const prompt = `You are an expert teacher grading a student essay. Please provide detailed feedback following this exact JSON format:
 
 {
   "inlineComments": [
     {
       "text": "specific text from essay",
-      "comment": "your comment about this text"
+      "comment": "your comment about this text",
+      "category": "grammar|clarity|organization|analysis|thesis|evidence",
+      "commentId": "unique-id",
+      "popupText": "short summary for tooltip"
     }
   ],
   "overallFeedback": "comprehensive feedback paragraph",

@@ -297,12 +297,23 @@ const SubmissionDetail = () => {
     return colors[category as keyof typeof colors] || 'border-gray-400 bg-gray-50 hover:bg-gray-100';
   };
 
+  const getCategoryBadgeClass = (category: string) => {
+    const badgeClasses = {
+      grammar: 'bg-red-100 text-red-800 border-red-200',
+      clarity: 'bg-blue-100 text-blue-800 border-blue-200',
+      organization: 'bg-green-100 text-green-800 border-green-200',
+      analysis: 'bg-purple-100 text-purple-800 border-purple-200',
+      thesis: 'bg-orange-100 text-orange-800 border-orange-200',
+      evidence: 'bg-pink-100 text-pink-800 border-pink-200'
+    };
+    return badgeClasses[category as keyof typeof badgeClasses] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
   const renderEssayWithHighlights = () => {
     console.log('Rendering essay with highlights:', {
       hasEssay: !!submission?.essay,
       hasSuggestions: suggestionsList.length > 0,
       suggestionsCount: suggestionsList.length,
-      essayPreview: submission?.essay?.substring(0, 100),
       firstSuggestion: suggestionsList[0]
     });
 
@@ -344,42 +355,77 @@ const SubmissionDetail = () => {
       );
     }
 
-    // Always show the essay content, even if no suggestions yet
-    let highlightedText = submission.essay;
-    
-    // Apply color-coded highlights for each suggestion
-    if (suggestionsList.length > 0) {
-      // Sort suggestions by text length (longer first) to avoid overlap issues
-      const sortedSuggestions = [...suggestionsList]
-        .map((suggestion, index) => ({ ...suggestion, originalIndex: index }))
-        .filter(suggestion => suggestion.text && highlightedText.includes(suggestion.text))
-        .sort((a, b) => (b.text?.length || 0) - (a.text?.length || 0));
+    // Always show the essay content, even if no suggestions
+    const essayText = submission.essay;
+    let processedEssay = essayText;
 
-      sortedSuggestions.forEach((suggestion) => {
-        const index = suggestion.originalIndex;
-        const category = suggestion.category || 'general';
-        const action = teacherActions[index];
-        const colorClass = getColorForCategory(category, action);
-        
-        // Create a unique identifier for this highlight
-        const highlightId = `highlight-${index}`;
-        
-        const highlightClass = `cursor-pointer transition-all duration-200 border-b-2 px-1 py-0.5 rounded-sm ${colorClass}`;
-        
-        // Only replace if the exact text exists and hasn't been replaced yet
-        if (highlightedText.includes(suggestion.text) && !highlightedText.includes(`data-comment-index="${index}"`)) {
-          highlightedText = highlightedText.replace(
-            suggestion.text,
-            `<span 
-              class="${highlightClass}" 
-              data-comment-index="${index}"
-              data-category="${category}"
-              id="${highlightId}"
-              title="Click to view comment: ${suggestion.comment?.substring(0, 50)}..."
-            >${suggestion.text}</span>`
-          );
+    if (suggestionsList.length > 0) {
+      // First, add unique IDs to comments if they don't have them
+      const enhancedSuggestions = suggestionsList.map((suggestion, index) => ({
+        ...suggestion,
+        commentId: suggestion.commentId || `comment-${index}`,
+        originalIndex: index
+      }));
+
+      // Find positions of each suggestion in the essay if not already provided
+      const suggestionsWithPositions = enhancedSuggestions.map(suggestion => {
+        if (suggestion.startIndex !== undefined && suggestion.endIndex !== undefined) {
+          return suggestion;
         }
-      });
+        
+        const textToFind = suggestion.text;
+        const startIndex = essayText.indexOf(textToFind);
+        if (startIndex >= 0) {
+          const endIndex = startIndex + textToFind.length;
+          return {
+            ...suggestion,
+            startIndex,
+            endIndex
+          };
+        }
+        return suggestion;
+      }).filter(s => s.startIndex !== undefined && s.startIndex >= 0);
+
+      // Sort by start position to ensure we process from beginning to end
+      suggestionsWithPositions.sort((a, b) => (a.startIndex || 0) - (b.startIndex || 0));
+      
+      // Build highlighted HTML by processing each segment
+      let lastIndex = 0;
+      let result = '';
+      
+      for (const suggestion of suggestionsWithPositions) {
+        const startIdx = suggestion.startIndex as number;
+        const endIdx = suggestion.endIndex as number;
+        
+        if (startIdx >= lastIndex) {
+          // Add text before this highlight
+          result += processedEssay.substring(lastIndex, startIdx);
+          
+          // Get styling based on category
+          const category = suggestion.category || 'general';
+          const action = teacherActions[suggestion.originalIndex];
+          const colorClass = getColorForCategory(category, action);
+          
+          // Create the highlighted span
+          result += `<span 
+            class="cursor-pointer transition-all duration-200 border-b-2 px-1 py-0.5 rounded-sm ${colorClass}" 
+            data-comment-id="${suggestion.commentId}"
+            data-comment-index="${suggestion.originalIndex}"
+            data-category="${category}"
+            title="${suggestion.popupText || 'Click to view comment'}"
+          >${processedEssay.substring(startIdx, endIdx)}</span>`;
+          
+          // Update last processed index
+          lastIndex = endIdx;
+        }
+      }
+      
+      // Add any remaining text after the last highlight
+      if (lastIndex < processedEssay.length) {
+        result += processedEssay.substring(lastIndex);
+      }
+      
+      processedEssay = result;
     }
 
     return (
@@ -387,7 +433,7 @@ const SubmissionDetail = () => {
         <div 
           className="prose max-w-none leading-relaxed text-base"
           dangerouslySetInnerHTML={{ 
-            __html: highlightedText.replace(/\n/g, '<br/>').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
+            __html: processedEssay.replace(/\n/g, '<br/>').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
           }}
           onClick={(e) => {
             const target = e.target as HTMLElement;
@@ -400,16 +446,16 @@ const SubmissionDetail = () => {
               const rect = target.getBoundingClientRect();
               setActiveCommentPopup({
                 index,
-                position: { x: rect.left + rect.width / 2, y: rect.bottom + 10 }
+                position: { x: rect.left + rect.width / 2, y: rect.bottom + 5 }
               });
             }
           }}
         />
         
-        {/* Comment Popup */}
+        {/* Tooltip-style Comment Popup */}
         {activeCommentPopup && (
           <div 
-            className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm animate-fade-in"
+            className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm animate-in fade-in-0 zoom-in-95"
             style={{
               left: `${activeCommentPopup.position.x}px`,
               top: `${activeCommentPopup.position.y}px`,
@@ -418,7 +464,9 @@ const SubmissionDetail = () => {
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Badge variant="outline" className="text-xs">
+                <Badge 
+                  className={`text-xs ${getCategoryBadgeClass(suggestionsList[activeCommentPopup.index]?.category || 'general')}`}
+                >
                   {suggestionsList[activeCommentPopup.index]?.category || 'general'}
                 </Badge>
                 <Button
@@ -657,9 +705,9 @@ const SubmissionDetail = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-6">
+                <div className="py-3">
                   <p className="text-sm text-gray-600 mb-2">Click on highlighted text in the essay to review comments</p>
-                  <div className="flex flex-wrap gap-2 justify-center">
+                  <div className="flex flex-wrap gap-2 justify-center mb-4">
                     <div className="flex items-center gap-1">
                       <div className="w-3 h-3 border-2 border-red-400 bg-red-50 rounded-sm"></div>
                       <span className="text-xs text-gray-600">Grammar</span>
@@ -679,28 +727,81 @@ const SubmissionDetail = () => {
                   </div>
                   
                   {suggestionsList.length > 0 && (
-                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                      <p className="text-sm font-medium text-gray-700 mb-2">
-                        {suggestionsList.length} comments available
-                      </p>
-                      <div className="flex justify-center gap-4 text-xs text-gray-600">
-                        <span>
-                          <span className="font-medium text-green-600">
-                            {Object.values(teacherActions).filter(a => a === 'approved').length}
-                          </span> approved
-                        </span>
-                        <span>
-                          <span className="font-medium text-gray-600">
-                            {Object.values(teacherActions).filter(a => a === 'declined').length}
-                          </span> declined
-                        </span>
-                        <span>
-                          <span className="font-medium text-blue-600">
-                            {Object.values(teacherActions).filter(a => a === 'modified').length}
-                          </span> modified
-                        </span>
+                    <>
+                      <div className="flex justify-between items-center mb-3 border-b pb-2">
+                        <p className="text-sm font-medium text-gray-700">
+                          {suggestionsList.length} comments
+                        </p>
+                        <div className="flex gap-3 text-xs text-gray-600">
+                          <span>
+                            <span className="font-medium text-green-600">
+                              {Object.values(teacherActions).filter(a => a === 'approved').length}
+                            </span> approved
+                          </span>
+                          <span>
+                            <span className="font-medium text-gray-600">
+                              {Object.values(teacherActions).filter(a => a === 'declined').length}
+                            </span> declined
+                          </span>
+                          <span>
+                            <span className="font-medium text-blue-600">
+                              {Object.values(teacherActions).filter(a => a === 'modified').length}
+                            </span> modified
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                      
+                      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                        {suggestionsList.map((suggestion, index) => {
+                          const action = teacherActions[index];
+                          const category = suggestion.category || 'general';
+                          return (
+                            <div 
+                              key={`suggestion-${index}`}
+                              className={`border rounded-md p-3 cursor-pointer transition-all ${
+                                selectedCommentIndex === index ? 'border-primary bg-primary-50' : 'border-gray-200 hover:border-gray-300'
+                              } ${action === 'declined' ? 'opacity-50' : ''}`}
+                              onClick={() => {
+                                // Find the highlight in the document and scroll to it
+                                const highlight = document.querySelector(`[data-comment-index="${index}"]`);
+                                if (highlight) {
+                                  highlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                  // Wait for the scroll to complete before showing the popup
+                                  setTimeout(() => {
+                                    const rect = (highlight as HTMLElement).getBoundingClientRect();
+                                    setActiveCommentPopup({
+                                      index,
+                                      position: { x: rect.left + rect.width / 2, y: rect.bottom + 5 }
+                                    });
+                                  }, 500);
+                                }
+                              }}
+                            >
+                              <div className="flex justify-between items-start">
+                                <Badge 
+                                  className={`mb-2 ${getCategoryBadgeClass(category)}`}
+                                >
+                                  {category}
+                                </Badge>
+                                {action && (
+                                  <Badge variant={action === 'approved' ? 'default' : 'secondary'} className="text-xs">
+                                    {action}
+                                  </Badge>
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500 italic mb-1 line-clamp-1">
+                                  "{suggestion.text}"
+                                </p>
+                                <p className="text-sm text-gray-700 line-clamp-2">
+                                  {suggestion.comment}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
                   )}
                 </div>
               </CardContent>
