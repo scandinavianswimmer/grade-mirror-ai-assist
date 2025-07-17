@@ -342,48 +342,50 @@ const SubmissionDetail = () => {
       );
     }
 
-    if (suggestionsList.length === 0) {
-      return (
-        <div className="prose max-w-none">
-          <p className="whitespace-pre-wrap leading-relaxed">{submission.essay}</p>
-        </div>
-      );
-    }
-
+    // Always show the essay content, even if no suggestions yet
     let highlightedText = submission.essay;
     
     // Apply color-coded highlights for each suggestion
-    suggestionsList.forEach((suggestion, index) => {
-      if (suggestion.text && highlightedText.includes(suggestion.text)) {
+    if (suggestionsList.length > 0) {
+      // Sort suggestions by text length (longer first) to avoid overlap issues
+      const sortedSuggestions = [...suggestionsList]
+        .map((suggestion, index) => ({ ...suggestion, originalIndex: index }))
+        .filter(suggestion => suggestion.text && highlightedText.includes(suggestion.text))
+        .sort((a, b) => (b.text?.length || 0) - (a.text?.length || 0));
+
+      sortedSuggestions.forEach((suggestion) => {
+        const index = suggestion.originalIndex;
         const category = suggestion.category || 'general';
         const action = teacherActions[index];
         const colorClass = getColorForCategory(category, action);
-        const isSelected = selectedCommentIndex === index;
         
-        const highlightClass = `
-          cursor-pointer transition-all duration-200 border-b-2 px-1 py-0.5 rounded-sm
-          ${colorClass}
-          ${isSelected ? 'ring-2 ring-blue-300' : ''}
-        `.trim();
+        // Create a unique identifier for this highlight
+        const highlightId = `highlight-${index}`;
         
-        highlightedText = highlightedText.replace(
-          suggestion.text,
-          `<span 
-            class="${highlightClass}" 
-            data-comment-index="${index}"
-            data-category="${category}"
-            title="Click to view comment"
-          >${suggestion.text}</span>`
-        );
-      }
-    });
+        const highlightClass = `cursor-pointer transition-all duration-200 border-b-2 px-1 py-0.5 rounded-sm ${colorClass}`;
+        
+        // Only replace if the exact text exists and hasn't been replaced yet
+        if (highlightedText.includes(suggestion.text) && !highlightedText.includes(`data-comment-index="${index}"`)) {
+          highlightedText = highlightedText.replace(
+            suggestion.text,
+            `<span 
+              class="${highlightClass}" 
+              data-comment-index="${index}"
+              data-category="${category}"
+              id="${highlightId}"
+              title="Click to view comment: ${suggestion.comment?.substring(0, 50)}..."
+            >${suggestion.text}</span>`
+          );
+        }
+      });
+    }
 
     return (
       <div className="relative">
         <div 
-          className="prose max-w-none leading-relaxed"
+          className="prose max-w-none leading-relaxed text-base"
           dangerouslySetInnerHTML={{ 
-            __html: highlightedText.replace(/\n/g, '<br/>')
+            __html: highlightedText.replace(/\n/g, '<br/>').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
           }}
           onClick={(e) => {
             const target = e.target as HTMLElement;
