@@ -301,7 +301,9 @@ const SubmissionDetail = () => {
     console.log('Rendering essay with highlights:', {
       hasEssay: !!submission?.essay,
       hasSuggestions: suggestionsList.length > 0,
-      suggestionsCount: suggestionsList.length
+      suggestionsCount: suggestionsList.length,
+      essayPreview: submission?.essay?.substring(0, 100),
+      firstSuggestion: suggestionsList[0]
     });
 
     if (!submission?.essay || submission.essay.trim() === '' || submission.essay.includes('[File')) {
