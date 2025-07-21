@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Brain, Loader2, FileText, MessageSquare, Check, X, Target, Edit3 } from 'lucide-react';
+import { ArrowLeft, Brain, Loader2, FileText, MessageSquare, Check, X, Target, Edit3, RotateCcw, ChevronDown, ChevronUp, Lightbulb } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Textarea } from '@/components/ui/textarea';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +35,21 @@ interface Assignment {
   description?: string;
 }
 
+interface FeedbackTile {
+  category: string;
+  score: number;
+  summary: string;
+  details: string;
+  examples: string[];
+}
+
+interface VocabularyCard {
+  word: string;
+  suggestions: string[];
+  reason: string;
+  position: number;
+}
+
 const SubmissionDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -48,6 +66,13 @@ const SubmissionDetail = () => {
   const [activeCommentPopup, setActiveCommentPopup] = useState<{index: number, position: {x: number, y: number}} | null>(null);
   const [modifyingComment, setModifyingComment] = useState<number | null>(null);
   const [modifiedText, setModifiedText] = useState<string>('');
+  const [essayText, setEssayText] = useState<string>('');
+  const [liveFeedback, setLiveFeedback] = useState(false);
+  const [expandedTiles, setExpandedTiles] = useState<{[key: string]: boolean}>({});
+  const [overallScore, setOverallScore] = useState<number>(0);
+  const [feedbackTiles, setFeedbackTiles] = useState<FeedbackTile[]>([]);
+  const [vocabularyCards, setVocabularyCards] = useState<VocabularyCard[]>([]);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (id && user) {
@@ -75,6 +100,18 @@ const SubmissionDetail = () => {
     }
   }, [submission?.essay, aiResponse]);
 
+  useEffect(() => {
+    if (submission?.essay) {
+      setEssayText(submission.essay);
+    }
+  }, [submission]);
+
+  useEffect(() => {
+    if (aiResponse) {
+      processAIResponse(aiResponse);
+    }
+  }, [aiResponse]);
+
   const fetchSubmissionData = async () => {
     try {
       // Fetch submission
@@ -92,6 +129,7 @@ const SubmissionDetail = () => {
         const aiData = submissionData.feedback_json as unknown as GradingResponse;
         setAiResponse(aiData);
         setSuggestionsList(aiData.inlineComments || []);
+        processAIResponse(aiData);
       }
 
       // Fetch assignment details
@@ -281,20 +319,116 @@ const SubmissionDetail = () => {
     }
   };
 
+  const processAIResponse = (response: GradingResponse) => {
+    // Calculate overall score
+    const score = parseInt(response.suggestedGrade?.replace(/[^\d]/g, '') || '0');
+    setOverallScore(score);
+
+    // Process feedback into tiles
+    const tiles: FeedbackTile[] = [
+      {
+        category: 'Grammar',
+        score: Math.round(Math.random() * 3 + 7), // Mock scores for demo
+        summary: 'Minor grammar issues found',
+        details: 'Found several instances of subject-verb disagreement and comma splices. Focus on sentence structure.',
+        examples: ['Line 1: "The students is" should be "The students are"']
+      },
+      {
+        category: 'Clarity',
+        score: Math.round(Math.random() * 3 + 7),
+        summary: 'Writing could be clearer',
+        details: 'Some sentences are overly complex and could benefit from simplification.',
+        examples: ['Paragraph 2: Consider breaking down long sentences']
+      },
+      {
+        category: 'Vocabulary',
+        score: Math.round(Math.random() * 3 + 7),
+        summary: 'Good word choice overall',
+        details: 'Vocabulary is appropriate but some words are overused.',
+        examples: ['Word "important" appears 5 times']
+      },
+      {
+        category: 'Organization',
+        score: Math.round(Math.random() * 3 + 7),
+        summary: 'Well-structured essay',
+        details: 'Clear introduction, body, and conclusion. Good use of transitions.',
+        examples: ['Strong thesis statement', 'Logical paragraph flow']
+      },
+      {
+        category: 'Analysis',
+        score: Math.round(Math.random() * 3 + 7),
+        summary: 'Analysis needs depth',
+        details: 'Arguments are present but need more supporting evidence.',
+        examples: ['Add more specific examples', 'Strengthen counterarguments']
+      },
+      {
+        category: 'Thesis',
+        score: Math.round(Math.random() * 3 + 7),
+        summary: 'Clear thesis statement',
+        details: 'Thesis is well-defined and arguable.',
+        examples: ['Strong position taken', 'Could be more specific']
+      }
+    ];
+    setFeedbackTiles(tiles);
+
+    // Process vocabulary suggestions
+    const vocab: VocabularyCard[] = [
+      { word: 'important', suggestions: ['crucial', 'vital', 'significant'], reason: 'Overused word', position: 45 },
+      { word: 'good', suggestions: ['excellent', 'effective', 'beneficial'], reason: 'Vague adjective', position: 123 },
+      { word: 'things', suggestions: ['elements', 'factors', 'aspects'], reason: 'Too general', position: 234 }
+    ];
+    setVocabularyCards(vocab);
+  };
+
+  const toggleTile = (category: string) => {
+    setExpandedTiles(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
+
+  const handleEssayEdit = (newText: string) => {
+    setEssayText(newText);
+    if (liveFeedback) {
+      // Implement live feedback regeneration here
+      console.log('Live feedback would regenerate here');
+    }
+  };
+
+  const getCategoryColor = (category: string) => {
+    const colors = {
+      grammar: 'text-red-600 bg-red-50 border-red-200',
+      clarity: 'text-blue-600 bg-blue-50 border-blue-200',
+      'word choice': 'text-yellow-600 bg-yellow-50 border-yellow-200',
+      evidence: 'text-green-600 bg-green-50 border-green-200',
+      vocabulary: 'text-yellow-600 bg-yellow-50 border-yellow-200',
+      organization: 'text-green-600 bg-green-50 border-green-200',
+      analysis: 'text-purple-600 bg-purple-50 border-purple-200',
+      thesis: 'text-orange-600 bg-orange-50 border-orange-200'
+    };
+    return colors[category.toLowerCase() as keyof typeof colors] || 'text-gray-600 bg-gray-50 border-gray-200';
+  };
+
+  const getHighlightColor = (category: string) => {
+    const colors = {
+      grammar: 'border-b-2 border-red-400 bg-red-50 hover:bg-red-100',
+      clarity: 'border-b-2 border-blue-400 bg-blue-50 hover:bg-blue-100',
+      'word choice': 'border-b-2 border-yellow-400 bg-yellow-50 hover:bg-yellow-100',
+      evidence: 'border-b-2 border-green-400 bg-green-50 hover:bg-green-100',
+      vocabulary: 'border-b-2 border-yellow-400 bg-yellow-50 hover:bg-yellow-100',
+      organization: 'border-b-2 border-green-400 bg-green-50 hover:bg-green-100',
+      analysis: 'border-b-2 border-purple-400 bg-purple-50 hover:bg-purple-100',
+      thesis: 'border-b-2 border-orange-400 bg-orange-50 hover:bg-orange-100'
+    };
+    return colors[category.toLowerCase() as keyof typeof colors] || 'border-b-2 border-gray-400 bg-gray-50 hover:bg-gray-100';
+  };
+
   const getColorForCategory = (category: string, action?: string) => {
     if (action === 'approved') return 'border-green-500 bg-green-100';
     if (action === 'declined') return 'border-gray-400 bg-gray-100 opacity-50';
     if (action === 'modified') return 'border-blue-500 bg-blue-100';
     
-    const colors = {
-      grammar: 'border-red-400 bg-red-50 hover:bg-red-100',
-      clarity: 'border-blue-400 bg-blue-50 hover:bg-blue-100', 
-      organization: 'border-green-400 bg-green-50 hover:bg-green-100',
-      analysis: 'border-purple-400 bg-purple-50 hover:bg-purple-100',
-      thesis: 'border-orange-400 bg-orange-50 hover:bg-orange-100',
-      evidence: 'border-pink-400 bg-pink-50 hover:bg-pink-100'
-    };
-    return colors[category as keyof typeof colors] || 'border-gray-400 bg-gray-50 hover:bg-gray-100';
+    return getHighlightColor(category);
   };
 
   const getCategoryBadgeClass = (category: string) => {
@@ -304,70 +438,57 @@ const SubmissionDetail = () => {
       organization: 'bg-green-100 text-green-800 border-green-200',
       analysis: 'bg-purple-100 text-purple-800 border-purple-200',
       thesis: 'bg-orange-100 text-orange-800 border-orange-200',
-      evidence: 'bg-pink-100 text-pink-800 border-pink-200'
+      evidence: 'bg-pink-100 text-pink-800 border-pink-200',
+      vocabulary: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      'word choice': 'bg-yellow-100 text-yellow-800 border-yellow-200'
     };
     return badgeClasses[category as keyof typeof badgeClasses] || 'bg-gray-100 text-gray-800 border-gray-200';
   };
 
   const renderEssayWithHighlights = () => {
-    console.log('Rendering essay with highlights:', {
-      hasEssay: !!submission?.essay,
-      hasSuggestions: suggestionsList.length > 0,
-      suggestionsCount: suggestionsList.length,
-      firstSuggestion: suggestionsList[0]
-    });
-
-    if (!submission?.essay || submission.essay.trim() === '' || submission.essay.includes('[File')) {
+    if (!essayText || essayText.trim() === '' || essayText.includes('[File')) {
       return (
-        <div className="text-center py-8">
-          <p className="text-gray-500 mb-4">
+        <div className="text-center py-8 text-gray-500">
+          <p className="mb-4">
             {submission?.submission_storage_path 
               ? 'Document uploaded but text not extracted yet.'
               : 'No essay content available.'
             }
           </p>
           {submission?.submission_storage_path && (
-            <div className="space-y-2">
-              <p className="text-sm text-gray-400 mb-2">
-                Storage path: {submission.submission_storage_path}
-              </p>
-              <Button 
-                onClick={handleExtractText}
-                disabled={extractingText}
-                variant="outline"
-                size="lg"
-              >
-                {extractingText ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Extracting Text...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="w-4 h-4 mr-2" />
-                    Extract Text from Document
-                  </>
-                )}
-              </Button>
-            </div>
+            <Button 
+              onClick={handleExtractText}
+              disabled={extractingText}
+              variant="outline"
+              size="lg"
+            >
+              {extractingText ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Extracting Text...
+                </>
+              ) : (
+                <>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Extract Text from Document
+                </>
+              )}
+            </Button>
           )}
         </div>
       );
     }
 
-    // Always show the essay content, even if no suggestions
-    const essayText = submission.essay;
-    let processedEssay = essayText;
+    let processedText = essayText;
 
+    // Apply highlights if we have suggestions
     if (suggestionsList.length > 0) {
-      // First, add unique IDs to comments if they don't have them
       const enhancedSuggestions = suggestionsList.map((suggestion, index) => ({
         ...suggestion,
         commentId: suggestion.commentId || `comment-${index}`,
         originalIndex: index
       }));
 
-      // Find positions of each suggestion in the essay if not already provided
       const suggestionsWithPositions = enhancedSuggestions.map(suggestion => {
         if (suggestion.startIndex !== undefined && suggestion.endIndex !== undefined) {
           return suggestion;
@@ -386,10 +507,8 @@ const SubmissionDetail = () => {
         return suggestion;
       }).filter(s => s.startIndex !== undefined && s.startIndex >= 0);
 
-      // Sort by start position to ensure we process from beginning to end
       suggestionsWithPositions.sort((a, b) => (a.startIndex || 0) - (b.startIndex || 0));
       
-      // Build highlighted HTML by processing each segment
       let lastIndex = 0;
       let result = '';
       
@@ -398,42 +517,44 @@ const SubmissionDetail = () => {
         const endIdx = suggestion.endIndex as number;
         
         if (startIdx >= lastIndex) {
-          // Add text before this highlight
-          result += processedEssay.substring(lastIndex, startIdx);
+          result += processedText.substring(lastIndex, startIdx);
           
-          // Get styling based on category
           const category = suggestion.category || 'general';
           const action = teacherActions[suggestion.originalIndex];
           const colorClass = getColorForCategory(category, action);
           
-          // Create the highlighted span
           result += `<span 
-            class="cursor-pointer transition-all duration-200 border-b-2 px-1 py-0.5 rounded-sm ${colorClass}" 
+            class="cursor-pointer transition-all duration-200 px-1 py-0.5 rounded-sm ${colorClass}" 
             data-comment-id="${suggestion.commentId}"
             data-comment-index="${suggestion.originalIndex}"
             data-category="${category}"
-            title="${suggestion.popupText || 'Click to view comment'}"
-          >${processedEssay.substring(startIdx, endIdx)}</span>`;
+            title="${suggestion.popupText || suggestion.comment || 'Click to view comment'}"
+          >${processedText.substring(startIdx, endIdx)}</span>`;
           
-          // Update last processed index
           lastIndex = endIdx;
         }
       }
       
-      // Add any remaining text after the last highlight
-      if (lastIndex < processedEssay.length) {
-        result += processedEssay.substring(lastIndex);
+      if (lastIndex < processedText.length) {
+        result += processedText.substring(lastIndex);
       }
       
-      processedEssay = result;
+      processedText = result;
     }
 
     return (
       <div className="relative">
         <div 
-          className="prose max-w-none leading-relaxed text-base"
+          ref={editorRef}
+          className="prose max-w-none leading-relaxed text-base font-['Inter'] min-h-[400px] focus:outline-none p-4 border rounded-lg bg-white"
+          contentEditable={true}
+          suppressContentEditableWarning={true}
           dangerouslySetInnerHTML={{ 
-            __html: processedEssay.replace(/\n/g, '<br/>').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
+            __html: processedText.replace(/\n/g, '<br/>').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
+          }}
+          onInput={(e) => {
+            const target = e.target as HTMLDivElement;
+            handleEssayEdit(target.innerText);
           }}
           onClick={(e) => {
             const target = e.target as HTMLElement;
@@ -442,7 +563,6 @@ const SubmissionDetail = () => {
               const index = parseInt(commentIndex);
               setSelectedCommentIndex(index);
               
-              // Get click position for popup
               const rect = target.getBoundingClientRect();
               setActiveCommentPopup({
                 index,
@@ -452,10 +572,10 @@ const SubmissionDetail = () => {
           }}
         />
         
-        {/* Tooltip-style Comment Popup */}
-        {activeCommentPopup && (
+        {/* Comment Popup */}
+        {activeCommentPopup && suggestionsList[activeCommentPopup.index] && (
           <div 
-            className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm animate-in fade-in-0 zoom-in-95"
+            className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-xl p-4 max-w-sm animate-in fade-in-0 zoom-in-95"
             style={{
               left: `${activeCommentPopup.position.x}px`,
               top: `${activeCommentPopup.position.y}px`,
@@ -481,90 +601,79 @@ const SubmissionDetail = () => {
               
               <div>
                 <p className="text-xs text-gray-600 mb-2 italic">
-                  "{suggestionsList[activeCommentPopup.index]?.text?.substring(0, 50)}..."
+                  "{suggestionsList[activeCommentPopup.index]?.text}"
                 </p>
-                
-                {modifyingComment === activeCommentPopup.index ? (
-                  <div className="space-y-2">
-                    <textarea
-                      value={modifiedText}
-                      onChange={(e) => setModifiedText(e.target.value)}
-                      className="w-full text-sm border rounded p-2 h-20 resize-none"
-                      placeholder="Enter your modified comment..."
-                    />
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant="default"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => handleTeacherAction(activeCommentPopup.index, 'modified', modifiedText)}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => {
-                          setModifyingComment(null);
-                          setModifiedText('');
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-sm text-gray-800 mb-3">
-                      {suggestionsList[activeCommentPopup.index]?.comment}
-                    </p>
-                    
-                    {!teacherActions[activeCommentPopup.index] && (
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="default"
-                          className="h-7 px-2 text-xs bg-green-600 hover:bg-green-700"
-                          onClick={() => handleTeacherAction(activeCommentPopup.index, 'approved')}
-                        >
-                          <Check className="w-3 h-3 mr-1" />
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 px-2 text-xs"
-                          onClick={() => handleTeacherAction(activeCommentPopup.index, 'declined')}
-                        >
-                          <X className="w-3 h-3 mr-1" />
-                          Decline
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 px-2 text-xs"
-                          onClick={() => {
-                            setModifyingComment(activeCommentPopup.index);
-                            setModifiedText(suggestionsList[activeCommentPopup.index]?.comment || '');
-                          }}
-                        >
-                          <Edit3 className="w-3 h-3 mr-1" />
-                          Modify
-                        </Button>
-                      </div>
-                    )}
-                    
-                    {teacherActions[activeCommentPopup.index] && (
-                      <div className="text-center">
-                        <Badge variant={teacherActions[activeCommentPopup.index] === 'approved' ? 'default' : 'secondary'}>
-                          {teacherActions[activeCommentPopup.index]}
-                        </Badge>
-                      </div>
-                    )}
-                  </>
-                )}
+                <p className="text-sm text-gray-800">
+                  {suggestionsList[activeCommentPopup.index]?.comment}
+                </p>
               </div>
+              
+              {modifyingComment === activeCommentPopup.index ? (
+                <div className="space-y-2">
+                  <Textarea
+                    value={modifiedText}
+                    onChange={(e) => setModifiedText(e.target.value)}
+                    placeholder="Edit the comment..."
+                    className="text-sm"
+                    rows={3}
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        handleTeacherAction(activeCommentPopup.index, 'modified', modifiedText);
+                      }}
+                      className="flex-1"
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setModifyingComment(null);
+                        setModifiedText('');
+                      }}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleTeacherAction(activeCommentPopup.index, 'approved')}
+                    className="flex-1 text-green-600 border-green-200 hover:bg-green-50"
+                  >
+                    <Check className="w-3 h-3 mr-1" />
+                    Accept
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setModifyingComment(activeCommentPopup.index);
+                      setModifiedText(suggestionsList[activeCommentPopup.index]?.comment || '');
+                    }}
+                    className="flex-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    <Edit3 className="w-3 h-3 mr-1" />
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleTeacherAction(activeCommentPopup.index, 'declined')}
+                    className="flex-1 text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Dismiss
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -574,11 +683,11 @@ const SubmissionDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-gray-50">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center py-12">
-            <div className="text-lg font-medium">Loading submission...</div>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="w-8 h-8 animate-spin" />
           </div>
         </div>
       </div>
@@ -587,13 +696,16 @@ const SubmissionDetail = () => {
 
   if (!submission || !assignment) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-gray-50">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center py-12">
-            <div className="text-lg font-medium text-red-600">Submission not found</div>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Submission not found</h2>
             <Link to="/dashboard">
-              <Button className="mt-4">Back to Dashboard</Button>
+              <Button variant="outline">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Dashboard
+              </Button>
             </Link>
           </div>
         </div>
@@ -602,210 +714,257 @@ const SubmissionDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 font-['Inter']">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-4 mb-4">
-            <Link to={`/assignment/${assignment.id}`}>
-              <Button variant="outline" size="sm">
+            <Link to="/dashboard">
+              <Button variant="ghost" size="sm" className="text-gray-600">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Assignment
+                Back to Dashboard
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{assignment.title}</h1>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant="outline">{submission.student_name}</Badge>
-                <Badge variant={submission.status === 'ai_graded' ? 'default' : 'secondary'}>
-                  {submission.status.replace('_', ' ').toUpperCase()}
-                </Badge>
-                {aiResponse && (
-                  <Badge className="bg-green-100 text-green-800">
-                    AI Confidence: {Math.round(aiResponse.confidence * 100)}%
-                  </Badge>
-                )}
-              </div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {assignment.title}
+              </h1>
+              <p className="text-gray-600 text-sm">
+                {submission.student_name} • Submitted {new Date(submission.created_at).toLocaleDateString()}
+              </p>
             </div>
+          </div>
+          
+          <div className="flex gap-3 mb-6">
+            <Button 
+              onClick={handleGenerateAIFeedback} 
+              disabled={generating || !essayText}
+              className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Analyzing Essay...
+                </>
+              ) : (
+                <>
+                  <Brain className="w-4 h-4 mr-2" />
+                  {aiResponse ? 'Re-analyze' : 'Analyze'} Essay
+                </>
+              )}
+            </Button>
+            
+            {aiResponse && (
+              <Button 
+                variant="outline"
+                onClick={() => setLiveFeedback(!liveFeedback)}
+                className={`shadow-sm ${liveFeedback ? 'bg-green-50 border-green-200 text-green-700' : ''}`}
+              >
+                <Target className={`w-4 h-4 mr-2 ${liveFeedback ? 'text-green-600' : ''}`} />
+                Live Feedback {liveFeedback ? 'On' : 'Off'}
+              </Button>
+            )}
+            
+            <Button variant="outline" className="shadow-sm">
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Regenerate All
+            </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Essay Content */}
-          <div className="lg:col-span-2">
-            <Card className="h-full">
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="w-5 h-5" />
-                    Student Essay
-                  </CardTitle>
-                  <Button 
-                    onClick={handleGenerateAIFeedback}
-                    disabled={generating}
-                    variant={aiResponse ? "outline" : "default"}
-                    size="sm"
-                  >
-                    {generating ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Brain className="w-4 h-4 mr-2" />
-                        {aiResponse ? 'Regenerate' : 'Generate'} AI Feedback
-                      </>
-                    )}
-                  </Button>
+        {/* Main Content - Grammarly Style Two Panel Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-240px)]">
+          
+          {/* Left Panel - Interactive Essay Editor */}
+          <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 bg-white">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <FileText className="w-5 h-5 mr-2 text-blue-600" />
+                  Essay Editor
+                </h2>
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <span>{essayText.length} characters</span>
+                  <span>•</span>
+                  <span>{suggestionsList.length} suggestions</span>
                 </div>
-              </CardHeader>
-              <CardContent>
-                {renderEssayWithHighlights()}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+            <div className="p-6 h-full overflow-y-auto">
+              {renderEssayWithHighlights()}
+            </div>
           </div>
 
-          {/* AI Suggestions Panel */}
-          <div className="space-y-4">
-            {/* Overall Score Card */}
-            {aiResponse && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Overall Assessment</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">AI Confidence</span>
-                      <Badge variant="outline">
-                        {Math.round((aiResponse.confidence || 0) * 100)}%
-                      </Badge>
+          {/* Right Panel - Feedback Sidebar */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 bg-white">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                <MessageSquare className="w-5 h-5 mr-2 text-blue-600" />
+                Writing Assistant
+              </h2>
+            </div>
+            
+            <div className="p-6 h-full overflow-y-auto space-y-6">
+              
+              {/* Overall Score Ring */}
+              {aiResponse && (
+                <div className="text-center bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6">
+                  <div className="relative w-20 h-20 mx-auto mb-3">
+                    <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 100 100">
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="35"
+                        stroke="currentColor"
+                        strokeWidth="6"
+                        fill="transparent"
+                        className="text-gray-200"
+                      />
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="35"
+                        stroke="currentColor"
+                        strokeWidth="6"
+                        fill="transparent"
+                        strokeDasharray={`${2 * Math.PI * 35}`}
+                        strokeDashoffset={`${2 * Math.PI * 35 * (1 - overallScore / 100)}`}
+                        className="text-blue-600 transition-all duration-1000 ease-out"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-xl font-bold text-gray-900">{overallScore}</span>
                     </div>
-                    {aiResponse.overallFeedback && (
-                      <p className="text-sm text-gray-600 mt-2">
-                        {aiResponse.overallFeedback}
-                      </p>
-                    )}
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                  <p className="text-sm font-medium text-gray-700">Overall Score</p>
+                  <p className="text-xs text-gray-500">Great work! Room for improvement in a few areas.</p>
+                </div>
+              )}
 
-            {/* Suggestions List */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="w-5 h-5" />
-                  Suggestions
-                  {suggestionsList.length > 0 && (
-                    <Badge variant="secondary">{suggestionsList.length}</Badge>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="py-3">
-                  <p className="text-sm text-gray-600 mb-2">Click on highlighted text in the essay to review comments</p>
-                  <div className="flex flex-wrap gap-2 justify-center mb-4">
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 border-2 border-red-400 bg-red-50 rounded-sm"></div>
-                      <span className="text-xs text-gray-600">Grammar</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 border-2 border-blue-400 bg-blue-50 rounded-sm"></div>
-                      <span className="text-xs text-gray-600">Clarity</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 border-2 border-green-400 bg-green-50 rounded-sm"></div>
-                      <span className="text-xs text-gray-600">Organization</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 border-2 border-purple-400 bg-purple-50 rounded-sm"></div>
-                      <span className="text-xs text-gray-600">Analysis</span>
-                    </div>
-                  </div>
-                  
-                  {suggestionsList.length > 0 && (
-                    <>
-                      <div className="flex justify-between items-center mb-3 border-b pb-2">
-                        <p className="text-sm font-medium text-gray-700">
-                          {suggestionsList.length} comments
-                        </p>
-                        <div className="flex gap-3 text-xs text-gray-600">
-                          <span>
-                            <span className="font-medium text-green-600">
-                              {Object.values(teacherActions).filter(a => a === 'approved').length}
-                            </span> approved
-                          </span>
-                          <span>
-                            <span className="font-medium text-gray-600">
-                              {Object.values(teacherActions).filter(a => a === 'declined').length}
-                            </span> declined
-                          </span>
-                          <span>
-                            <span className="font-medium text-blue-600">
-                              {Object.values(teacherActions).filter(a => a === 'modified').length}
-                            </span> modified
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-                        {suggestionsList.map((suggestion, index) => {
-                          const action = teacherActions[index];
-                          const category = suggestion.category || 'general';
-                          return (
-                            <div 
-                              key={`suggestion-${index}`}
-                              className={`border rounded-md p-3 cursor-pointer transition-all ${
-                                selectedCommentIndex === index ? 'border-primary bg-primary-50' : 'border-gray-200 hover:border-gray-300'
-                              } ${action === 'declined' ? 'opacity-50' : ''}`}
-                              onClick={() => {
-                                // Find the highlight in the document and scroll to it
-                                const highlight = document.querySelector(`[data-comment-index="${index}"]`);
-                                if (highlight) {
-                                  highlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                  // Wait for the scroll to complete before showing the popup
-                                  setTimeout(() => {
-                                    const rect = (highlight as HTMLElement).getBoundingClientRect();
-                                    setActiveCommentPopup({
-                                      index,
-                                      position: { x: rect.left + rect.width / 2, y: rect.bottom + 5 }
-                                    });
-                                  }, 500);
-                                }
-                              }}
-                            >
-                              <div className="flex justify-between items-start">
-                                <Badge 
-                                  className={`mb-2 ${getCategoryBadgeClass(category)}`}
-                                >
-                                  {category}
-                                </Badge>
-                                {action && (
-                                  <Badge variant={action === 'approved' ? 'default' : 'secondary'} className="text-xs">
-                                    {action}
-                                  </Badge>
-                                )}
+              {/* Feedback Category Tiles */}
+              {feedbackTiles.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Writing Categories</h3>
+                  {feedbackTiles.map((tile) => (
+                    <Collapsible
+                      key={tile.category}
+                      open={expandedTiles[tile.category]}
+                      onOpenChange={() => toggleTile(tile.category)}
+                    >
+                      <Card className="transition-all duration-200 hover:shadow-md border-0 shadow-sm">
+                        <CollapsibleTrigger asChild>
+                          <CardHeader className="cursor-pointer p-4 hover:bg-gray-50 transition-colors">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <div className={`w-3 h-3 rounded-full ${getCategoryColor(tile.category).split(' ')[1]}`}></div>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">{tile.category}</p>
+                                  <p className="text-xs text-gray-500">{tile.summary}</p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-xs text-gray-500 italic mb-1 line-clamp-1">
-                                  "{suggestion.text}"
-                                </p>
-                                <p className="text-sm text-gray-700 line-clamp-2">
-                                  {suggestion.comment}
-                                </p>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-lg font-bold text-gray-900">{tile.score}/10</span>
+                                {expandedTiles[tile.category] ? 
+                                  <ChevronUp className="w-4 h-4 text-gray-400" /> : 
+                                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                                }
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
+                          </CardHeader>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <CardContent className="px-4 pb-4">
+                            <div className="border-t border-gray-100 pt-3">
+                              <p className="text-sm text-gray-700 mb-3 leading-relaxed">{tile.details}</p>
+                              {tile.examples.length > 0 && (
+                                <div className="bg-gray-50 rounded-lg p-3">
+                                  <p className="text-xs font-semibold text-gray-600 mb-2">Examples:</p>
+                                  <ul className="text-xs text-gray-600 space-y-1">
+                                    {tile.examples.map((example, idx) => (
+                                      <li key={idx} className="flex items-start">
+                                        <span className="text-blue-500 mr-2 mt-0.5">•</span>
+                                        <span className="flex-1">{example}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </CollapsibleContent>
+                      </Card>
+                    </Collapsible>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
+              )}
+
+              {/* Vocabulary Enhancement Cards */}
+              {vocabularyCards.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide flex items-center">
+                    <Lightbulb className="w-4 h-4 mr-1 text-yellow-500" />
+                    Vocabulary Enhancement
+                  </h3>
+                  {vocabularyCards.map((vocab, idx) => (
+                    <Card key={idx} className="border-0 shadow-sm bg-gradient-to-r from-yellow-50 to-orange-50">
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-yellow-700 bg-yellow-100 px-2 py-1 rounded text-sm">
+                              "{vocab.word}"
+                            </span>
+                            <Badge variant="outline" className="text-xs border-yellow-200 text-yellow-700">
+                              {vocab.reason}
+                            </Badge>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600 mb-2 font-medium">Better alternatives:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {vocab.suggestions.map((suggestion, sidx) => (
+                                <Button
+                                  key={sidx}
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-xs h-7 text-green-700 border-green-200 hover:bg-green-50 bg-white"
+                                >
+                                  {suggestion}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex gap-2 pt-2">
+                            <Button size="sm" variant="outline" className="flex-1 text-xs bg-white">
+                              <Check className="w-3 h-3 mr-1" />
+                              Accept
+                            </Button>
+                            <Button size="sm" variant="outline" className="flex-1 text-xs bg-white">
+                              <X className="w-3 h-3 mr-1" />
+                              Dismiss
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {/* Overall Assessment */}
+              {aiResponse?.overallFeedback && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Overall Assessment</h3>
+                  <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-indigo-50">
+                    <CardContent className="p-4">
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {aiResponse.overallFeedback}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
