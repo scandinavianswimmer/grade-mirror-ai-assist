@@ -345,8 +345,20 @@ const SubmissionDetail = () => {
   };
 
   const processAIResponse = (response: GradingResponse) => {
-    // Calculate overall score
-    const score = parseInt(response.suggestedGrade?.replace(/[^\d]/g, '') || '0');
+    // Calculate overall score from letter grade
+    const gradeToScore = (grade: string): number => {
+      const cleanGrade = grade?.toUpperCase().trim() || '';
+      const gradeMap: { [key: string]: number } = {
+        'A+': 97, 'A': 93, 'A-': 90,
+        'B+': 87, 'B': 83, 'B-': 80,
+        'C+': 77, 'C': 73, 'C-': 70,
+        'D+': 67, 'D': 63, 'D-': 60,
+        'F': 50
+      };
+      return gradeMap[cleanGrade] || 75; // Default to C grade if unknown
+    };
+    
+    const score = gradeToScore(response.suggestedGrade || 'B');
     setOverallScore(score);
 
     // Process feedback into tiles
@@ -403,6 +415,52 @@ const SubmissionDetail = () => {
       { word: 'things', suggestions: ['elements', 'factors', 'aspects'], reason: 'Too general', position: 234 }
     ];
     setVocabularyCards(vocab);
+  };
+
+  // Handle vocabulary actions
+  const handleVocabularyAction = async (vocabIndex: number, action: 'apply' | 'dismiss') => {
+    if (!user || !submission) return;
+
+    try {
+      const vocab = vocabularyCards[vocabIndex];
+      
+      if (action === 'apply') {
+        // Apply the first suggestion by default
+        const suggestion = vocab.suggestions[0];
+        
+        // Replace the word in the essay text
+        const regex = new RegExp(`\\b${vocab.word}\\b`, 'gi');
+        const newText = essayText.replace(regex, suggestion);
+        setEssayText(newText);
+        
+        // Update submission in database
+        await supabase
+          .from('submissions')
+          .update({ essay: newText })
+          .eq('id', submission.id);
+
+        toast({
+          title: "Word replaced!",
+          description: `Replaced "${vocab.word}" with "${suggestion}"`,
+        });
+      } else {
+        toast({
+          title: "Suggestion dismissed",
+          description: `Dismissed vocabulary suggestion for "${vocab.word}"`,
+        });
+      }
+      
+      // Remove this vocabulary card from the list
+      setVocabularyCards(prev => prev.filter((_, index) => index !== vocabIndex));
+      
+    } catch (error) {
+      console.error('Error handling vocabulary action:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process vocabulary suggestion",
+        variant: "destructive"
+      });
+    }
   };
 
   const toggleTile = (category: string) => {
@@ -975,23 +1033,25 @@ const SubmissionDetail = () => {
                             </div>
                           </div>
                           
-                          <div className="flex gap-3 pt-2">
-                            <Button 
-                              size="sm" 
-                              className="flex-1 bg-green-600 hover:bg-green-700 text-white shadow-sm"
-                            >
-                              <Check className="w-4 h-4 mr-2" />
-                              Apply Suggestions
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="flex-1 border-gray-300 hover:bg-gray-50"
-                            >
-                              <X className="w-4 h-4 mr-2" />
-                              Dismiss
-                            </Button>
-                          </div>
+                           <div className="flex gap-3 pt-2">
+                             <Button 
+                               size="sm" 
+                               className="flex-1 bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                               onClick={() => handleVocabularyAction(idx, 'apply')}
+                             >
+                               <Check className="w-4 h-4 mr-2" />
+                               Apply Suggestions
+                             </Button>
+                             <Button 
+                               size="sm" 
+                               variant="outline" 
+                               className="flex-1 border-gray-300 hover:bg-gray-50"
+                               onClick={() => handleVocabularyAction(idx, 'dismiss')}
+                             >
+                               <X className="w-4 h-4 mr-2" />
+                               Dismiss
+                             </Button>
+                           </div>
                         </div>
                       </CardContent>
                     </Card>
