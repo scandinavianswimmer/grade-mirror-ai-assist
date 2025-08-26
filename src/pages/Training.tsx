@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Upload, Brain, FileText, CheckCircle, Clock, AlertCircle, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import TrainingDataManager from "@/components/TrainingDataManager";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
@@ -217,8 +218,11 @@ const Training = () => {
             </div>
           </Card>
 
+          {/* Training Data Manager */}
+          <TrainingDataManager />
+
           {/* Training History */}
-          <Card className="p-6">
+          <Card className="p-6 mt-8">
             <h3 className="text-lg font-semibold mb-4">Training History</h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">

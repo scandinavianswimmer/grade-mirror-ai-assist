@@ -3,10 +3,14 @@ import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, FileText, Calendar, Clock, Users, SortAsc } from 'lucide-react';
+import { Plus, FileText, Calendar, Clock, Users, SortAsc, Trash2, MoreVertical } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
+import { deleteClass, deleteAssignment } from '@/lib/api';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import CreateClassModal from '@/components/CreateClassModal';
 
@@ -55,6 +59,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
@@ -248,6 +253,46 @@ const Dashboard = () => {
     fetchData();
   };
 
+  const handleDeleteClass = async (classId: string, className: string) => {
+    try {
+      await deleteClass(classId);
+      toast({
+        title: "Class deleted",
+        description: `${className} has been deleted successfully.`
+      });
+      // Clear cache and refresh data
+      dashboardCache = null;
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting class:', error);
+      toast({
+        title: "Error deleting class",
+        description: "Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteAssignment = async (assignmentId: string, assignmentTitle: string) => {
+    try {
+      await deleteAssignment(assignmentId);
+      toast({
+        title: "Assignment deleted",
+        description: `${assignmentTitle} has been deleted successfully.`
+      });
+      // Clear cache and refresh data
+      dashboardCache = null;
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting assignment:', error);
+      toast({
+        title: "Error deleting assignment",
+        description: "Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Navbar />
@@ -358,6 +403,42 @@ const Dashboard = () => {
                             </div>
                           </div>
                         </div>
+                        {classSchedule.id !== 'default' && (
+                          <AlertDialog>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem className="text-red-600">
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete Class
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Class</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{classSchedule.name}"? This action cannot be undone and will also delete all assignments in this class.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => handleDeleteClass(classSchedule.id, classSchedule.name)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
                     </CardHeader>
                   </Card>
@@ -384,43 +465,77 @@ const Dashboard = () => {
                       <h3 className="text-lg font-semibold text-gray-800">
                         Assignments for {classSchedule.name}
                       </h3>
-                      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {classSchedule.assignments.map((assignment, assignmentIndex) => (
-                          <Card 
-                            key={assignment.id} 
-                            className={`hover:shadow-lg transition-all duration-500 border-l-4 border-l-blue-500 hover:scale-105 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                            style={{ transitionDelay: `${400 + index * 100 + assignmentIndex * 50}ms` }}
-                          >
-                            <CardHeader>
-                              <CardTitle className="text-lg font-semibold line-clamp-2">
-                                {assignment.title}
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                                {assignment.description}
-                              </p>
-                              
-                              <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="w-4 h-4" />
-                                  {new Date(assignment.created_at).toLocaleDateString()}
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                          {classSchedule.assignments.map((assignment, assignmentIndex) => (
+                            <Card 
+                              key={assignment.id} 
+                              className={`hover:shadow-lg transition-all duration-500 border-l-4 border-l-blue-500 hover:scale-105 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                              style={{ transitionDelay: `${400 + index * 100 + assignmentIndex * 50}ms` }}
+                            >
+                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-lg font-semibold line-clamp-2 flex-1">
+                                  {assignment.title}
+                                </CardTitle>
+                                <AlertDialog>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm">
+                                        <MoreVertical className="w-4 h-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                      <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem className="text-red-600">
+                                          <Trash2 className="w-4 h-4 mr-2" />
+                                          Delete Assignment
+                                        </DropdownMenuItem>
+                                      </AlertDialogTrigger>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Assignment</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete "{assignment.title}"? This action cannot be undone and will delete all submissions.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction 
+                                        onClick={() => handleDeleteAssignment(assignment.id, assignment.title)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </CardHeader>
+                              <CardContent>
+                                <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                                  {assignment.description}
+                                </p>
+                                
+                                <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="w-4 h-4" />
+                                    {new Date(assignment.created_at).toLocaleDateString()}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <FileText className="w-4 h-4" />
+                                    {assignment.submission_count} submissions
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  <FileText className="w-4 h-4" />
-                                  {assignment.submission_count} submissions
-                                </div>
-                              </div>
 
-                              <Link to={`/assignment/${assignment.id}`}>
-                                <Button variant="outline" className="w-full hover:bg-blue-50 transition-colors">
-                                  View Assignment
-                                </Button>
-                              </Link>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
+                                <Link to={`/assignment/${assignment.id}`}>
+                                  <Button variant="outline" className="w-full hover:bg-blue-50 transition-colors">
+                                    View Assignment
+                                  </Button>
+                                </Link>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
                     </div>
                   )}
                 </div>

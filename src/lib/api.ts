@@ -35,6 +35,15 @@ export const getAssignment = async (id: string) => {
   return data
 }
 
+export const deleteAssignment = async (id: string) => {
+  const { error } = await supabase
+    .from('assignments')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+}
+
 // Submissions
 export const getSubmissions = async (assignmentId: string) => {
   const { data, error } = await supabase
@@ -86,6 +95,38 @@ export const createRubric = async (rubric: Omit<Rubric, 'id' | 'created_at'>) =>
   const { data, error } = await supabase
     .from('rubrics')
     .insert(rubric)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+// Classes
+export const deleteClass = async (id: string) => {
+  const { error } = await supabase
+    .from('classes')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+// Training Data
+export const deleteTrainingData = async (id: string) => {
+  const { error } = await supabase
+    .from('training_data')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+export const updateTrainingData = async (id: string, updates: Partial<TrainingData>) => {
+  const { data, error } = await supabase
+    .from('training_data')
+    .update(updates)
+    .eq('id', id)
     .select()
     .single()
 
