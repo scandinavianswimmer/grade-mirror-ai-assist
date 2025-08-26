@@ -106,14 +106,24 @@ export const PdfSubmission: React.FC = () => {
   const essayText = submission.essay || 'Essay content not available for PDF generation.';
   
   // Use ai_feedback if available, otherwise create empty feedback
-  const feedbackJson = submission.ai_feedback || JSON.stringify({
-    inlineComments: [],
-    overallFeedback: 'No AI feedback available.',
-    suggestedGrade: submission.final_grade || '',
-    reasoning: '',
-    confidence: 0,
-    rubricBreakdown: []
-  });
+  let feedbackJson = submission.ai_feedback;
+  
+  // If no AI feedback, create empty structure
+  if (!feedbackJson) {
+    feedbackJson = JSON.stringify({
+      inlineComments: [],
+      overallFeedback: 'No AI feedback available.',
+      suggestedGrade: submission.final_grade || '',
+      reasoning: '',
+      confidence: 0,
+      rubricBreakdown: []
+    });
+  }
+  
+  // If ai_feedback is already an object, stringify it
+  if (typeof feedbackJson === 'object') {
+    feedbackJson = JSON.stringify(feedbackJson);
+  }
 
   return (
     <EssayFeedbackPdfRenderer
