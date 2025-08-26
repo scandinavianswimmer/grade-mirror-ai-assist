@@ -35,7 +35,7 @@ const Auth = () => {
         await signIn(email, password)
         toast({
           title: "Welcome back!",
-          description: "Successfully signed in to GradeMirror."
+          description: "Successfully signed in to aiTA."
         })
         navigate('/')
       } else {
@@ -63,7 +63,7 @@ const Auth = () => {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <GraduationCap className="w-8 h-8 text-blue-600" />
-            <span className="text-2xl font-bold text-gray-900">GradeMirror</span>
+            <span className="text-2xl font-bold text-gray-900">aiTA</span>
           </div>
           <h1 className="text-xl font-semibold">
             {isLogin ? 'Sign in to your account' : 'Create your account'}

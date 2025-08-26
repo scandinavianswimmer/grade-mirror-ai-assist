@@ -10,7 +10,7 @@ const WelcomeStep = ({ onNext }: WelcomeStepProps) => {
   return (
     <div className="text-center space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Welcome to GradeMirror</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">Welcome to aiTA</h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
           We're excited to help you reclaim your time while providing personalized, high-quality feedback to your students. 
           This short setup process will teach our AI to become your personal grading assistant, mirroring your unique style and standards.

@@ -20,7 +20,7 @@ const Confirmation = ({ userId, onComplete }: ConfirmationProps) => {
     try {
       await completeOnboarding(userId);
       toast({
-        title: "Welcome to GradeMirror!",
+        title: "Welcome to aiTA!",
         description: "Your account is now fully set up and ready to use."
       });
       onComplete();

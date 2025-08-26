@@ -42,7 +42,7 @@ const LoginOverlay: React.FC<LoginOverlayProps> = ({ onLoginSuccess }) => {
         await signIn(email, password);
         toast({
           title: "Welcome back!",
-          description: "Successfully signed in to GradeMirror."
+          description: "Successfully signed in to aiTA."
         });
       } else {
         await signUp(email, password, name);
@@ -77,7 +77,7 @@ const LoginOverlay: React.FC<LoginOverlayProps> = ({ onLoginSuccess }) => {
           <CardHeader className="text-center">
             <div className="flex items-center justify-center gap-2 mb-4">
               <GraduationCap className="w-8 h-8 text-blue-600" />
-              <span className="text-2xl font-bold text-gray-900">GradeMirror</span>
+              <span className="text-2xl font-bold text-gray-900">aiTA</span>
             </div>
             <CardTitle className="text-xl">
               {isLogin ? 'Sign in to your account' : 'Create your account'}

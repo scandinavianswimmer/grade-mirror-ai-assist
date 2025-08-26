@@ -102,7 +102,7 @@ const ProfileSetup = ({ userId, onComplete }: ProfileSetupProps) => {
       </div>
 
       <div>
-        <Label htmlFor="why_joining">Why are you using GradeMirror? *</Label>
+        <Label htmlFor="why_joining">Why are you using aiTA? *</Label>
         <Textarea
           id="why_joining"
           required

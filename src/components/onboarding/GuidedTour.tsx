@@ -10,7 +10,7 @@ interface GuidedTourProps {
 
 const TOUR_STEPS = [
   {
-    title: "Welcome to GradeMirror! 🎉",
+    title: "Welcome to aiTA! 🎉",
     content: "Let's take a quick tour to show you around. This will help you get the most out of our AI-powered grading assistant.",
     position: "center"
   },
@@ -40,7 +40,7 @@ const TOUR_STEPS = [
   },
   {
     title: "Settings & Training",
-    content: "Use this area to train the AI on your grading style, adjust settings, and customize how GradeMirror works for you.",
+    content: "Use this area to train the AI on your grading style, adjust settings, and customize how aiTA works for you.",
     target: ".settings-section",
     position: "left"
   }

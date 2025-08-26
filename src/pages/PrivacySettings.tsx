@@ -152,7 +152,7 @@ const PrivacySettings = () => {
               <div className="p-4 bg-blue-50 rounded-lg">
                 <h4 className="font-medium text-blue-900 mb-2">FERPA Compliance</h4>
                 <p className="text-blue-800">
-                  GradeMirror is designed to comply with the Family Educational Rights and Privacy Act (FERPA). 
+                  aiTA is designed to comply with the Family Educational Rights and Privacy Act (FERPA). 
                   Student data is encrypted, access is restricted, and you maintain full control over your educational records.
                 </p>
               </div>

@@ -45,7 +45,7 @@ const GoalsStep: React.FC<GoalsStepProps> = ({ data, onNext, onBack }) => {
     <div className="space-y-6">
       <div>
         <Label className="text-base font-medium mb-4 block">
-          What are you hoping to use GradeMirror for? (Choose all that apply)
+          What are you hoping to use aiTA for? (Choose all that apply)
         </Label>
         <div className="space-y-3">
           {ACTIVE_GOALS.map((goal) => (

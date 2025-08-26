@@ -41,7 +41,7 @@ const AccountSetupStep: React.FC<AccountSetupStepProps> = ({ data, onNext, onBac
 
       <div>
         <Label className="text-base font-medium mb-4 block">
-          How would you like to use GradeMirror?
+          How would you like to use aiTA?
         </Label>
         <RadioGroup value={syncLMS} onValueChange={setSyncLMS}>
           <div className="flex items-center space-x-2">

@@ -15,7 +15,7 @@ const Index = () => {
         {/* Header Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Welcome to <span className="text-blue-600">GradeMirror</span>
+            Welcome to <span className="text-blue-600">aiTA</span>
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Your AI-powered grading assistant that learns your unique teaching style and helps you provide consistent, personalized feedback to students.
