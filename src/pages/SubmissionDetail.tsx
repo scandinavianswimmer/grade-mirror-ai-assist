@@ -15,6 +15,7 @@ import { generateGradingFeedback, type GradingResponse } from '@/lib/geminiApi';
 import { getTextFromStoredFile } from '@/lib/fileProcessing';
 import { TeacherCommentModal } from '@/components/TeacherCommentModal';
 import { TeacherGradingPanel } from '@/components/TeacherGradingPanel';
+import { parseAIFeedback, extractCleanFeedback, extractCleanGrade } from '@/lib/aiParser';
 
 interface Submission {
   id: string;
@@ -1325,13 +1326,18 @@ const SubmissionDetail = () => {
               <div>
                 <TeacherGradingPanel
                   teacherComments={teacherComments}
-                  aiComments={aiResponse?.inlineComments?.map(c => ({
-                    text: c.text,
-                    comment: c.comment,
-                    category: 'General'
-                  })) || []}
-                  overallFeedback={aiResponse?.overallFeedback || ''}
-                  suggestedGrade={aiResponse?.suggestedGrade || ''}
+                  aiComments={(() => {
+                    // Parse AI feedback to get clean inline comments
+                    const parsedFeedback = parseAIFeedback(aiResponse?.overallFeedback || '');
+                    const inlineComments = parsedFeedback?.inlineComments || aiResponse?.inlineComments || [];
+                    return inlineComments.map(c => ({
+                      text: c.text,
+                      comment: c.comment,
+                      category: c.category || 'General'
+                    }));
+                  })()}
+                  overallFeedback={extractCleanFeedback(aiResponse?.overallFeedback || '')}
+                  suggestedGrade={extractCleanGrade(aiResponse?.suggestedGrade || '')}
                   teacherFinalGrade={submission?.teacher_final_grade}
                   teacherNotes={submission?.teacher_notes}
                   studentName={submission.student_name}

@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import { parseAIFeedback, type AIComment, type ParsedAIFeedback } from './aiParser';
 
 interface TeacherComment {
   id: string;
@@ -7,19 +8,6 @@ interface TeacherComment {
   comment_text: string;
   comment_type: 'positive' | 'negative' | 'neutral';
   created_at: string;
-}
-
-interface AIComment {
-  text: string;
-  comment: string;
-  category?: string;
-}
-
-interface ParsedAIFeedback {
-  inlineComments: AIComment[];
-  overallFeedback: string;
-  suggestedGrade: string;
-  reasoning?: string;
 }
 
 interface ExportData {
@@ -34,27 +22,6 @@ interface ExportData {
   teacherNotes?: string;
 }
 
-// Helper function to parse AI feedback JSON
-const parseAIFeedback = (feedbackString: string): ParsedAIFeedback | null => {
-  try {
-    // Try to parse as JSON first
-    const parsed = JSON.parse(feedbackString);
-    return {
-      inlineComments: parsed.inlineComments || [],
-      overallFeedback: parsed.overallFeedback || feedbackString,
-      suggestedGrade: parsed.suggestedGrade || '',
-      reasoning: parsed.reasoning
-    };
-  } catch {
-    // If not JSON, return as plain text
-    return {
-      inlineComments: [],
-      overallFeedback: feedbackString,
-      suggestedGrade: '',
-      reasoning: ''
-    };
-  }
-};
 
 export const generatePDF = (data: ExportData): void => {
   const pdf = new jsPDF();
@@ -71,13 +38,14 @@ export const generatePDF = (data: ExportData): void => {
   const cleanSuggestedGrade = parsedFeedback?.suggestedGrade || data.suggestedGrade;
   
   // Helper function to add text with word wrapping
-  const addText = (text: string, fontSize: number = 12, isBold: boolean = false) => {
+  const addText = (text: string, fontSize: number = 12, isBold: boolean = false, color: [number, number, number] = [0, 0, 0]) => {
     if (isBold) {
       pdf.setFont('helvetica', 'bold');
     } else {
       pdf.setFont('helvetica', 'normal');
     }
     pdf.setFontSize(fontSize);
+    pdf.setTextColor(color[0], color[1], color[2]);
     
     const lines = pdf.splitTextToSize(text, maxLineWidth);
     
@@ -91,6 +59,7 @@ export const generatePDF = (data: ExportData): void => {
     });
     
     yPos += 5; // Add space after text block
+    pdf.setTextColor(0, 0, 0); // Reset to black
   };
 
   // Helper function to add a new section
@@ -162,37 +131,50 @@ export const generatePDF = (data: ExportData): void => {
   addText(annotatedEssay, 11);
 
   // Comments section
-  addSection('DETAILED COMMENTS');
+  addSection('FEEDBACK & ANNOTATIONS');
   
   allComments.forEach((comment) => {
-    addText(`[${comment.index}] ${comment.type}`, 10, true);
-    addText(`"${annotatedEssay.slice(comment.start, comment.end).replace(/\[\d+\]/g, '').trim()}"`, 9);
+    // Comment header with type color
+    const typeColor: [number, number, number] = comment.type.includes('Teacher') ? [34, 139, 34] : [65, 105, 225];
+    addText(`[${comment.index}] ${comment.type}`, 11, true, typeColor);
+    
+    // Quoted text reference
+    const quotedText = comment.start < annotatedEssay.length ? 
+      annotatedEssay.slice(comment.start, Math.min(comment.end, comment.start + 100)).replace(/\[\d+\]/g, '').trim() : 
+      'Selected text';
+    addText(`"${quotedText}${quotedText.length > 97 ? '...' : ''}"`, 9, false, [100, 100, 100]);
+    
+    // Comment text
     addText(comment.comment, 10);
-    yPos += 5;
+    yPos += 8; // Extra spacing between comments
   });
 
   // Overall assessment
   addSection('OVERALL ASSESSMENT');
   
   if (cleanOverallFeedback && cleanOverallFeedback.trim() !== '') {
-    addText('Feedback Summary:', 12, true);
+    addText('Summary Feedback:', 12, true, [65, 105, 225]);
     addText(cleanOverallFeedback, 11);
+    yPos += 5;
   }
 
   if (data.teacherNotes) {
-    addText('Teacher Notes:', 12, true);
+    addText('Teacher Notes:', 12, true, [34, 139, 34]);
     addText(data.teacherNotes, 11);
+    yPos += 5;
   }
 
-  // Grades
-  addSection('GRADING');
+  // Grades section with better formatting
+  addSection('ASSESSMENT RESULTS');
   
   if (cleanSuggestedGrade && cleanSuggestedGrade.trim() !== '') {
-    addText(`AI Suggested Grade: ${cleanSuggestedGrade}`, 11, true);
+    addText(`Suggested Grade: ${cleanSuggestedGrade}`, 12, true, [65, 105, 225]);
+    yPos += 3;
   }
   
   if (data.teacherFinalGrade) {
-    addText(`Teacher Final Grade: ${data.teacherFinalGrade}`, 11, true);
+    addText(`Final Grade: ${data.teacherFinalGrade}`, 12, true, [34, 139, 34]);
+    yPos += 3;
   }
 
   // Footer
