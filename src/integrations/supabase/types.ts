@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -424,6 +424,8 @@ export type Database = {
           status: string | null
           student_name: string
           submission_storage_path: string | null
+          teacher_final_grade: string | null
+          teacher_notes: string | null
         }
         Insert: {
           ai_feedback?: string | null
@@ -444,6 +446,8 @@ export type Database = {
           status?: string | null
           student_name: string
           submission_storage_path?: string | null
+          teacher_final_grade?: string | null
+          teacher_notes?: string | null
         }
         Update: {
           ai_feedback?: string | null
@@ -464,6 +468,8 @@ export type Database = {
           status?: string | null
           student_name?: string
           submission_storage_path?: string | null
+          teacher_final_grade?: string | null
+          teacher_notes?: string | null
         }
         Relationships: [
           {
@@ -471,6 +477,50 @@ export type Database = {
             columns: ["assignment_id"]
             isOneToOne: false
             referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_comments: {
+        Row: {
+          comment_text: string
+          comment_type: string
+          created_at: string
+          id: string
+          submission_id: string
+          text_end: number
+          text_start: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_text: string
+          comment_type?: string
+          created_at?: string
+          id?: string
+          submission_id: string
+          text_end: number
+          text_start: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment_text?: string
+          comment_type?: string
+          created_at?: string
+          id?: string
+          submission_id?: string
+          text_end?: number
+          text_start?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_comments_submission_fk"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
             referencedColumns: ["id"]
           },
         ]

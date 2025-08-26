@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { generateGradingFeedback, type GradingResponse } from '@/lib/geminiApi';
 import { getTextFromStoredFile } from '@/lib/fileProcessing';
+import { TeacherCommentModal } from '@/components/TeacherCommentModal';
+import { TeacherGradingPanel } from '@/components/TeacherGradingPanel';
 
 interface Submission {
   id: string;
@@ -26,6 +28,8 @@ interface Submission {
   ai_feedback?: string;
   ai_grade?: string;
   feedback_json?: any;
+  teacher_final_grade?: string;
+  teacher_notes?: string;
 }
 
 interface Assignment {
@@ -50,6 +54,15 @@ interface VocabularyCard {
   position: number;
 }
 
+interface TeacherComment {
+  id: string;
+  text_start: number;
+  text_end: number;
+  comment_text: string;
+  comment_type: 'positive' | 'negative' | 'neutral';
+  created_at: string;
+}
+
 const SubmissionDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -72,11 +85,20 @@ const SubmissionDetail = () => {
   const [overallScore, setOverallScore] = useState<number>(0);
   const [feedbackTiles, setFeedbackTiles] = useState<FeedbackTile[]>([]);
   const [vocabularyCards, setVocabularyCards] = useState<VocabularyCard[]>([]);
+  
+  // Teacher comment states
+  const [teacherComments, setTeacherComments] = useState<TeacherComment[]>([]);
+  const [selectedText, setSelectedText] = useState<string>('');
+  const [textSelection, setTextSelection] = useState<{start: number, end: number} | null>(null);
+  const [commentModalOpen, setCommentModalOpen] = useState(false);
+  const [editingComment, setEditingComment] = useState<TeacherComment | null>(null);
+  
   const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (id && user) {
       fetchSubmissionData();
+      fetchTeacherComments();
     }
   }, [id, user]);
 
@@ -177,6 +199,155 @@ const SubmissionDetail = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTeacherComments = async () => {
+    if (!id || !user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('teacher_comments')
+        .select('*')
+        .eq('submission_id', id)
+        .order('text_start', { ascending: true });
+
+      if (error) throw error;
+      setTeacherComments((data || []) as TeacherComment[]);
+    } catch (error) {
+      console.error('Error fetching teacher comments:', error);
+    }
+  };
+
+  // Text selection handling for teacher comments
+  const handleTextSelection = () => {
+    if (!editorRef.current) return;
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    if (!range.collapsed && range.toString().trim()) {
+      const selectedText = range.toString().trim();
+      
+      // Calculate text positions
+      const preCaretRange = range.cloneRange();
+      preCaretRange.selectNodeContents(editorRef.current);
+      preCaretRange.setEnd(range.startContainer, range.startOffset);
+      const textStart = preCaretRange.toString().length;
+      const textEnd = textStart + selectedText.length;
+
+      setSelectedText(selectedText);
+      setTextSelection({ start: textStart, end: textEnd });
+      setCommentModalOpen(true);
+    }
+  };
+
+  // Teacher comment CRUD operations
+  const handleSaveTeacherComment = async (commentData: Omit<TeacherComment, 'id' | 'created_at'>) => {
+    if (!user || !submission) return;
+
+    try {
+      if (editingComment) {
+        // Update existing comment
+        const { error } = await supabase
+          .from('teacher_comments')
+          .update(commentData)
+          .eq('id', editingComment.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Comment updated!",
+          description: "Your comment has been updated successfully.",
+        });
+      } else {
+        // Create new comment
+        const { error } = await supabase
+          .from('teacher_comments')
+          .insert({
+            ...commentData,
+            user_id: user.id,
+            submission_id: submission.id,
+          });
+
+        if (error) throw error;
+
+        toast({
+          title: "Comment added!",
+          description: "Your comment has been added successfully.",
+        });
+      }
+
+      // Refresh comments and reset states
+      await fetchTeacherComments();
+      setEditingComment(null);
+    } catch (error) {
+      console.error('Error saving teacher comment:', error);
+      toast({
+        title: "Error saving comment",
+        description: "Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteTeacherComment = async (commentId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('teacher_comments')
+        .delete()
+        .eq('id', commentId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Comment deleted",
+        description: "The comment has been removed.",
+      });
+
+      await fetchTeacherComments();
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      toast({
+        title: "Error deleting comment",
+        description: "Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleEditTeacherComment = (comment: TeacherComment) => {
+    setEditingComment(comment);
+    setSelectedText(essayText.slice(comment.text_start, comment.text_end));
+    setTextSelection({ start: comment.text_start, end: comment.text_end });
+    setCommentModalOpen(true);
+  };
+
+  const handleSaveGrade = async (finalGrade: string, teacherNotes: string) => {
+    if (!user || !submission) return;
+
+    try {
+      const { error } = await supabase
+        .from('submissions')
+        .update({
+          teacher_final_grade: finalGrade,
+          teacher_notes: teacherNotes
+        })
+        .eq('id', submission.id);
+
+      if (error) throw error;
+
+      setSubmission(prev => prev ? {
+        ...prev,
+        teacher_final_grade: finalGrade,
+        teacher_notes: teacherNotes
+      } : null);
+    } catch (error) {
+      console.error('Error saving grade:', error);
+      throw error;
     }
   };
 
@@ -639,6 +810,7 @@ const SubmissionDetail = () => {
             const target = e.target as HTMLDivElement;
             handleEssayEdit(target.innerText);
           }}
+          onMouseUp={handleTextSelection}
           onClick={(e) => {
             const target = e.target as HTMLElement;
             const commentIndex = target.getAttribute('data-comment-index');
@@ -1148,10 +1320,48 @@ const SubmissionDetail = () => {
                   </Card>
                 </div>
               )}
+
+              {/* Teacher Grading Panel */}
+              <div>
+                <TeacherGradingPanel
+                  teacherComments={teacherComments}
+                  aiComments={aiResponse?.inlineComments?.map(c => ({
+                    text: c.text,
+                    comment: c.comment,
+                    category: 'General'
+                  })) || []}
+                  overallFeedback={aiResponse?.overallFeedback || ''}
+                  suggestedGrade={aiResponse?.suggestedGrade || ''}
+                  teacherFinalGrade={submission?.teacher_final_grade}
+                  teacherNotes={submission?.teacher_notes}
+                  studentName={submission.student_name}
+                  assignmentTitle={assignment.title}
+                  essay={essayText}
+                  onSaveGrade={handleSaveGrade}
+                  onDeleteComment={handleDeleteTeacherComment}
+                  onEditComment={handleEditTeacherComment}
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Teacher Comment Modal */}
+      <TeacherCommentModal
+        isOpen={commentModalOpen}
+        onClose={() => {
+          setCommentModalOpen(false);
+          setEditingComment(null);
+          setSelectedText('');
+          setTextSelection(null);
+        }}
+        onSave={handleSaveTeacherComment}
+        selectedText={selectedText}
+        textStart={textSelection?.start || 0}
+        textEnd={textSelection?.end || 0}
+        existingComment={editingComment}
+      />
     </div>
   );
 };
