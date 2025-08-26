@@ -34,6 +34,7 @@ interface TeacherGradingPanelProps {
   studentName: string;
   assignmentTitle: string;
   essay: string;
+  submissionId?: string;
   onSaveGrade: (grade: string, notes: string) => void;
   onDeleteComment: (commentId: string) => void;
   onEditComment: (comment: TeacherComment) => void;
@@ -49,6 +50,7 @@ export const TeacherGradingPanel: React.FC<TeacherGradingPanelProps> = ({
   studentName,
   assignmentTitle,
   essay,
+  submissionId,
   onSaveGrade,
   onDeleteComment,
   onEditComment
@@ -65,45 +67,43 @@ export const TeacherGradingPanel: React.FC<TeacherGradingPanelProps> = ({
     });
   };
 
-  const handleExportPDF = () => {
-    const exportData = {
-      studentName,
-      assignmentTitle,
-      essay,
-      aiComments,
-      teacherComments,
-      overallFeedback,
-      suggestedGrade,
-      teacherFinalGrade: finalGrade,
-      teacherNotes: notes
-    };
+  const handleExportPDF = (submissionId?: string) => {
+    if (!submissionId) {
+      toast({
+        title: "Export Error",
+        description: "No submission ID available",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    generatePDF(exportData);
+    // Open the PDF route in a new window for printing
+    const pdfUrl = `/pdf/submission/${submissionId}`;
+    window.open(pdfUrl, '_blank');
     
     toast({
-      title: "PDF Generated!",
-      description: "Full analysis PDF has been downloaded.",
+      title: "PDF Ready",
+      description: "PDF opened in new tab - use your browser's print function to save",
     });
   };
 
-  const handleExportStudentVersion = () => {
-    const exportData = {
-      studentName,
-      assignmentTitle,
-      essay,
-      aiComments,
-      teacherComments,
-      overallFeedback,
-      suggestedGrade,
-      teacherFinalGrade: finalGrade,
-      teacherNotes: notes
-    };
+  const handleExportStudentVersion = (submissionId?: string) => {
+    if (!submissionId) {
+      toast({
+        title: "Export Error",
+        description: "No submission ID available",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    generateStudentVersion(exportData);
+    // Open the PDF route in a new window for printing
+    const pdfUrl = `/pdf/submission/${submissionId}`;
+    window.open(pdfUrl, '_blank');
     
     toast({
-      title: "Student PDF Generated!",
-      description: "Student-friendly PDF has been downloaded.",
+      title: "Student PDF Ready",
+      description: "PDF opened in new tab - use your browser's print function to save",
     });
   };
 
@@ -223,11 +223,11 @@ export const TeacherGradingPanel: React.FC<TeacherGradingPanelProps> = ({
           <CardTitle>Export Options</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Button onClick={handleExportPDF} variant="outline" className="w-full">
+          <Button onClick={() => handleExportPDF(submissionId)} variant="outline" className="w-full">
             <FileDown className="w-4 h-4 mr-2" />
             Export Full PDF (Teacher Version)
           </Button>
-          <Button onClick={handleExportStudentVersion} variant="outline" className="w-full">
+          <Button onClick={() => handleExportStudentVersion(submissionId)} variant="outline" className="w-full">
             <FileDown className="w-4 h-4 mr-2" />
             Export Student-Friendly PDF
           </Button>

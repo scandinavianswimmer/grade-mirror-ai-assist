@@ -29,6 +29,7 @@ import Onboarding from "./pages/Onboarding";
 import OnboardingFlow from "./pages/OnboardingFlow";
 import PodcastGenerator from "./pages/PodcastGenerator";
 import PodcastDetail from "./pages/PodcastDetail";
+import { PdfSubmission } from "./pages/PdfSubmission";
 
 const queryClient = new QueryClient();
 
@@ -247,6 +248,7 @@ const AppContent = () => {
         </AuthGuard>
       } />
       
+      <Route path="/pdf/submission/:id" element={<PdfSubmission />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

@@ -1343,6 +1343,7 @@ const SubmissionDetail = () => {
                   studentName={submission.student_name}
                   assignmentTitle={assignment.title}
                   essay={essayText}
+                  submissionId={submission.id}
                   onSaveGrade={handleSaveGrade}
                   onDeleteComment={handleDeleteTeacherComment}
                   onEditComment={handleEditTeacherComment}
