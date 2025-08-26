@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     console.log('Creating class with data:', { className, gradeLevel, classSize, classLevel, classTime })
 
     // Validate required fields
-    if (!className || !gradeLevel || !classSize || !classLevel || !classTime) {
+    if (!className || !gradeLevel || !classSize || !classTime) {
       throw new Error('Missing required fields')
     }
 
