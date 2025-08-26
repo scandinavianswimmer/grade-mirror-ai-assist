@@ -15,6 +15,13 @@ interface AIComment {
   category?: string;
 }
 
+interface ParsedAIFeedback {
+  inlineComments: AIComment[];
+  overallFeedback: string;
+  suggestedGrade: string;
+  reasoning?: string;
+}
+
 interface ExportData {
   studentName: string;
   assignmentTitle: string;
@@ -27,6 +34,28 @@ interface ExportData {
   teacherNotes?: string;
 }
 
+// Helper function to parse AI feedback JSON
+const parseAIFeedback = (feedbackString: string): ParsedAIFeedback | null => {
+  try {
+    // Try to parse as JSON first
+    const parsed = JSON.parse(feedbackString);
+    return {
+      inlineComments: parsed.inlineComments || [],
+      overallFeedback: parsed.overallFeedback || feedbackString,
+      suggestedGrade: parsed.suggestedGrade || '',
+      reasoning: parsed.reasoning
+    };
+  } catch {
+    // If not JSON, return as plain text
+    return {
+      inlineComments: [],
+      overallFeedback: feedbackString,
+      suggestedGrade: '',
+      reasoning: ''
+    };
+  }
+};
+
 export const generatePDF = (data: ExportData): void => {
   const pdf = new jsPDF();
   const pageWidth = pdf.internal.pageSize.width;
@@ -35,6 +64,11 @@ export const generatePDF = (data: ExportData): void => {
   const maxLineWidth = pageWidth - 2 * margin;
   
   let yPos = margin;
+  
+  // Parse AI feedback if it's in JSON format
+  const parsedFeedback = parseAIFeedback(data.overallFeedback);
+  const cleanOverallFeedback = parsedFeedback?.overallFeedback || data.overallFeedback;
+  const cleanSuggestedGrade = parsedFeedback?.suggestedGrade || data.suggestedGrade;
   
   // Helper function to add text with word wrapping
   const addText = (text: string, fontSize: number = 12, isBold: boolean = false) => {
@@ -98,15 +132,16 @@ export const generatePDF = (data: ExportData): void => {
     });
   });
 
-  // Add AI comments
-  data.aiComments.forEach((aiComment, index) => {
+  // Add AI comments from parsed feedback if available
+  const aiCommentsToUse = parsedFeedback?.inlineComments || data.aiComments;
+  aiCommentsToUse.forEach((aiComment, index) => {
     const textPosition = annotatedEssay.indexOf(aiComment.text);
     if (textPosition !== -1) {
       allComments.push({
         start: textPosition,
         end: textPosition + aiComment.text.length,
         comment: aiComment.comment,
-        type: `AI (${aiComment.category || 'General'})`,
+        type: `AI Feedback`,
         index: data.teacherComments.length + index + 1
       });
     }
@@ -139,9 +174,9 @@ export const generatePDF = (data: ExportData): void => {
   // Overall assessment
   addSection('OVERALL ASSESSMENT');
   
-  if (data.overallFeedback) {
-    addText('AI Assessment:', 12, true);
-    addText(data.overallFeedback, 11);
+  if (cleanOverallFeedback && cleanOverallFeedback.trim() !== '') {
+    addText('Feedback Summary:', 12, true);
+    addText(cleanOverallFeedback, 11);
   }
 
   if (data.teacherNotes) {
@@ -152,8 +187,8 @@ export const generatePDF = (data: ExportData): void => {
   // Grades
   addSection('GRADING');
   
-  if (data.suggestedGrade) {
-    addText(`AI Suggested Grade: ${data.suggestedGrade}`, 11, true);
+  if (cleanSuggestedGrade && cleanSuggestedGrade.trim() !== '') {
+    addText(`AI Suggested Grade: ${cleanSuggestedGrade}`, 11, true);
   }
   
   if (data.teacherFinalGrade) {
