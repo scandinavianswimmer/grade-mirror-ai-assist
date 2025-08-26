@@ -130,6 +130,31 @@ const SubmissionDetail = () => {
         setAiResponse(aiData);
         setSuggestionsList(aiData.inlineComments || []);
         processAIResponse(aiData);
+      } else if (submissionData.ai_feedback && typeof submissionData.ai_feedback === 'string') {
+        // Handle legacy data that might have JSON wrapped in markdown
+        try {
+          let cleanedFeedback = submissionData.ai_feedback.trim();
+          
+          // Check if it contains JSON wrapped in markdown
+          if (cleanedFeedback.includes('```json')) {
+            cleanedFeedback = cleanedFeedback.replace(/^.*```json\s*/, '').replace(/\s*```.*$/, '');
+          } else if (cleanedFeedback.includes('```')) {
+            cleanedFeedback = cleanedFeedback.replace(/^.*```\s*/, '').replace(/\s*```.*$/, '');
+          }
+          
+          // Remove any remaining backticks and try to parse
+          cleanedFeedback = cleanedFeedback.replace(/^`+|`+$/g, '').trim();
+          
+          if (cleanedFeedback.startsWith('{') && cleanedFeedback.endsWith('}')) {
+            const parsedData = JSON.parse(cleanedFeedback) as GradingResponse;
+            setAiResponse(parsedData);
+            setSuggestionsList(parsedData.inlineComments || []);
+            processAIResponse(parsedData);
+          }
+        } catch (error) {
+          console.log('Could not parse legacy AI feedback as JSON:', error);
+          // If parsing fails, we'll just use the fallback text display
+        }
       }
 
       // Fetch assignment details

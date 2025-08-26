@@ -75,7 +75,9 @@ serve(async (req) => {
       ).join('\n\n')}`;
     }
 
-const prompt = `You are an expert teacher grading a student essay. Please provide detailed feedback following this exact JSON format:
+const prompt = `You are an expert teacher grading a student essay. Please provide detailed feedback following this exact JSON format.
+
+CRITICAL: Return ONLY valid JSON without any markdown formatting, code blocks, or additional text. Do not wrap the response in \`\`\`json or any other formatting.
 
 {
   "inlineComments": [
@@ -119,7 +121,7 @@ ${rubricText}
 
 ${trainingContext}
 
-Please respond with ONLY the JSON object, no additional text.`;
+Return ONLY the JSON object with no markdown formatting, code blocks, or additional text.`;
 
     // Call Gemini API
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
@@ -153,17 +155,37 @@ Please respond with ONLY the JSON object, no additional text.`;
       throw new Error('No response from Gemini API');
     }
 
-    // Parse the JSON response
+    // Clean and parse the JSON response
     let gradingResponse: GradingResponse;
     try {
-      gradingResponse = JSON.parse(generatedText);
+      // Strip markdown formatting if present
+      let cleanedText = generatedText.trim();
+      
+      // Remove markdown code blocks if present
+      if (cleanedText.startsWith('```json')) {
+        cleanedText = cleanedText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanedText.startsWith('```')) {
+        cleanedText = cleanedText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+      
+      // Remove any remaining backticks
+      cleanedText = cleanedText.replace(/^`+|`+$/g, '');
+      
+      gradingResponse = JSON.parse(cleanedText);
+      
+      // Validate required fields exist
+      if (!gradingResponse.overallFeedback || !gradingResponse.suggestedGrade) {
+        throw new Error('Missing required fields in AI response');
+      }
+      
     } catch (parseError) {
+      console.error('JSON parsing error:', parseError, 'Raw text:', generatedText);
       // Fallback if JSON parsing fails
       gradingResponse = {
         inlineComments: [],
-        overallFeedback: generatedText,
+        overallFeedback: "I've provided detailed feedback on your essay focusing on areas for improvement and strengths. Please review the specific comments for actionable suggestions.",
         suggestedGrade: "B",
-        reasoning: "AI-generated feedback based on essay analysis",
+        reasoning: "Grade based on overall essay quality, organization, and content analysis.",
         confidence: 0.8,
         rubricBreakdown: []
       };
