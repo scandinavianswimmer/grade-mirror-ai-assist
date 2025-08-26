@@ -1014,9 +1014,34 @@ const SubmissionDetail = () => {
                         </div>
                         <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
                           <p className="text-sm text-gray-700 leading-relaxed">
-                            {typeof aiResponse.overallFeedback === 'string' && aiResponse.overallFeedback.trim() !== '' 
-                              ? aiResponse.overallFeedback 
-                              : 'This essay demonstrates solid understanding of the text with clear organization and relevant examples. The analysis could be strengthened with deeper exploration of themes and more detailed textual evidence. Overall, this is good work with room for growth in critical thinking and analytical depth.'}
+                            {(() => {
+                              // Extract clean feedback text
+                              let feedbackText = aiResponse.overallFeedback;
+                              
+                              // If the feedback contains JSON structure, try to extract the overallFeedback field
+                              if (typeof feedbackText === 'string' && feedbackText.includes('"overallFeedback"')) {
+                                try {
+                                  // Clean markdown formatting first
+                                  let cleanText = feedbackText.trim();
+                                  if (cleanText.includes('```json')) {
+                                    cleanText = cleanText.replace(/^.*```json\s*/, '').replace(/\s*```.*$/, '');
+                                  } else if (cleanText.includes('```')) {
+                                    cleanText = cleanText.replace(/^.*```\s*/, '').replace(/\s*```.*$/, '');
+                                  }
+                                  cleanText = cleanText.replace(/^`+|`+$/g, '').trim();
+                                  
+                                  // Parse and extract overallFeedback
+                                  const parsed = JSON.parse(cleanText);
+                                  feedbackText = parsed.overallFeedback || feedbackText;
+                                } catch (error) {
+                                  console.log('Could not extract overallFeedback from JSON:', error);
+                                }
+                              }
+                              
+                              return typeof feedbackText === 'string' && feedbackText.trim() !== '' 
+                                ? feedbackText 
+                                : "This essay demonstrates solid understanding of the text with clear organization and relevant examples. The analysis could be strengthened with deeper exploration of themes and more detailed textual evidence. Overall, this is good work with room for growth in critical thinking and analytical depth.";
+                            })()}
                           </p>
                         </div>
                       </div>
