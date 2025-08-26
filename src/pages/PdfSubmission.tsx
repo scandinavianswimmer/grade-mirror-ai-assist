@@ -8,7 +8,7 @@ interface Submission {
   assignment_id: string;
   student_name: string;
   file_url?: string;
-  text_content?: string;
+  essay?: string;
   ai_feedback?: string;
   final_grade?: string;
   teacher_notes?: string;
@@ -102,8 +102,8 @@ export const PdfSubmission: React.FC = () => {
     course: submission.assignments?.course_name || 'Course'
   };
 
-  // Use text_content if available, otherwise show a message
-  const essayText = submission.text_content || 'Essay content not available for PDF generation.';
+  // Use essay if available, otherwise show a message
+  const essayText = submission.essay || 'Essay content not available for PDF generation.';
   
   // Use ai_feedback if available, otherwise create empty feedback
   const feedbackJson = submission.ai_feedback || JSON.stringify({
