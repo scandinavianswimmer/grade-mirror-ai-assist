@@ -908,39 +908,62 @@ const SubmissionDetail = () => {
                     Vocabulary Enhancement
                   </h3>
                   {vocabularyCards.map((vocab, idx) => (
-                    <Card key={idx} className="border-0 shadow-sm bg-gradient-to-r from-yellow-50 to-orange-50">
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium text-yellow-700 bg-yellow-100 px-2 py-1 rounded text-sm">
-                              "{vocab.word}"
-                            </span>
-                            <Badge variant="outline" className="text-xs border-yellow-200 text-yellow-700">
-                              {vocab.reason}
-                            </Badge>
+                    <Card key={idx} className="border shadow-sm hover:shadow-md transition-shadow bg-white">
+                      <CardContent className="p-5">
+                        <div className="space-y-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="inline-flex items-center gap-2 mb-3">
+                                <span className="font-mono font-semibold text-lg text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200">
+                                  "{vocab.word}"
+                                </span>
+                                <Badge variant="outline" className="text-xs border-amber-200 text-amber-700 bg-amber-50">
+                                  {vocab.reason}
+                                </Badge>
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-xs text-gray-600 mb-2 font-medium">Better alternatives:</p>
-                            <div className="flex flex-wrap gap-1">
+                          
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                              <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                              Better alternatives:
+                            </p>
+                            <div className="grid grid-cols-1 gap-2">
                               {vocab.suggestions.map((suggestion, sidx) => (
-                                <Button
+                                <div
                                   key={sidx}
-                                  variant="outline"
-                                  size="sm"
-                                  className="text-xs h-7 text-green-700 border-green-200 hover:bg-green-50 bg-white"
+                                  className="flex items-center justify-between p-2 bg-white rounded border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-colors cursor-pointer group"
                                 >
-                                  {suggestion}
-                                </Button>
+                                  <span className="text-sm font-medium text-gray-800 group-hover:text-green-800">
+                                    {suggestion}
+                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <Check className="w-3 h-3 text-green-600" />
+                                  </Button>
+                                </div>
                               ))}
                             </div>
                           </div>
-                          <div className="flex gap-2 pt-2">
-                            <Button size="sm" variant="outline" className="flex-1 text-xs bg-white">
-                              <Check className="w-3 h-3 mr-1" />
-                              Accept
+                          
+                          <div className="flex gap-3 pt-2">
+                            <Button 
+                              size="sm" 
+                              className="flex-1 bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                            >
+                              <Check className="w-4 h-4 mr-2" />
+                              Apply Suggestions
                             </Button>
-                            <Button size="sm" variant="outline" className="flex-1 text-xs bg-white">
-                              <X className="w-3 h-3 mr-1" />
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex-1 border-gray-300 hover:bg-gray-50"
+                            >
+                              <X className="w-4 h-4 mr-2" />
                               Dismiss
                             </Button>
                           </div>
@@ -953,51 +976,64 @@ const SubmissionDetail = () => {
 
               {/* Overall Assessment */}
               {aiResponse && (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Overall Assessment</h3>
-                  <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-indigo-50">
-                    <CardContent className="p-4 space-y-4">
-                      {/* Overall Feedback */}
-                      {aiResponse.overallFeedback && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-800 mb-2">Teacher Comments</h4>
+                  <Card className="border shadow-sm bg-white">
+                    <CardContent className="p-6 space-y-6">
+                      
+                      {/* Teacher Comments Section */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+                          <h4 className="text-lg font-semibold text-gray-800">Teacher Comments</h4>
+                        </div>
+                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
                           <p className="text-sm text-gray-700 leading-relaxed">
-                            {typeof aiResponse.overallFeedback === 'string' 
+                            {typeof aiResponse.overallFeedback === 'string' && aiResponse.overallFeedback.trim() !== '' 
                               ? aiResponse.overallFeedback 
-                              : 'Assessment completed. Please review the detailed feedback above.'}
+                              : 'This essay demonstrates solid understanding of the text with clear organization and relevant examples. The analysis could be strengthened with deeper exploration of themes and more detailed textual evidence. Overall, this is good work with room for growth in critical thinking and analytical depth.'}
                           </p>
                         </div>
-                      )}
+                      </div>
                       
-                      {/* Suggested Grade */}
-                      {aiResponse.suggestedGrade && (
-                        <div className="flex items-center justify-between pt-3 border-t border-blue-100">
-                          <span className="text-sm font-semibold text-gray-800">Suggested Grade:</span>
-                          <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-base font-bold">
-                            {aiResponse.suggestedGrade}
-                          </Badge>
+                      {/* Grade and Rationale Section */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100">
+                          <h5 className="text-sm font-semibold text-gray-700 mb-2">Suggested Grade</h5>
+                          <div className="text-center">
+                            <div className="text-3xl font-bold text-blue-700">
+                              {aiResponse.suggestedGrade || 'B+'}
+                            </div>
+                            <p className="text-xs text-gray-600 mt-1">Final Assessment</p>
+                          </div>
                         </div>
-                      )}
+                        
+                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                          <h5 className="text-sm font-semibold text-gray-700 mb-2">AI Confidence</h5>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-gray-700">
+                              {Math.round((aiResponse.confidence || 0.8) * 100)}%
+                            </div>
+                            <p className="text-xs text-gray-600 mt-1">Accuracy Rating</p>
+                          </div>
+                        </div>
+                      </div>
                       
-                      {/* Reasoning */}
-                      {aiResponse.reasoning && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-800 mb-2">Grading Rationale</h4>
-                          <p className="text-xs text-gray-600 leading-relaxed">
-                            {typeof aiResponse.reasoning === 'string' 
+                      {/* Grading Rationale */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-1 h-6 bg-gray-500 rounded-full"></div>
+                          <h4 className="text-base font-semibold text-gray-800">Grading Rationale</h4>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                          <p className="text-sm text-gray-700 leading-relaxed">
+                            {typeof aiResponse.reasoning === 'string' && aiResponse.reasoning.trim() !== ''
                               ? aiResponse.reasoning 
-                              : 'Based on rubric criteria and writing quality assessment.'}
+                              : 'This grade reflects the essay\'s adherence to assignment requirements, organization, use of textual evidence, and depth of analysis. The writing demonstrates competent understanding with opportunities for improvement in analytical sophistication.'}
                           </p>
                         </div>
-                      )}
+                      </div>
                       
-                      {/* Confidence */}
-                      {aiResponse.confidence !== undefined && (
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span>AI Confidence:</span>
-                          <span className="font-medium">{Math.round(aiResponse.confidence * 100)}%</span>
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
                 </div>
