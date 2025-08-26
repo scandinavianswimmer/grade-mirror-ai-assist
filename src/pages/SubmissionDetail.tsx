@@ -952,14 +952,52 @@ const SubmissionDetail = () => {
               )}
 
               {/* Overall Assessment */}
-              {aiResponse?.overallFeedback && (
+              {aiResponse && (
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Overall Assessment</h3>
                   <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-indigo-50">
-                    <CardContent className="p-4">
-                      <p className="text-sm text-gray-700 leading-relaxed">
-                        {aiResponse.overallFeedback}
-                      </p>
+                    <CardContent className="p-4 space-y-4">
+                      {/* Overall Feedback */}
+                      {aiResponse.overallFeedback && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-800 mb-2">Teacher Comments</h4>
+                          <p className="text-sm text-gray-700 leading-relaxed">
+                            {typeof aiResponse.overallFeedback === 'string' 
+                              ? aiResponse.overallFeedback 
+                              : 'Assessment completed. Please review the detailed feedback above.'}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Suggested Grade */}
+                      {aiResponse.suggestedGrade && (
+                        <div className="flex items-center justify-between pt-3 border-t border-blue-100">
+                          <span className="text-sm font-semibold text-gray-800">Suggested Grade:</span>
+                          <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-base font-bold">
+                            {aiResponse.suggestedGrade}
+                          </Badge>
+                        </div>
+                      )}
+                      
+                      {/* Reasoning */}
+                      {aiResponse.reasoning && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-800 mb-2">Grading Rationale</h4>
+                          <p className="text-xs text-gray-600 leading-relaxed">
+                            {typeof aiResponse.reasoning === 'string' 
+                              ? aiResponse.reasoning 
+                              : 'Based on rubric criteria and writing quality assessment.'}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Confidence */}
+                      {aiResponse.confidence !== undefined && (
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                          <span>AI Confidence:</span>
+                          <span className="font-medium">{Math.round(aiResponse.confidence * 100)}%</span>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </div>
