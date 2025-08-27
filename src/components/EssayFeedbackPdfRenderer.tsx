@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { parseAIFeedback, type ParsedAIFeedback } from '@/lib/aiParser';
+import { resolveAnchors } from '@/lib/annotations/resolveAnchors';
+import EssayWithAnnotations from './EssayWithAnnotations';
+import AnnotationSidebar from './AnnotationSidebar';
 
 interface EssayFeedbackPdfRendererProps {
   essayText: string;
@@ -20,66 +23,15 @@ export const EssayFeedbackPdfRenderer: React.FC<EssayFeedbackPdfRendererProps> =
   meta,
   onPrint
 }) => {
+  const [activeAnchor, setActiveAnchor] = useState<string | null>(null);
   const parsedFeedback = parseAIFeedback(feedbackJson);
   
   if (!parsedFeedback) {
     return <div className="p-8">Error: Unable to parse feedback data</div>;
   }
 
-  // Function to inject numbered markers into essay text
-  const injectMarkers = (text: string, comments: ParsedAIFeedback['inlineComments']) => {
-    if (!comments || comments.length === 0) return text;
-    
-    let annotatedText = text;
-    const usedRanges: Array<{start: number, end: number}> = [];
-    
-    comments.forEach((comment, index) => {
-      if (!comment.text) return;
-      
-      const marker = `[${index + 1}]`;
-      
-      // Try exact match first
-      let matchIndex = annotatedText.indexOf(comment.text);
-      
-      // Try case-insensitive match
-      if (matchIndex === -1) {
-        const lowerText = annotatedText.toLowerCase();
-        const lowerComment = comment.text.toLowerCase();
-        matchIndex = lowerText.indexOf(lowerComment);
-      }
-      
-      // Try whitespace-normalized match
-      if (matchIndex === -1) {
-        const normalizedText = annotatedText.replace(/\s+/g, ' ').trim();
-        const normalizedComment = comment.text.replace(/\s+/g, ' ').trim();
-        const normalizedIndex = normalizedText.indexOf(normalizedComment);
-        if (normalizedIndex !== -1) {
-          // Map back to original text position (approximate)
-          matchIndex = normalizedIndex;
-        }
-      }
-      
-      if (matchIndex !== -1) {
-        const endIndex = matchIndex + comment.text.length;
-        
-        // Check for overlaps with existing markers
-        const hasOverlap = usedRanges.some(range => 
-          (matchIndex >= range.start && matchIndex <= range.end) ||
-          (endIndex >= range.start && endIndex <= range.end) ||
-          (matchIndex <= range.start && endIndex >= range.end)
-        );
-        
-        if (!hasOverlap) {
-          annotatedText = annotatedText.slice(0, endIndex) + marker + annotatedText.slice(endIndex);
-          usedRanges.push({ start: matchIndex, end: endIndex + marker.length });
-        }
-      }
-    });
-    
-    return annotatedText;
-  };
-
-  const annotatedEssay = injectMarkers(essayText, parsedFeedback.inlineComments);
+  // Resolve anchors from inline comments
+  const anchors = resolveAnchors(essayText, parsedFeedback.inlineComments || []);
   
   const handlePrint = () => {
     if (onPrint) {
@@ -90,15 +42,35 @@ export const EssayFeedbackPdfRenderer: React.FC<EssayFeedbackPdfRendererProps> =
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Print styles */}
       <style>{`
+        .anno-underline {
+          text-decoration-line: underline;
+          text-decoration-color: #EF4444;
+          text-decoration-thickness: 2px;
+          text-underline-offset: 2px;
+          cursor: pointer;
+          background: transparent;
+          border: none;
+          padding: 0;
+          font: inherit;
+          color: inherit;
+        }
+        .anno-underline:hover {
+          background-color: rgba(239, 68, 68, 0.1);
+        }
+        .anno-sup {
+          display: none;
+        }
         @media print {
           * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
           body { margin: 0; }
           .no-print { display: none !important; }
           .page-break { page-break-before: always; }
           .avoid-break { page-break-inside: avoid; }
+          .anno-sup { display: inline !important; }
+          .break-inside-avoid { break-inside: avoid; }
         }
       `}</style>
       
@@ -125,17 +97,23 @@ export const EssayFeedbackPdfRenderer: React.FC<EssayFeedbackPdfRendererProps> =
         </div>
       </div>
 
-      {/* Essay with annotations */}
-      <div className="px-8 mb-8 avoid-break">
-        <h2 className="text-xl font-semibold mb-4 text-foreground">Essay</h2>
-        <div 
-          className="prose prose-lg max-w-none bg-muted/20 p-6 rounded border leading-relaxed text-foreground"
-          dangerouslySetInnerHTML={{ 
-            __html: annotatedEssay
-              .replace(/\n/g, '<br/>')
-              .replace(/\[(\d+)\]/g, '<sup class="bg-primary text-primary-foreground px-1 py-0.5 rounded text-xs font-bold ml-1">[$1]</sup>')
-          }}
-        />
+      {/* Main content grid */}
+      <div className="container mx-auto grid grid-cols-12 gap-8 px-8">
+        <div className="col-span-12 md:col-span-8 print:col-span-8">
+          <h2 className="text-xl font-semibold mb-4 text-foreground">Essay</h2>
+          <div className="bg-muted/20 p-6 rounded border leading-relaxed text-foreground">
+            <EssayWithAnnotations 
+              body={essayText} 
+              anchors={anchors} 
+              onFocus={setActiveAnchor}
+            />
+          </div>
+        </div>
+        
+        <div className="col-span-12 md:col-span-4 print:col-span-4">
+          <h2 className="text-xl font-semibold mb-4 text-foreground">Comments</h2>
+          <AnnotationSidebar anchors={anchors} />
+        </div>
       </div>
 
       {/* Feedback & Annotations */}
