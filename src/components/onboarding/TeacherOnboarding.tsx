@@ -13,7 +13,7 @@ import GoalsStep from './GoalsStep';
 import TechnicalComfortStep from './TechnicalComfortStep';
 import AccountSetupStep from './AccountSetupStep';
 import ReferralStep from './ReferralStep';
-import GuidedTour from './GuidedTour';
+import { updateOnboardingProfile, checkGuidedTourStatus } from '@/lib/onboardingApi';
 
 const STEPS = [
   { id: 1, title: 'Basic Information', component: BasicInfoStep },
@@ -105,23 +105,29 @@ const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => 
         console.error('Error updating auth metadata:', authUpdateError);
       }
 
-      // Show welcome screen first
-      setShowWelcome(true);
+      // Check if they requested guided tour and haven't completed it
+      const wantsGuidedTour = onboardingData.technicalComfort?.needsGuidedTour === 'guided';
+      const tourCompleted = await checkGuidedTourStatus(user.id);
       
-      // After 3 seconds, show guided tour or complete
-      setTimeout(() => {
-        const needsGuidedTour = onboardingData.technicalComfort?.needsGuidedTour === 'guided';
-        if (needsGuidedTour) {
+      if (wantsGuidedTour && !tourCompleted) {
+        setShowWelcome(true);
+        // After 3 seconds, show guided tour
+        setTimeout(() => {
           setShowWelcome(false);
           setShowGuidedTour(true);
-        } else {
+        }, 3000);
+      } else {
+        // Show welcome screen first
+        setShowWelcome(true);
+        // After 3 seconds, complete onboarding
+        setTimeout(() => {
           toast({
             title: "Welcome to aiTA! ✨",
             description: "Your teaching journey just got a whole lot easier!"
           });
           onComplete();
-        }
-      }, 3000);
+        }, 3000);
+      }
     } catch (error) {
       console.error('Error saving onboarding data:', error);
       toast({

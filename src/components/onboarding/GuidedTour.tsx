@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { X, ArrowRight, ArrowLeft } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface GuidedTourProps {
   onComplete: () => void;
@@ -16,39 +17,61 @@ const TOUR_STEPS = [
   },
   {
     title: "Dashboard Overview",
-    content: "This is your main dashboard where you can see all your assignments, recent activity, and quick stats about your grading progress.",
-    target: ".dashboard-overview",
+    content: "This is your main dashboard where you can see all your classes and assignments. You can track your grading progress and manage your teaching workflow.",
+    target: "[data-tour='dashboard-overview']",
     position: "bottom"
   },
   {
-    title: "Create New Assignment",
-    content: "Click here to create a new assignment. You can set grading criteria, upload student submissions, and let our AI help with grading.",
+    title: "Creating Classes",
+    content: "Start by creating classes for your courses. Click here to add a new class with details like grade level, size, and schedule.",
+    target: "[data-tour='create-class']",
+    position: "bottom"
+  },
+  {
+    title: "Managing Classes",
+    content: "You can edit your classes anytime by clicking the edit button. Update class details, student rosters, and schedules as needed.",
+    target: "[data-tour='edit-class']",
+    position: "top"
+  },
+  {
+    title: "Creating Assignments",
+    content: "Once you have classes, create assignments for your students. Set grading criteria and let our AI help with consistent grading.",
     target: "[data-tour='create-assignment']",
     position: "bottom"
   },
   {
-    title: "AI Grading Assistant",
-    content: "Our AI learns your grading style and provides consistent, detailed feedback on student work. It saves you hours while maintaining your standards.",
-    target: ".grading-section",
+    title: "Uploading Student Work",
+    content: "Upload student submissions easily. Our AI will analyze them based on your grading style and provide detailed feedback.",
+    target: "[data-tour='upload-section']",
     position: "top"
   },
   {
-    title: "View Your Assignments",
-    content: "Here you can see all your assignments, track progress, and access detailed grading reports for each one.",
-    target: ".assignments-list",
-    position: "top"
-  },
-  {
-    title: "Settings & Training",
-    content: "Use this area to train the AI on your grading style, adjust settings, and customize how aiTA works for you.",
-    target: ".settings-section",
-    position: "left"
+    title: "AI-Powered Grading",
+    content: "Our AI has learned from your 10 uploaded examples and will grade consistently according to your standards. You can always review and adjust the feedback.",
+    target: "[data-tour='grading-results']",
+    position: "center"
   }
 ];
 
 const GuidedTour: React.FC<GuidedTourProps> = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
+
+  // Add spotlight effect for the current target
+  useEffect(() => {
+    const currentStepData = TOUR_STEPS[currentStep];
+    if (currentStepData.target) {
+      const element = document.querySelector(currentStepData.target);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Add spotlight effect
+        element.classList.add('tour-spotlight');
+        return () => {
+          element.classList.remove('tour-spotlight');
+        };
+      }
+    }
+  }, [currentStep]);
 
   const handleNext = () => {
     if (currentStep < TOUR_STEPS.length - 1) {
@@ -64,7 +87,20 @@ const GuidedTour: React.FC<GuidedTourProps> = ({ onComplete }) => {
     }
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
+    // Mark tour as completed in database
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('users')
+          .update({ guided_tour_completed: true })
+          .eq('id', user.id);
+      }
+    } catch (error) {
+      console.error('Error marking tour as completed:', error);
+    }
+    
     setIsVisible(false);
     setTimeout(onComplete, 300);
   };

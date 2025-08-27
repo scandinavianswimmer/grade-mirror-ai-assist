@@ -174,6 +174,7 @@ export type Database = {
           file_type: string
           file_url: string
           id: string
+          teacher_comments: Json | null
           title: string
           uploaded_at: string | null
           user_id: string
@@ -182,6 +183,7 @@ export type Database = {
           file_type: string
           file_url: string
           id?: string
+          teacher_comments?: Json | null
           title: string
           uploaded_at?: string | null
           user_id: string
@@ -190,6 +192,7 @@ export type Database = {
           file_type?: string
           file_url?: string
           id?: string
+          teacher_comments?: Json | null
           title?: string
           uploaded_at?: string | null
           user_id?: string
@@ -723,6 +726,7 @@ export type Database = {
           email: string
           full_name: string | null
           gender: string | null
+          guided_tour_completed: boolean | null
           id: string
           last_reset_date: string | null
           name: string | null
@@ -739,6 +743,7 @@ export type Database = {
           email: string
           full_name?: string | null
           gender?: string | null
+          guided_tour_completed?: boolean | null
           id: string
           last_reset_date?: string | null
           name?: string | null
@@ -755,6 +760,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           gender?: string | null
+          guided_tour_completed?: boolean | null
           id?: string
           last_reset_date?: string | null
           name?: string | null

@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, FileText, Calendar, Clock, Users, SortAsc, Trash2, MoreVertical } from 'lucide-react';
+import { Plus, FileText, Calendar, Clock, Users, SortAsc, Trash2, MoreVertical, Edit } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import CreateClassModal from '@/components/CreateClassModal';
+import EditClassModal from '@/components/EditClassModal';
 
 interface Assignment {
   id: string;
@@ -64,6 +65,8 @@ const Dashboard = () => {
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [classToEdit, setClassToEdit] = useState<Class | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('time');
   const [hasAnimated, setHasAnimated] = useState(false);
   const hasInitiallyLoaded = useRef(false);
@@ -253,6 +256,19 @@ const Dashboard = () => {
     fetchData();
   };
 
+  const handleClassUpdated = () => {
+    // Clear cache to force fresh data fetch
+    dashboardCache = null;
+    fetchData();
+    setShowEditModal(false);
+    setClassToEdit(null);
+  };
+
+  const handleEditClass = (classData: Class) => {
+    setClassToEdit(classData);
+    setShowEditModal(true);
+  };
+
   const handleDeleteClass = async (classId: string, className: string) => {
     try {
       await deleteClass(classId);
@@ -297,7 +313,7 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8" data-tour="dashboard-overview">
         <div className={`flex items-center justify-between mb-8 transition-all duration-700 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <h1 className="text-3xl font-bold text-gray-900">My Classes Dashboard</h1>
           <div className="flex gap-3">
@@ -306,12 +322,13 @@ const Dashboard = () => {
               variant="outline"
               className="flex items-center gap-2"
               onClick={() => setShowCreateModal(true)}
+              data-tour="create-class"
             >
               <Plus className="w-5 h-5" />
               Create New Class
             </Button>
             <Link to="/create-assignment">
-              <Button size="lg" className="flex items-center gap-2">
+              <Button size="lg" className="flex items-center gap-2" data-tour="create-assignment">
                 <Plus className="w-5 h-5" />
                 Create New Assignment
               </Button>
@@ -404,40 +421,51 @@ const Dashboard = () => {
                           </div>
                         </div>
                         {classSchedule.id !== 'default' && (
-                          <AlertDialog>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
-                                  <MoreVertical className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent>
-                                <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem className="text-red-600">
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    Delete Class
-                                  </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Class</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete "{classSchedule.name}"? This action cannot be undone and will also delete all assignments in this class.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => handleDeleteClass(classSchedule.id, classSchedule.name)}
-                                  className="bg-red-600 hover:bg-red-700"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleEditClass(classes.find(c => c.id === classSchedule.id)!)}
+                              className="text-white hover:bg-white/20"
+                              data-tour="edit-class"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <AlertDialog>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
+                                    <MoreVertical className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                  <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem className="text-red-600">
+                                      <Trash2 className="w-4 h-4 mr-2" />
+                                      Delete Class
+                                    </DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Class</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete "{classSchedule.name}"? This action cannot be undone and will also delete all assignments in this class.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => handleDeleteClass(classSchedule.id, classSchedule.name)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         )}
                       </div>
                     </CardHeader>
@@ -548,6 +576,13 @@ const Dashboard = () => {
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           onClassCreated={handleClassCreated}
+        />
+
+        <EditClassModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onClassUpdated={handleClassUpdated}
+          classData={classToEdit}
         />
       </div>
     </div>

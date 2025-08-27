@@ -1,73 +1,105 @@
+import { supabase } from '@/integrations/supabase/client';
 
-import { supabase } from './supabase';
-import { uploadFile } from './fileUpload';
-
-export interface OnboardingProfile {
-  full_name: string;
-  school: string;
-  gender: string;
-  years_experience: number;
-  why_joining: string;
+interface OnboardingProfile {
+  basicInfo: {
+    fullName: string;
+    school: string;
+    yearsExperience: number;
+  };
+  teachingEnvironment: {
+    gradeLevel: string;
+    subjects: string[];
+    classSize: string;
+  };
+  goals: {
+    primary: string;
+    timeExpectation: string;
+  };
+  technicalComfort: {
+    level: string;
+    previousAI: boolean;
+  };
+  accountSetup: {
+    notifications: boolean;
+    privacy: string;
+  };
+  referral: {
+    source: string;
+    other?: string;
+  };
 }
 
 export interface GradingExample {
   id: string;
-  user_id: string;
   title: string;
   file_url: string;
   file_type: string;
   uploaded_at: string;
+  teacher_comments?: any;
 }
 
-export interface AIProfile {
+interface AIProfile {
   id: string;
-  user_id: string;
   grading_style_summary: string;
-  last_trained: string;
-  ai_model_id: string;
+  created_at: string;
 }
 
-// Update user profile for onboarding
 export const updateOnboardingProfile = async (userId: string, profile: OnboardingProfile): Promise<void> => {
   const { error } = await supabase
     .from('users')
     .update({
-      name: profile.full_name,
-      school: profile.school,
-      gender: profile.gender,
-      years_experience: profile.years_experience,
-      why_joining: profile.why_joining
+      full_name: profile.basicInfo.fullName,
+      school: profile.basicInfo.school,
+      years_experience: profile.basicInfo.yearsExperience,
+      onboarding_complete: true
     })
     .eq('id', userId);
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error updating onboarding profile:', error);
+    throw error;
+  }
 };
 
-// Upload grading example
 export const uploadGradingExample = async (userId: string, file: File, title: string): Promise<GradingExample> => {
-  // Upload file to storage
-  const uploadResult = await uploadFile(file, 'grading-examples');
-  if (!uploadResult.success) {
-    throw new Error(uploadResult.error || 'Failed to upload file');
+  // Upload file to Supabase storage
+  const fileExtension = file.name.split('.').pop();
+  const fileName = `${userId}/${Date.now()}.${fileExtension}`;
+  
+  const { error: uploadError } = await supabase.storage
+    .from('grading-examples')
+    .upload(fileName, file);
+
+  if (uploadError) {
+    console.error('Error uploading file:', uploadError);
+    throw uploadError;
   }
 
-  // Save to database
+  // Get the public URL
+  const { data: { publicUrl } } = supabase.storage
+    .from('grading-examples')
+    .getPublicUrl(fileName);
+
+  // Save metadata to database
   const { data, error } = await supabase
     .from('grading_examples')
     .insert({
       user_id: userId,
       title,
-      file_url: uploadResult.url,
+      file_url: publicUrl,
       file_type: file.type
     })
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error saving example metadata:', error);
+    throw error;
+  }
+
   return data;
 };
 
-// Get grading examples for user
 export const getGradingExamples = async (userId: string): Promise<GradingExample[]> => {
   const { data, error } = await supabase
     .from('grading_examples')
@@ -75,64 +107,86 @@ export const getGradingExamples = async (userId: string): Promise<GradingExample
     .eq('user_id', userId)
     .order('uploaded_at', { ascending: false });
 
-  if (error) throw error;
-  return data || [];
-};
-
-// Generate AI style summary
-export const generateStyleSummary = async (userId: string): Promise<string> => {
-  const examples = await getGradingExamples(userId);
-  
-  if (examples.length < 3) {
-    throw new Error('Need at least 3 grading examples to generate style summary');
+  if (error) {
+    console.error('Error fetching grading examples:', error);
+    throw error;
   }
 
+  return data?.map(item => ({
+    ...item,
+    teacher_comments: typeof item.teacher_comments === 'string' ? item.teacher_comments : ''
+  })) || [];
+};
+
+export const updateGradingExampleComments = async (exampleId: string, comments: string): Promise<void> => {
+  const { error } = await supabase
+    .from('grading_examples')
+    .update({ teacher_comments: { comments } })
+    .eq('id', exampleId);
+
+  if (error) {
+    console.error('Error updating example comments:', error);
+    throw error;
+  }
+};
+
+export const generateStyleSummary = async (userId: string): Promise<string> => {
   const { data, error } = await supabase.functions.invoke('generate-style-summary', {
-    body: { userId, examples }
+    body: { userId }
   });
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error generating style summary:', error);
+    throw error;
+  }
+
   return data.summary;
 };
 
-// Save AI profile
 export const saveAIProfile = async (userId: string, summary: string): Promise<AIProfile> => {
   const { data, error } = await supabase
     .from('ai_profiles')
     .upsert({
       user_id: userId,
       grading_style_summary: summary,
-      last_trained: new Date().toISOString(),
-      ai_model_id: `teacher_${userId}_${Date.now()}`
+      last_trained: new Date().toISOString()
     })
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error saving AI profile:', error);
+    throw error;
+  }
+
   return data;
 };
 
-// Test AI grading
 export const testAIGrading = async (userId: string, essay: string): Promise<{ feedback: string; grade: string }> => {
   const { data, error } = await supabase.functions.invoke('test-ai-grading', {
     body: { userId, essay }
   });
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error testing AI grading:', error);
+    throw error;
+  }
+
   return data;
 };
 
-// Complete onboarding
 export const completeOnboarding = async (userId: string): Promise<void> => {
   const { error } = await supabase
     .from('users')
     .update({ onboarding_complete: true })
     .eq('id', userId);
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error completing onboarding:', error);
+    throw error;
+  }
 };
 
-// Check onboarding status
 export const checkOnboardingStatus = async (userId: string): Promise<boolean> => {
   const { data, error } = await supabase
     .from('users')
@@ -140,6 +194,25 @@ export const checkOnboardingStatus = async (userId: string): Promise<boolean> =>
     .eq('id', userId)
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error checking onboarding status:', error);
+    return false;
+  }
+
   return data?.onboarding_complete || false;
+};
+
+export const checkGuidedTourStatus = async (userId: string): Promise<boolean> => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('guided_tour_completed')
+    .eq('id', userId)
+    .single();
+
+  if (error) {
+    console.error('Error checking guided tour status:', error);
+    return false;
+  }
+
+  return data?.guided_tour_completed || false;
 };

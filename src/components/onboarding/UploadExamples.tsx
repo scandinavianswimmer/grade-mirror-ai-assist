@@ -18,6 +18,7 @@ const UploadExamples = ({ userId, onComplete }: UploadExamplesProps) => {
   const [examples, setExamples] = useState<GradingExample[]>([]);
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState('');
+  const [comments, setComments] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
     loadExamples();
@@ -45,9 +46,14 @@ const UploadExamples = ({ userId, onComplete }: UploadExamplesProps) => {
 
     setLoading(true);
     try {
-      await uploadGradingExample(userId, file, title.trim());
+      const example = await uploadGradingExample(userId, file, title.trim());
       await loadExamples();
       setTitle('');
+      // Initialize comments for the new example
+      setComments(prev => ({
+        ...prev,
+        [example.id]: ''
+      }));
       toast({
         title: "File uploaded!",
         description: "Your grading example has been saved."
@@ -63,13 +69,17 @@ const UploadExamples = ({ userId, onComplete }: UploadExamplesProps) => {
     }
   };
 
-  const canContinue = examples.length >= 3;
+  // Check if we have at least 10 examples and all have comments before allowing to continue
+  const canContinue = examples.length >= 10 && examples.every(example => 
+    comments[example.id] && comments[example.id].trim().length > 0
+  );
 
   return (
     <div className="space-y-6">
       <div className="text-center">
         <p className="text-gray-600 mb-4">
-          Upload at least 3 examples of your previously graded work. This helps train the AI to match your grading style.
+          Upload 10 examples of your graded work to help our AI learn your grading style.
+          These should include your comments and feedback. Please add a comment explaining your grading approach for each example.
         </p>
         <p className="text-sm text-gray-500">
           Accepted formats: PDF, DOC, DOCX, images (JPG, PNG)
@@ -108,19 +118,36 @@ const UploadExamples = ({ userId, onComplete }: UploadExamplesProps) => {
       {examples.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold mb-4">
-            Uploaded Examples ({examples.length})
+            Uploaded Examples ({examples.length}/10)
           </h3>
-          <div className="grid gap-3">
+          <div className="space-y-4">
             {examples.map((example) => (
               <Card key={example.id} className="p-4">
-                <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-blue-600" />
-                  <div className="flex-1">
-                    <p className="font-medium">{example.title}</p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(example.uploaded_at).toLocaleDateString()}
-                    </p>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <p className="font-medium">{example.title}</p>
+                      <p className="text-sm text-gray-500">
+                        {new Date(example.uploaded_at).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Your grading approach for this example:
+                  </label>
+                  <textarea
+                    value={comments[example.id] || ''}
+                    onChange={(e) => setComments(prev => ({
+                      ...prev,
+                      [example.id]: e.target.value
+                    }))}
+                    placeholder="Explain your grading criteria, what you focused on, why you gave this grade, etc."
+                    className="w-full p-3 border border-gray-200 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                  />
                 </div>
               </Card>
             ))}
@@ -130,13 +157,23 @@ const UploadExamples = ({ userId, onComplete }: UploadExamplesProps) => {
 
       {/* Progress */}
       <div className="text-center">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <div className={`w-3 h-3 rounded-full ${examples.length >= 1 ? 'bg-green-500' : 'bg-gray-300'}`} />
-          <div className={`w-3 h-3 rounded-full ${examples.length >= 2 ? 'bg-green-500' : 'bg-gray-300'}`} />
-          <div className={`w-3 h-3 rounded-full ${examples.length >= 3 ? 'bg-green-500' : 'bg-gray-300'}`} />
+        <div className="flex items-center justify-center gap-1 flex-wrap mb-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+            <div
+              key={i}
+              className={`w-3 h-3 rounded-full ${
+                examples.length >= i ? 'bg-green-500' : 'bg-gray-300'
+              }`}
+            />
+          ))}
         </div>
         <p className="text-sm text-gray-600">
-          {examples.length < 3 ? `${3 - examples.length} more examples needed` : 'Ready to continue!'}
+          {examples.length < 10 
+            ? `${10 - examples.length} more examples needed` 
+            : canContinue 
+              ? 'Ready to continue!' 
+              : 'Add comments to all examples to continue'
+          }
         </p>
       </div>
 
@@ -145,7 +182,11 @@ const UploadExamples = ({ userId, onComplete }: UploadExamplesProps) => {
         disabled={!canContinue} 
         className="w-full"
       >
-        {canContinue ? 'Continue to AI Training' : `Upload ${3 - examples.length} More Examples`}
+        {canContinue ? 'Continue to AI Training' : 
+          examples.length < 10 
+            ? `Upload ${10 - examples.length} more example${10 - examples.length === 1 ? '' : 's'}`
+            : 'Add comments to all examples to continue'
+        }
       </Button>
     </div>
   );
