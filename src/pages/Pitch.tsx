@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -19,9 +20,14 @@ import {
 const Pitch = () => {
   const [beforeAfter, setBeforeAfter] = useState<'before' | 'after'>('before');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const navigate = useNavigate();
 
   const toggleFaq = (index: number) => {
     setExpandedFaq(expandedFaq === index ? null : index);
+  };
+
+  const handleStartFree = () => {
+    navigate('/auth');
   };
 
   return (
@@ -42,7 +48,7 @@ const Pitch = () => {
           </div>
           <div className="flex items-center space-x-4">
             <Button variant="ghost" size="sm">Sign in</Button>
-            <Button size="sm">Start free</Button>
+            <Button onClick={handleStartFree} size="sm">Start free</Button>
           </div>
         </div>
       </nav>
@@ -78,7 +84,7 @@ const Pitch = () => {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-            <Button size="lg" className="text-lg px-8">
+            <Button onClick={handleStartFree} size="lg" className="text-lg px-8">
               Start free
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
@@ -404,25 +410,14 @@ const Pitch = () => {
             Start free. Upgrade when you're ready.
           </h2>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 gap-8 justify-center">
             <Card className="hover:shadow-lg transition-shadow">
               <CardContent className="p-6 text-center">
                 <h3 className="text-2xl font-bold mb-4">Free</h3>
                 <p className="text-muted-foreground mb-6">
                   Try aiTA with your real assignments. No credit card.
                 </p>
-                <Button className="w-full">Start Free</Button>
-                <p className="text-sm text-muted-foreground mt-4">Cancel anytime</p>
-              </CardContent>
-            </Card>
-            
-            <Card className="hover:shadow-lg transition-shadow border-primary">
-              <CardContent className="p-6 text-center">
-                <h3 className="text-2xl font-bold mb-4">Pro</h3>
-                <p className="text-muted-foreground mb-6">
-                  For teachers who want it every week.
-                </p>
-                <Button className="w-full">Upgrade to Pro</Button>
+                <Button onClick={handleStartFree} className="w-full">Start Free</Button>
                 <p className="text-sm text-muted-foreground mt-4">Cancel anytime</p>
               </CardContent>
             </Card>
@@ -510,7 +505,7 @@ const Pitch = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-            <Button size="lg" className="text-lg px-8">
+            <Button onClick={handleStartFree} size="lg" className="text-lg px-8">
               Start free
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
