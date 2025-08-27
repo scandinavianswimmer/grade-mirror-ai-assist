@@ -29,7 +29,36 @@ const ProfileSetup = ({ userId, onComplete }: ProfileSetupProps) => {
     setLoading(true);
 
     try {
-      await updateOnboardingProfile(userId, formData);
+      const profileData = {
+        basicInfo: {
+          fullName: formData.full_name,
+          school: formData.school,
+          yearsExperience: formData.years_experience,
+        },
+        teachingEnvironment: {
+          gradeLevel: '',
+          subjects: [],
+          classSize: ''
+        },
+        goals: {
+          primary: '',
+          timeExpectation: ''
+        },
+        technicalComfort: {
+          level: '',
+          previousAI: false
+        },
+        accountSetup: {
+          notifications: true,
+          privacy: 'standard'
+        },
+        referral: {
+          source: 'other',
+          other: formData.why_joining
+        }
+      };
+      
+      await updateOnboardingProfile(userId, profileData);
       toast({
         title: "Profile saved!",
         description: "Your profile has been updated successfully."

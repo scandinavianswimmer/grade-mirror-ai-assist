@@ -36,6 +36,18 @@ interface Class {
   created_at: string;
 }
 
+interface EditableClass {
+  id: string;
+  class_name: string;
+  details_jsonb: {
+    grade: string;
+    size: string;
+    level: string;
+    time: string;
+    students?: string;
+  };
+}
+
 interface ClassSchedule {
   id: string;
   name: string;
@@ -66,7 +78,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [classToEdit, setClassToEdit] = useState<Class | null>(null);
+  const [classToEdit, setClassToEdit] = useState<EditableClass | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('time');
   const [hasAnimated, setHasAnimated] = useState(false);
   const hasInitiallyLoaded = useRef(false);
@@ -265,7 +277,16 @@ const Dashboard = () => {
   };
 
   const handleEditClass = (classData: Class) => {
-    setClassToEdit(classData);
+    // Convert size from number to string for the modal
+    const editableClass: EditableClass = {
+      id: classData.id,
+      class_name: classData.class_name,
+      details_jsonb: {
+        ...classData.details_jsonb,
+        size: classData.details_jsonb.size.toString()
+      }
+    };
+    setClassToEdit(editableClass);
     setShowEditModal(true);
   };
 

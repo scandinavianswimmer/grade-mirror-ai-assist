@@ -14,6 +14,7 @@ import TechnicalComfortStep from './TechnicalComfortStep';
 import AccountSetupStep from './AccountSetupStep';
 import ReferralStep from './ReferralStep';
 import { updateOnboardingProfile, checkGuidedTourStatus } from '@/lib/onboardingApi';
+import GuidedTour from './GuidedTour';
 
 const STEPS = [
   { id: 1, title: 'Basic Information', component: BasicInfoStep },
