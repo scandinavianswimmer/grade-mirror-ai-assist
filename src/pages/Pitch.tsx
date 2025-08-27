@@ -30,25 +30,31 @@ const Pitch = () => {
     navigate('/auth?mode=signup');
   };
 
+  const handleSignIn = () => {
+    navigate('/auth');
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 animate-fade-in">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-8">
-            <div className="text-2xl font-bold text-primary">aiTA</div>
+            <div className="text-2xl font-bold text-primary hover:scale-105 transition-transform duration-300 cursor-pointer">aiTA</div>
             <div className="hidden md:flex space-x-6 text-sm">
-              <a href="#product" className="text-muted-foreground hover:text-foreground transition-colors">Product</a>
-              <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">How it works</a>
-              <a href="#results" className="text-muted-foreground hover:text-foreground transition-colors">Results</a>
-              <a href="#security" className="text-muted-foreground hover:text-foreground transition-colors">Security</a>
-              <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
-              <a href="#faq" className="text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
+              <a href="#product" className="story-link text-muted-foreground hover:text-foreground transition-colors">Product</a>
+              <a href="#how-it-works" className="story-link text-muted-foreground hover:text-foreground transition-colors">How it works</a>
+              <a href="#results" className="story-link text-muted-foreground hover:text-foreground transition-colors">Results</a>
+              <a href="#security" className="story-link text-muted-foreground hover:text-foreground transition-colors">Security</a>
+              <a href="#pricing" className="story-link text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
+              <a href="#faq" className="story-link text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm">Sign in</Button>
-            <Button onClick={handleStartFree} size="sm">Start free</Button>
+            <Button onClick={handleSignIn} variant="ghost" size="sm" className="hover-scale">Sign in</Button>
+            <Button onClick={handleStartFree} size="sm" className="hover-scale relative overflow-hidden">
+              <span className="relative z-10">Start free</span>
+            </Button>
           </div>
         </div>
       </nav>
@@ -76,30 +82,42 @@ const Pitch = () => {
               "Extracts text from student uploads and returns downloadable, annotated essays",
               "Summarizes strengths, next steps, and a feedback synopsis you approve"
             ].map((point, index) => (
-              <div key={index} className="flex items-start space-x-3 animate-fade-in">
-                <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
+              <div key={index} className={`flex items-start space-x-3 animate-fade-in hover-scale transition-all duration-300`} 
+                   style={{ animationDelay: `${index * 0.1}s` }}>
+                <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0 animate-pulse" />
                 <span className="text-muted-foreground">{point}</span>
               </div>
             ))}
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
-            <Button onClick={handleStartFree} size="lg" className="text-lg px-8">
-              Start free
-              <ArrowRight className="w-5 h-5 ml-2" />
+            <Button onClick={handleStartFree} size="lg" className="text-lg px-8 hover-scale relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <span className="relative z-10 flex items-center">
+                Start free
+                <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
+              </span>
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8">
-              Book a 10‑minute walkthrough
+            <Button variant="outline" size="lg" className="text-lg px-8 hover-scale relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <span className="relative z-10">Book a 10‑minute walkthrough</span>
             </Button>
           </div>
           
-          <p className="text-sm text-muted-foreground mb-8">No credit card.</p>
+          <p className="text-sm text-muted-foreground mb-8 animate-fade-in">No credit card.</p>
           
           <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
-            <Badge variant="secondary">In‑app</Badge>
-            <Badge variant="secondary">Teacher‑controlled</Badge>
-            <Badge variant="secondary">Rubric‑aligned</Badge>
-            <Badge variant="secondary">Built for ELA & Humanities</Badge>
+            {[
+              "In‑app",
+              "Teacher‑controlled", 
+              "Rubric‑aligned",
+              "Built for ELA & Humanities"
+            ].map((badge, index) => (
+              <Badge key={index} variant="secondary" className="animate-fade-in hover-scale cursor-default"
+                     style={{ animationDelay: `${0.5 + index * 0.1}s` }}>
+                {badge}
+              </Badge>
+            ))}
           </div>
         </div>
       </section>
@@ -107,23 +125,30 @@ const Pitch = () => {
       {/* Scroll Story */}
       <section className="py-20 px-4 bg-muted/50">
         <div className="container mx-auto max-w-4xl text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-8">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-8 animate-fade-in">
             The real problem isn't you. It's the workload.
           </h2>
           
-          <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
+          <p className="text-xl text-muted-foreground mb-8 leading-relaxed animate-fade-in">
             You write the lessons. You hold the room together. And then the pile of essays whispers, "You're behind." 
             You're not behind. You're carrying too much.
           </p>
           
-          <p className="text-2xl font-semibold text-primary mb-12">
+          <p className="text-2xl font-semibold text-primary mb-12 animate-fade-in animate-pulse">
             aiTA shoulders the repetitive work so you can show up where you matter most.
           </p>
           
           <div className="flex flex-wrap justify-center gap-6">
-            <Badge variant="outline" className="px-4 py-2 text-base">Less mechanical marking</Badge>
-            <Badge variant="outline" className="px-4 py-2 text-base">More real conversations</Badge>
-            <Badge variant="outline" className="px-4 py-2 text-base">More sleep</Badge>
+            {[
+              "Less mechanical marking",
+              "More real conversations",
+              "More sleep"
+            ].map((badge, index) => (
+              <Badge key={index} variant="outline" className="px-4 py-2 text-base hover-scale animate-fade-in"
+                     style={{ animationDelay: `${index * 0.2}s` }}>
+                {badge}
+              </Badge>
+            ))}
           </div>
         </div>
       </section>
@@ -136,12 +161,12 @@ const Pitch = () => {
           </h2>
           
           <div className="flex justify-center mb-12">
-            <div className="bg-muted rounded-full p-1 flex">
+            <div className="bg-muted rounded-full p-1 flex animate-fade-in">
               <button
                 onClick={() => setBeforeAfter('before')}
-                className={`px-6 py-2 rounded-full transition-all ${
+                className={`px-6 py-2 rounded-full transition-all duration-300 hover-scale ${
                   beforeAfter === 'before' 
-                    ? 'bg-primary text-primary-foreground' 
+                    ? 'bg-primary text-primary-foreground shadow-lg' 
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -149,9 +174,9 @@ const Pitch = () => {
               </button>
               <button
                 onClick={() => setBeforeAfter('after')}
-                className={`px-6 py-2 rounded-full transition-all ${
+                className={`px-6 py-2 rounded-full transition-all duration-300 hover-scale ${
                   beforeAfter === 'after' 
-                    ? 'bg-primary text-primary-foreground' 
+                    ? 'bg-primary text-primary-foreground shadow-lg' 
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -163,42 +188,34 @@ const Pitch = () => {
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-4">
               <h3 className="text-lg font-semibold mb-4 text-center">Before aiTA</h3>
-              <div className="flex items-center space-x-3 text-muted-foreground">
-                <Clock className="w-5 h-5" />
-                <span>10:14 PM: still grading</span>
-              </div>
-              <div className="flex items-center space-x-3 text-muted-foreground">
-                <MessageSquare className="w-5 h-5" />
-                <span>Same comment, different student</span>
-              </div>
-              <div className="flex items-center space-x-3 text-muted-foreground">
-                <FileText className="w-5 h-5" />
-                <span>Rubric check, copy‑paste, repeat</span>
-              </div>
-              <div className="flex items-center space-x-3 text-muted-foreground">
-                <Clock className="w-5 h-5" />
-                <span>"One more stack" steals your weekend</span>
-              </div>
+              {[
+                { icon: Clock, text: "10:14 PM: still grading" },
+                { icon: MessageSquare, text: "Same comment, different student" },
+                { icon: FileText, text: "Rubric check, copy‑paste, repeat" },
+                { icon: Clock, text: "\"One more stack\" steals your weekend" }
+              ].map((item, index) => (
+                <div key={index} className="flex items-center space-x-3 text-muted-foreground animate-fade-in hover-scale transition-all duration-300"
+                     style={{ animationDelay: `${index * 0.1}s` }}>
+                  <item.icon className="w-5 h-5 animate-pulse" />
+                  <span>{item.text}</span>
+                </div>
+              ))}
             </div>
             
             <div className="space-y-4">
               <h3 className="text-lg font-semibold mb-4 text-center">After aiTA</h3>
-              <div className="flex items-center space-x-3 text-primary">
-                <CheckCircle2 className="w-5 h-5" />
-                <span>4:30 PM: laptop closed</span>
-              </div>
-              <div className="flex items-center space-x-3 text-primary">
-                <MessageSquare className="w-5 h-5" />
-                <span>Comments drafted in your voice</span>
-              </div>
-              <div className="flex items-center space-x-3 text-primary">
-                <Star className="w-5 h-5" />
-                <span>Rubric‑aligned score proposals ready</span>
-              </div>
-              <div className="flex items-center space-x-3 text-primary">
-                <Download className="w-5 h-5" />
-                <span>Downloadable, annotated essays + summary</span>
-              </div>
+              {[
+                { icon: CheckCircle2, text: "4:30 PM: laptop closed" },
+                { icon: MessageSquare, text: "Comments drafted in your voice" },
+                { icon: Star, text: "Rubric‑aligned score proposals ready" },
+                { icon: Download, text: "Downloadable, annotated essays + summary" }
+              ].map((item, index) => (
+                <div key={index} className="flex items-center space-x-3 text-primary animate-fade-in hover-scale transition-all duration-300 group"
+                     style={{ animationDelay: `${index * 0.1}s` }}>
+                  <item.icon className="w-5 h-5 group-hover:animate-pulse" />
+                  <span>{item.text}</span>
+                </div>
+              ))}
             </div>
           </div>
           
@@ -238,12 +255,13 @@ const Pitch = () => {
                 description: "Export a downloadable, annotated essay plus a clean feedback summary for students and guardians."
               }
             ].map((item, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow">
+              <Card key={index} className="text-center hover:shadow-lg hover-scale transition-all duration-300 animate-fade-in group"
+                   style={{ animationDelay: `${index * 0.2}s` }}>
                 <CardContent className="p-6">
-                  <div className="w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                  <div className="w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold group-hover:animate-pulse transition-all duration-300 hover:scale-110">
                     {item.step}
                   </div>
-                  <h3 className="text-xl font-semibold mb-3">{item.title}</h3>
+                  <h3 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">{item.title}</h3>
                   <p className="text-muted-foreground">{item.description}</p>
                 </CardContent>
               </Card>
@@ -296,10 +314,12 @@ const Pitch = () => {
                 description: "Download annotated PDFs for LMS, conferences, or portfolios."
               }
             ].map((feature, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <feature.icon className="w-8 h-8 text-primary mb-4" />
-                  <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
+              <Card key={index} className="hover:shadow-lg hover-scale transition-all duration-300 animate-fade-in group relative overflow-hidden"
+                   style={{ animationDelay: `${index * 0.15}s` }}>
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <CardContent className="p-6 relative z-10">
+                  <feature.icon className="w-8 h-8 text-primary mb-4 group-hover:animate-pulse transition-all duration-300" />
+                  <h3 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">{feature.title}</h3>
                   <p className="text-muted-foreground">{feature.description}</p>
                 </CardContent>
               </Card>
@@ -311,21 +331,23 @@ const Pitch = () => {
       {/* Demo Section */}
       <section className="py-20 px-4 bg-muted/50">
         <div className="container mx-auto max-w-4xl text-center">
-          <h2 className="text-xl font-semibold text-foreground mb-8">45‑second demo</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-8 animate-fade-in">45‑second demo</h2>
           
-          <p className="text-xl text-muted-foreground mb-8">
+          <p className="text-xl text-muted-foreground mb-8 animate-fade-in">
             "Remember when teaching felt like teaching—not triage at midnight?"
           </p>
           
-          <div className="bg-card rounded-lg p-8 shadow-lg">
-            <div className="bg-muted rounded-lg aspect-video flex items-center justify-center mb-6">
+          <div className="bg-card rounded-lg p-8 shadow-lg hover-scale transition-all duration-300 animate-fade-in group relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="bg-muted rounded-lg aspect-video flex items-center justify-center mb-6 relative group/play cursor-pointer">
               <div className="text-center">
-                <Play className="w-16 h-16 text-primary mx-auto mb-4" />
+                <Play className="w-16 h-16 text-primary mx-auto mb-4 group-hover/play:scale-110 transition-transform duration-300" />
                 <p className="text-lg font-medium">Watch the demo</p>
                 <p className="text-sm text-muted-foreground">Upload → Align → Review → Deliver</p>
               </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover/play:opacity-100 transition-opacity duration-1000 transform -skew-x-12 group-hover/play:translate-x-full"></div>
             </div>
-            <p className="text-muted-foreground">Your voice. Your standards. Your evening back.</p>
+            <p className="text-muted-foreground relative z-10">Your voice. Your standards. Your evening back.</p>
           </div>
         </div>
       </section>
@@ -348,8 +370,9 @@ const Pitch = () => {
               "Less decision fatigue with strong drafts and aligned score proposals",
               "Confidence that grading aligns with expectations and is documented"
             ].map((outcome, index) => (
-              <div key={index} className="flex items-start space-x-3">
-                <CheckCircle2 className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
+              <div key={index} className="flex items-start space-x-3 animate-fade-in hover-scale transition-all duration-300"
+                   style={{ animationDelay: `${index * 0.15}s` }}>
+                <CheckCircle2 className="w-6 h-6 text-primary mt-1 flex-shrink-0 animate-pulse" />
                 <span className="text-lg text-muted-foreground">{outcome}</span>
               </div>
             ))}
@@ -391,10 +414,11 @@ const Pitch = () => {
                 description: "No LMS lock-in; export and share on your terms."
               }
             ].map((item, index) => (
-              <div key={index} className="flex items-start space-x-4">
-                <item.icon className="w-8 h-8 text-primary mt-1 flex-shrink-0" />
+              <div key={index} className="flex items-start space-x-4 animate-fade-in hover-scale transition-all duration-300 group"
+                   style={{ animationDelay: `${index * 0.1}s` }}>
+                <item.icon className="w-8 h-8 text-primary mt-1 flex-shrink-0 group-hover:animate-pulse" />
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
+                  <h3 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors">{item.title}</h3>
                   <p className="text-muted-foreground">{item.description}</p>
                 </div>
               </div>
@@ -415,24 +439,33 @@ const Pitch = () => {
           </h2>
           
           <div className="grid md:grid-cols-2 gap-8 justify-center">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6 text-center">
-                <h3 className="text-2xl font-bold mb-4">Free</h3>
+            <Card className="hover:shadow-lg hover-scale transition-all duration-300 animate-fade-in group relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <CardContent className="p-6 text-center relative z-10">
+                <h3 className="text-2xl font-bold mb-4 group-hover:text-primary transition-colors">Free</h3>
                 <p className="text-muted-foreground mb-6">
                   Try aiTA with your real assignments. No credit card.
                 </p>
-                <Button onClick={handleStartFree} className="w-full">Start free</Button>
+                <Button onClick={handleStartFree} className="w-full hover-scale relative overflow-hidden group/button">
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover/button:opacity-100 transition-opacity duration-300"></div>
+                  <span className="relative z-10">Start free</span>
+                </Button>
                 <p className="text-sm text-muted-foreground mt-4">Cancel anytime</p>
               </CardContent>
             </Card>
             
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6 text-center">
-                <h3 className="text-2xl font-bold mb-4">School/District</h3>
+            <Card className="hover:shadow-lg hover-scale transition-all duration-300 animate-fade-in group relative overflow-hidden"
+                  style={{ animationDelay: '0.2s' }}>
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <CardContent className="p-6 text-center relative z-10">
+                <h3 className="text-2xl font-bold mb-4 group-hover:text-primary transition-colors">School/District</h3>
                 <p className="text-muted-foreground mb-6">
                   Volume pricing + onboarding support.
                 </p>
-                <Button variant="outline" className="w-full">Contact Sales</Button>
+                <Button variant="outline" className="w-full hover-scale relative overflow-hidden group/button">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover/button:opacity-100 transition-opacity duration-300"></div>
+                  <span className="relative z-10">Contact Sales</span>
+                </Button>
                 <p className="text-sm text-muted-foreground mt-4">Custom terms</p>
               </CardContent>
             </Card>
