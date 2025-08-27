@@ -24,14 +24,21 @@ export const EssayFeedbackPdfRenderer: React.FC<EssayFeedbackPdfRendererProps> =
   onPrint
 }) => {
   const [activeAnchor, setActiveAnchor] = useState<string | null>(null);
+  
+  // Parse the feedback JSON
   const parsedFeedback = parseAIFeedback(feedbackJson);
   
   if (!parsedFeedback) {
     return <div className="p-8">Error: Unable to parse feedback data</div>;
   }
 
+  // Debug logging to see what we're getting
+  console.log('Raw feedbackJson:', feedbackJson);
+  console.log('Parsed feedback:', parsedFeedback);
+
   // Resolve anchors from inline comments
   const anchors = resolveAnchors(essayText, parsedFeedback.inlineComments || []);
+  console.log('Resolved anchors:', anchors);
   
   const handlePrint = () => {
     if (onPrint) {
