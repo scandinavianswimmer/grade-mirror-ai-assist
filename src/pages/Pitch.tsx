@@ -61,7 +61,7 @@ const Pitch = () => {
           </h1>
           
           <p className="text-xl text-muted-foreground mb-8 leading-relaxed animate-fade-in">
-            The late-night grading. The copy-and-paste feedback. The guilt when family time loses to the stack on your desk. 
+            The late‑night grading. The copy‑and‑paste feedback. The guilt when family time loses to the stack on your desk. 
             It's not that you're not enough—you're being asked to do the work of three people.
           </p>
           
@@ -71,7 +71,7 @@ const Pitch = () => {
           
           <div className="grid md:grid-cols-2 gap-4 mb-12 text-left max-w-2xl mx-auto">
             {[
-              "Drafts inline, teacher-tone comments that learn from your edits",
+              "Drafts inline, teacher‑tone comments that learn from your edits",
               "Finds your rubric and instructions, aligns feedback, and proposes scores",
               "Extracts text from student uploads and returns downloadable, annotated essays",
               "Summarizes strengths, next steps, and a feedback synopsis you approve"
@@ -83,20 +83,22 @@ const Pitch = () => {
             ))}
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
             <Button onClick={handleStartFree} size="lg" className="text-lg px-8">
               Start free
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
             <Button variant="outline" size="lg" className="text-lg px-8">
-              Book a 10-min walkthrough
+              Book a 10‑minute walkthrough
             </Button>
           </div>
           
+          <p className="text-sm text-muted-foreground mb-8">No credit card.</p>
+          
           <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
-            <Badge variant="secondary">In-app</Badge>
-            <Badge variant="secondary">Teacher-controlled</Badge>
-            <Badge variant="secondary">Rubric-aligned</Badge>
+            <Badge variant="secondary">In‑app</Badge>
+            <Badge variant="secondary">Teacher‑controlled</Badge>
+            <Badge variant="secondary">Rubric‑aligned</Badge>
             <Badge variant="secondary">Built for ELA & Humanities</Badge>
           </div>
         </div>
@@ -159,49 +161,45 @@ const Pitch = () => {
           </div>
           
           <div className="grid md:grid-cols-2 gap-8">
-            {beforeAfter === 'before' ? (
-              <>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-3 text-muted-foreground">
-                    <Clock className="w-5 h-5" />
-                    <span>10:14 PM: still grading</span>
-                  </div>
-                  <div className="flex items-center space-x-3 text-muted-foreground">
-                    <MessageSquare className="w-5 h-5" />
-                    <span>Same comment, different student</span>
-                  </div>
-                  <div className="flex items-center space-x-3 text-muted-foreground">
-                    <FileText className="w-5 h-5" />
-                    <span>Rubric check, copy-paste, repeat</span>
-                  </div>
-                  <div className="flex items-center space-x-3 text-muted-foreground">
-                    <Clock className="w-5 h-5" />
-                    <span>Weekend disappears to "just one more stack"</span>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-3 text-primary">
-                    <CheckCircle2 className="w-5 h-5" />
-                    <span>4:30 PM: laptop closed</span>
-                  </div>
-                  <div className="flex items-center space-x-3 text-primary">
-                    <MessageSquare className="w-5 h-5" />
-                    <span>Comments drafted in your voice</span>
-                  </div>
-                  <div className="flex items-center space-x-3 text-primary">
-                    <Star className="w-5 h-5" />
-                    <span>Rubric-true, score proposals ready</span>
-                  </div>
-                  <div className="flex items-center space-x-3 text-primary">
-                    <Download className="w-5 h-5" />
-                    <span>Downloadable, annotated essays + summary</span>
-                  </div>
-                </div>
-              </>
-            )}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold mb-4 text-center">Before aiTA</h3>
+              <div className="flex items-center space-x-3 text-muted-foreground">
+                <Clock className="w-5 h-5" />
+                <span>10:14 PM: still grading</span>
+              </div>
+              <div className="flex items-center space-x-3 text-muted-foreground">
+                <MessageSquare className="w-5 h-5" />
+                <span>Same comment, different student</span>
+              </div>
+              <div className="flex items-center space-x-3 text-muted-foreground">
+                <FileText className="w-5 h-5" />
+                <span>Rubric check, copy‑paste, repeat</span>
+              </div>
+              <div className="flex items-center space-x-3 text-muted-foreground">
+                <Clock className="w-5 h-5" />
+                <span>"One more stack" steals your weekend</span>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold mb-4 text-center">After aiTA</h3>
+              <div className="flex items-center space-x-3 text-primary">
+                <CheckCircle2 className="w-5 h-5" />
+                <span>4:30 PM: laptop closed</span>
+              </div>
+              <div className="flex items-center space-x-3 text-primary">
+                <MessageSquare className="w-5 h-5" />
+                <span>Comments drafted in your voice</span>
+              </div>
+              <div className="flex items-center space-x-3 text-primary">
+                <Star className="w-5 h-5" />
+                <span>Rubric‑aligned score proposals ready</span>
+              </div>
+              <div className="flex items-center space-x-3 text-primary">
+                <Download className="w-5 h-5" />
+                <span>Downloadable, annotated essays + summary</span>
+              </div>
+            </div>
           </div>
           
           <p className="text-center text-xl font-semibold text-foreground mt-12">
@@ -214,7 +212,7 @@ const Pitch = () => {
       <section id="how-it-works" className="py-20 px-4 bg-muted/50">
         <div className="container mx-auto max-w-6xl">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-foreground mb-4">
-            Feedback that sounds like you—delivered faster.
+            How it works
           </h2>
           
           <div className="grid md:grid-cols-4 gap-8 mt-16">
@@ -274,7 +272,7 @@ const Pitch = () => {
               },
               {
                 icon: Star,
-                title: "Rubric-true scoring.",
+                title: "Rubric‑aligned scoring.",
                 description: "Aligned proposals you can defend—and edit in seconds."
               },
               {
@@ -313,6 +311,8 @@ const Pitch = () => {
       {/* Demo Section */}
       <section className="py-20 px-4 bg-muted/50">
         <div className="container mx-auto max-w-4xl text-center">
+          <h2 className="text-xl font-semibold text-foreground mb-8">45‑second demo</h2>
+          
           <p className="text-xl text-muted-foreground mb-8">
             "Remember when teaching felt like teaching—not triage at midnight?"
           </p>
@@ -321,8 +321,8 @@ const Pitch = () => {
             <div className="bg-muted rounded-lg aspect-video flex items-center justify-center mb-6">
               <div className="text-center">
                 <Play className="w-16 h-16 text-primary mx-auto mb-4" />
-                <p className="text-lg font-medium">Demo Video</p>
-                <p className="text-sm text-muted-foreground">Upload → Align → Review → Export</p>
+                <p className="text-lg font-medium">Watch the demo</p>
+                <p className="text-sm text-muted-foreground">Upload → Align → Review → Deliver</p>
               </div>
             </div>
             <p className="text-muted-foreground">Your voice. Your standards. Your evening back.</p>
@@ -334,15 +334,19 @@ const Pitch = () => {
       <section id="results" className="py-20 px-4">
         <div className="container mx-auto max-w-4xl">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-foreground mb-16">
-            Outcomes teachers actually feel
+            Results
           </h2>
+          
+          <h3 className="text-xl font-semibold text-center text-muted-foreground mb-12">
+            What teachers say they notice first
+          </h3>
           
           <div className="grid md:grid-cols-2 gap-8">
             {[
-              "Time back for planning, parent emails, and life outside school",
+              "Time back for planning, feedback conferences, and life outside school",
               "Better student uptake because feedback is clear and in your voice", 
               "Less decision fatigue with strong drafts and aligned score proposals",
-              "Confidence that your grading aligns with expectations and is documented"
+              "Confidence that grading aligns with expectations and is documented"
             ].map((outcome, index) => (
               <div key={index} className="flex items-start space-x-3">
                 <CheckCircle2 className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
@@ -361,7 +365,7 @@ const Pitch = () => {
       <section id="security" className="py-20 px-4 bg-muted/50">
         <div className="container mx-auto max-w-4xl">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-foreground mb-16">
-            You stay in control. Your data stays yours.
+            Security & control
           </h2>
           
           <div className="grid md:grid-cols-2 gap-8">
@@ -417,7 +421,7 @@ const Pitch = () => {
                 <p className="text-muted-foreground mb-6">
                   Try aiTA with your real assignments. No credit card.
                 </p>
-                <Button onClick={handleStartFree} className="w-full">Start Free</Button>
+                <Button onClick={handleStartFree} className="w-full">Start free</Button>
                 <p className="text-sm text-muted-foreground mt-4">Cancel anytime</p>
               </CardContent>
             </Card>
@@ -445,29 +449,29 @@ const Pitch = () => {
           
           <div className="space-y-4">
             {[
-              {
+               {
                 question: "Will aiTA replace me?",
-                answer: "No. aiTA drafts; you approve. It's a power tool, not a substitute."
+                answer: "No. aiTA drafts; you approve. It's a power tool that accelerates your workflow—not a substitute for your judgment."
               },
               {
                 question: "Will comments sound generic?",
-                answer: "aiTA learns from your edits, so feedback keeps sounding like you."
+                answer: "aiTA learns from your edits, so feedback keeps sounding like you and gets closer to your voice over time."
               },
               {
                 question: "Can I use my own rubrics?",
-                answer: "Yes. aiTA pulls your rubric and proposes aligned scores you can edit."
+                answer: "Yes. aiTA finds your rubric and proposes rubric‑aligned scores that you can accept or adjust."
               },
               {
                 question: "Does it work for ELA and History?",
-                answer: "Yes—built for essay-driven courses first, with more subjects coming."
+                answer: "Yes—aiTA is built for essay‑driven courses first, with broader subject support planned."
               },
               {
                 question: "What about privacy?",
-                answer: "We support district privacy practices. You control retention and exports."
+                answer: "We support district privacy practices. You control retention and exports, and you can delete your data."
               },
               {
                 question: "How hard is it to start?",
-                answer: "Upload, review, export. Most teachers are comfortable in minutes."
+                answer: "Upload, review, export. Most teachers feel comfortable within minutes."
               }
             ].map((faq, index) => (
               <Card key={index} className="hover:shadow-sm transition-shadow">
@@ -510,7 +514,7 @@ const Pitch = () => {
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
             <Button variant="outline" size="lg" className="text-lg px-8">
-              Book a 10-min walkthrough
+              Book a 10‑minute walkthrough
             </Button>
           </div>
           
