@@ -7,10 +7,11 @@ import { Label } from '@/components/ui/label'
 import { useAuth } from '@/components/AuthProvider'
 import { GraduationCap } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true)
+  const [searchParams] = useSearchParams()
+  const [isLogin, setIsLogin] = useState(searchParams.get('mode') !== 'signup')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')

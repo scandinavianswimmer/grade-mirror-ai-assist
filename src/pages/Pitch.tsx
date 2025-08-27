@@ -27,7 +27,7 @@ const Pitch = () => {
   };
 
   const handleStartFree = () => {
-    navigate('/auth');
+    navigate('/auth?mode=signup');
   };
 
   return (
