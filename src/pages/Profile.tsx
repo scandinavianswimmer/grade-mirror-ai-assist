@@ -1,0 +1,428 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+import { useAuth } from '@/components/AuthProvider';
+import { supabase } from '@/integrations/supabase/client';
+import Navbar from '@/components/Navbar';
+import { User, School, Calendar, Mail, Save, Edit3, X } from 'lucide-react';
+
+interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  full_name: string;
+  school: string;
+  years_experience: number;
+  onboarding_complete: boolean;
+  plan: string;
+  role: string;
+  created_at: string;
+}
+
+const Profile = () => {
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    full_name: '',
+    name: '',
+    school: '',
+    years_experience: 0,
+  });
+
+  useEffect(() => {
+    if (user) {
+      fetchUserProfile();
+    }
+  }, [user]);
+
+  const fetchUserProfile = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        toast.error('Failed to load profile');
+        return;
+      }
+
+      const userProfile = {
+        ...data,
+        email: user.email || data.email || ''
+      };
+
+      setProfile(userProfile);
+      setFormData({
+        full_name: userProfile.full_name || '',
+        name: userProfile.name || '',
+        school: userProfile.school || '',
+        years_experience: userProfile.years_experience || 0,
+      });
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      toast.error('Failed to load profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (field: string, value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user || !profile) return;
+
+    try {
+      setSaving(true);
+      
+      const { error } = await supabase
+        .from('users')
+        .update({
+          full_name: formData.full_name,
+          name: formData.name,
+          school: formData.school,
+          years_experience: Number(formData.years_experience),
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Error updating profile:', error);
+        toast.error('Failed to update profile');
+        return;
+      }
+
+      // Update local state
+      setProfile(prev => prev ? {
+        ...prev,
+        full_name: formData.full_name,
+        name: formData.name,
+        school: formData.school,
+        years_experience: Number(formData.years_experience),
+      } : null);
+
+      setEditing(false);
+      toast.success('Profile updated successfully!');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setFormData({
+      full_name: profile?.full_name || '',
+      name: profile?.name || '',
+      school: profile?.school || '',
+      years_experience: profile?.years_experience || 0,
+    });
+    setEditing(false);
+  };
+
+  const getInitials = (name: string, email: string) => {
+    if (name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+    }
+    return email.substring(0, 2).toUpperCase();
+  };
+
+  const getPlanColor = (plan: string) => {
+    switch (plan?.toLowerCase()) {
+      case 'premium':
+        return 'bg-purple-100 text-purple-800';
+      case 'pro':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getExperienceLabel = (years: number) => {
+    if (years === 0) return 'New Teacher';
+    if (years === 1) return '1 Year';
+    if (years < 5) return `${years} Years`;
+    if (years < 10) return `${years} Years (Experienced)`;
+    return `${years}+ Years (Veteran)`;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-lg font-medium animate-pulse">Loading profile...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <Card className="max-w-2xl mx-auto">
+            <CardContent className="p-8 text-center">
+              <h2 className="text-xl font-semibold text-gray-700 mb-2">Profile Not Found</h2>
+              <p className="text-gray-600">Unable to load your profile information.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+      <Navbar />
+      
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
+              <p className="text-gray-600 mt-1">Manage your account information and preferences</p>
+            </div>
+            {!editing ? (
+              <Button 
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-2"
+              >
+                <Edit3 className="w-4 h-4" />
+                Edit Profile
+              </Button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={handleCancelEdit}
+                  className="flex items-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSaveProfile}
+                  disabled={saving}
+                  className="flex items-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Profile Overview */}
+            <Card className="lg:col-span-1">
+              <CardHeader className="text-center">
+                <div className="flex justify-center mb-4">
+                  <Avatar className="h-24 w-24">
+                    <AvatarFallback className="bg-blue-600 text-white text-2xl">
+                      {getInitials(profile.full_name || profile.name || '', profile.email)}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                <CardTitle className="text-xl">
+                  {profile.full_name || profile.name || 'Teacher'}
+                </CardTitle>
+                <p className="text-gray-600">{profile.email}</p>
+                <div className="flex justify-center mt-3">
+                  <Badge className={getPlanColor(profile.plan)}>
+                    {profile.plan?.charAt(0).toUpperCase() + profile.plan?.slice(1) || 'Free'} Plan
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <School className="w-5 h-5 text-gray-500" />
+                  <div>
+                    <p className="text-sm font-medium">School</p>
+                    <p className="text-sm text-gray-600">{profile.school || 'Not specified'}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-5 h-5 text-gray-500" />
+                  <div>
+                    <p className="text-sm font-medium">Experience</p>
+                    <p className="text-sm text-gray-600">
+                      {getExperienceLabel(profile.years_experience || 0)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <User className="w-5 h-5 text-gray-500" />
+                  <div>
+                    <p className="text-sm font-medium">Role</p>
+                    <p className="text-sm text-gray-600">{profile.role || 'Teacher'}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Mail className="w-5 h-5 text-gray-500" />
+                  <div>
+                    <p className="text-sm font-medium">Member Since</p>
+                    <p className="text-sm text-gray-600">
+                      {new Date(profile.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Profile Details */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Profile Information</CardTitle>
+                <p className="text-sm text-gray-600">
+                  {editing ? 'Update your profile information below' : 'Your current profile information'}
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="full_name">Full Name</Label>
+                    {editing ? (
+                      <Input
+                        id="full_name"
+                        value={formData.full_name}
+                        onChange={(e) => handleInputChange('full_name', e.target.value)}
+                        placeholder="Enter your full name"
+                      />
+                    ) : (
+                      <p className="text-sm text-gray-700 p-2 bg-gray-50 rounded">
+                        {profile.full_name || 'Not specified'}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Display Name</Label>
+                    {editing ? (
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => handleInputChange('name', e.target.value)}
+                        placeholder="Enter your display name"
+                      />
+                    ) : (
+                      <p className="text-sm text-gray-700 p-2 bg-gray-50 rounded">
+                        {profile.name || 'Not specified'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <p className="text-sm text-gray-700 p-2 bg-gray-50 rounded">
+                    {profile.email}
+                  </p>
+                  <p className="text-xs text-gray-500">Email cannot be changed from this page</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="school">School/Institution</Label>
+                  {editing ? (
+                    <Input
+                      id="school"
+                      value={formData.school}
+                      onChange={(e) => handleInputChange('school', e.target.value)}
+                      placeholder="Enter your school or institution name"
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-700 p-2 bg-gray-50 rounded">
+                      {profile.school || 'Not specified'}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="years_experience">Years of Teaching Experience</Label>
+                  {editing ? (
+                    <Select 
+                      value={formData.years_experience?.toString()} 
+                      onValueChange={(value) => handleInputChange('years_experience', parseInt(value))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select years of experience" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">New Teacher (0 years)</SelectItem>
+                        <SelectItem value="1">1 Year</SelectItem>
+                        <SelectItem value="2">2 Years</SelectItem>
+                        <SelectItem value="3">3 Years</SelectItem>
+                        <SelectItem value="4">4 Years</SelectItem>
+                        <SelectItem value="5">5 Years</SelectItem>
+                        <SelectItem value="6">6 Years</SelectItem>
+                        <SelectItem value="7">7 Years</SelectItem>
+                        <SelectItem value="8">8 Years</SelectItem>
+                        <SelectItem value="9">9 Years</SelectItem>
+                        <SelectItem value="10">10+ Years</SelectItem>
+                        <SelectItem value="15">15+ Years</SelectItem>
+                        <SelectItem value="20">20+ Years</SelectItem>
+                        <SelectItem value="25">25+ Years</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="text-sm text-gray-700 p-2 bg-gray-50 rounded">
+                      {getExperienceLabel(profile.years_experience || 0)}
+                    </p>
+                  )}
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Account Status</Label>
+                  <div className="flex items-center gap-4">
+                    <Badge variant={profile.onboarding_complete ? "default" : "secondary"}>
+                      {profile.onboarding_complete ? "Setup Complete" : "Setup Pending"}
+                    </Badge>
+                    <Badge className={getPlanColor(profile.plan)}>
+                      {profile.plan?.charAt(0).toUpperCase() + profile.plan?.slice(1) || 'Free'} Plan
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Profile;

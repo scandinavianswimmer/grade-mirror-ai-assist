@@ -20,6 +20,7 @@ import Training from "./pages/Training";
 import LMSIntegration from "./pages/LMSIntegration";
 import LMSCallback from "./pages/LMSCallback";
 import PrivacySettings from "./pages/PrivacySettings";
+import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import FreemiumDashboard from "./pages/FreemiumDashboard";
@@ -233,6 +234,12 @@ const AppContent = () => {
       <Route path="/privacy" element={
         <AuthGuard>
           <PrivacySettings />
+        </AuthGuard>
+      } />
+      
+      <Route path="/profile" element={
+        <AuthGuard>
+          <Profile />
         </AuthGuard>
       } />
       
