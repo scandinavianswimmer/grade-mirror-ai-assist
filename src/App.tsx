@@ -30,6 +30,7 @@ import OnboardingFlow from "./pages/OnboardingFlow";
 import PodcastGenerator from "./pages/PodcastGenerator";
 import PodcastDetail from "./pages/PodcastDetail";
 import { PdfSubmission } from "./pages/PdfSubmission";
+import Pitch from "./pages/Pitch";
 
 const queryClient = new QueryClient();
 
@@ -249,6 +250,7 @@ const AppContent = () => {
       } />
       
       <Route path="/pdf/submission/:id" element={<PdfSubmission />} />
+      <Route path="/pitch" element={<Pitch />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
