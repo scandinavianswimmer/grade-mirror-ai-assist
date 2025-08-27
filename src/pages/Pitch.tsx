@@ -66,7 +66,7 @@ const Pitch = () => {
           <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 min-h-[8rem] md:min-h-[12rem] flex items-center justify-center">
             <TypewriterText 
               text={'You\'re not "falling behind." You\'re carrying the weight of a whole classroom.'}
-              speed={80}
+              wordsPerMinute={82}
               className="text-4xl md:text-6xl font-bold text-foreground"
             />
           </h1>

@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 
 interface TypewriterTextProps {
   text: string;
-  speed?: number; // characters per second
+  wordsPerMinute?: number; // words per minute instead of characters per second
   className?: string;
   onComplete?: () => void;
 }
 
 const TypewriterText: React.FC<TypewriterTextProps> = ({ 
   text, 
-  speed = 80, 
+  wordsPerMinute = 82, 
   className = "",
   onComplete 
 }) => {
@@ -22,8 +22,12 @@ const TypewriterText: React.FC<TypewriterTextProps> = ({
     setDisplayText("");
     setIsComplete(false);
     
+    // Convert words per minute to characters per second
+    // Average word length is ~5 characters
+    const charactersPerSecond = (wordsPerMinute * 5) / 60;
+    const intervalTime = 1000 / charactersPerSecond; // milliseconds per character
+    
     let currentIndex = 0;
-    const intervalTime = 1000 / speed; // milliseconds per character
     
     const timer = setInterval(() => {
       if (currentIndex < text.length) {
@@ -37,19 +41,35 @@ const TypewriterText: React.FC<TypewriterTextProps> = ({
     }, intervalTime);
 
     return () => clearInterval(timer);
-  }, [text, speed, onComplete]);
+  }, [text, wordsPerMinute, onComplete]);
 
   return (
     <span className={className}>
       {displayText}
       <span 
-        className={`inline-block w-0.5 h-[1em] bg-primary ml-1 ${
-          isComplete ? 'animate-pulse' : 'animate-pulse opacity-100'
+        className={`inline-block w-0.5 h-[1em] ml-1 bg-primary ${
+          isComplete 
+            ? 'animate-pulse' 
+            : ''
         }`}
         style={{
-          animation: 'pulse 1s infinite'
+          animation: isComplete 
+            ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+            : 'typing-blink 1.2s infinite'
         }}
       />
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @keyframes typing-blink {
+            0%, 50% {
+              opacity: 1;
+            }
+            51%, 100% {
+              opacity: 0;
+            }
+          }
+        `
+      }} />
     </span>
   );
 };
