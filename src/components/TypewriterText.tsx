@@ -9,7 +9,7 @@ interface TypewriterTextProps {
 
 const TypewriterText: React.FC<TypewriterTextProps> = ({ 
   text, 
-  wordsPerMinute = 82, 
+  wordsPerMinute = 91, 
   className = "",
   onComplete 
 }) => {
@@ -47,14 +47,10 @@ const TypewriterText: React.FC<TypewriterTextProps> = ({
     <span className={className}>
       {displayText}
       <span 
-        className={`inline-block w-0.5 h-[1em] ml-1 bg-primary ${
-          isComplete 
-            ? 'animate-pulse' 
-            : ''
-        }`}
+        className="inline-block w-0.5 h-[1em] ml-1 bg-primary"
         style={{
           animation: isComplete 
-            ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+            ? 'cursor-fade 1.5s ease-in-out infinite'
             : 'typing-blink 1.2s infinite'
         }}
       />
@@ -66,6 +62,15 @@ const TypewriterText: React.FC<TypewriterTextProps> = ({
             }
             51%, 100% {
               opacity: 0;
+            }
+          }
+          
+          @keyframes cursor-fade {
+            0%, 100% {
+              opacity: 1;
+            }
+            50% {
+              opacity: 0.3;
             }
           }
         `
