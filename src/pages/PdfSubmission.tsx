@@ -15,9 +15,15 @@ interface Submission {
   assignments?: {
     title: string;
     course_name?: string;
-  };
-  profiles?: {
-    display_name?: string;
+    class_id?: string;
+    user_id?: string;
+    users?: {
+      name?: string;
+      full_name?: string;
+    };
+    classes?: {
+      class_name: string;
+    };
   };
 }
 
@@ -42,7 +48,16 @@ export const PdfSubmission: React.FC = () => {
             *,
             assignments (
               title,
-              course_name
+              course_name,
+              class_id,
+              user_id,
+              users!assignments_user_id_fkey (
+                name,
+                full_name
+              ),
+              classes (
+                class_name
+              )
             )
           `)
           .eq('id', id)
@@ -97,9 +112,9 @@ export const PdfSubmission: React.FC = () => {
   const meta = {
     assignmentTitle: submission.assignments?.title || 'Assignment',
     studentName: submission.student_name || 'Unknown Student',
-    teacherName: 'Teacher', // We'll get this from teacher info later
+    teacherName: submission.assignments?.users?.full_name || submission.assignments?.users?.name || 'Teacher',
     generatedAtISO: new Date().toISOString(),
-    course: submission.assignments?.course_name || 'Course'
+    course: submission.assignments?.classes?.class_name || submission.assignments?.course_name || 'Course'
   };
 
   // Use essay if available, otherwise show a message
