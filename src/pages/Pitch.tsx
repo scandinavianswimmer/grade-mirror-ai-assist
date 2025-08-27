@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import TypewriterText from '@/components/TypewriterText';
 import { 
   Clock, 
   CheckCircle2, 
@@ -62,8 +63,12 @@ const Pitch = () => {
       {/* Hero Section */}
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-4xl text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 animate-fade-in">
-            You're not "falling behind." You're carrying the weight of a whole classroom.
+          <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 min-h-[8rem] md:min-h-[12rem] flex items-center justify-center">
+            <TypewriterText 
+              text={'You\'re not "falling behind." You\'re carrying the weight of a whole classroom.'}
+              speed={80}
+              className="text-4xl md:text-6xl font-bold text-foreground"
+            />
           </h1>
           
           <p className="text-xl text-muted-foreground mb-8 leading-relaxed animate-fade-in">
