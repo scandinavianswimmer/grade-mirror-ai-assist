@@ -116,40 +116,9 @@ export const EssayFeedbackPdfRenderer: React.FC<EssayFeedbackPdfRendererProps> =
         </div>
       </div>
 
-      {/* Feedback & Annotations */}
-      {parsedFeedback.inlineComments && parsedFeedback.inlineComments.length > 0 && (
-        <div className="px-8 mb-8 page-break">
-          <h2 className="text-xl font-semibold mb-4 text-foreground">Feedback & Annotations</h2>
-          <div className="space-y-4">
-            {parsedFeedback.inlineComments.map((comment, index) => (
-              <div key={index} className="border border-border rounded p-4 bg-card avoid-break">
-                <div className="flex items-start gap-3">
-                  <span className="bg-primary text-primary-foreground px-2 py-1 rounded text-sm font-bold">
-                    [{index + 1}]
-                  </span>
-                  <div className="flex-1">
-                    <p className="text-foreground mb-2">{comment.comment}</p>
-                    {comment.text && (
-                      <blockquote className="border-l-4 border-muted-foreground pl-4 text-muted-foreground italic text-sm">
-                        "{comment.text}"
-                      </blockquote>
-                    )}
-                    {comment.category && (
-                      <span className="inline-block mt-2 px-2 py-1 bg-secondary text-secondary-foreground rounded text-xs">
-                        {comment.category}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Overall Feedback */}
       {parsedFeedback.overallFeedback && (
-        <div className="px-8 mb-8 avoid-break">
+        <div className="px-8 mb-8 page-break">
           <h2 className="text-xl font-semibold mb-4 text-foreground">Overall Feedback</h2>
           <div className="bg-card border border-border rounded p-6">
             <p className="text-foreground leading-relaxed">{parsedFeedback.overallFeedback}</p>
