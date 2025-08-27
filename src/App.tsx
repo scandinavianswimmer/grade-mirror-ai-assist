@@ -19,7 +19,6 @@ import GradingPreview from "./pages/GradingPreview";
 import Training from "./pages/Training";
 import LMSIntegration from "./pages/LMSIntegration";
 import LMSCallback from "./pages/LMSCallback";
-import PrivacySettings from "./pages/PrivacySettings";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -228,12 +227,6 @@ const AppContent = () => {
       <Route path="/lms/callback" element={
         <AuthGuard>
           <LMSCallback />
-        </AuthGuard>
-      } />
-      
-      <Route path="/privacy" element={
-        <AuthGuard>
-          <PrivacySettings />
         </AuthGuard>
       } />
       

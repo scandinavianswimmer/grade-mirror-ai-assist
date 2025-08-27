@@ -26,7 +26,6 @@ const Navbar = () => {
     { path: '/', label: 'Dashboard', icon: Home },
     { path: '/upload-training', label: 'Upload Training', icon: Upload },
     { path: '/submit-assignment', label: 'Grade Essay', icon: Brain },
-    { path: '/privacy', label: 'Privacy', icon: Settings },
   ];
 
   return (
@@ -87,10 +86,6 @@ const Navbar = () => {
                   <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
                     <span>Edit Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/privacy')} className="cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-600 focus:text-red-600">

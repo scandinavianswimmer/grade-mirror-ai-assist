@@ -5,14 +5,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/Navbar';
-import { User, School, Calendar, Mail, Save, Edit3, X } from 'lucide-react';
+import DataManagement from '@/components/DataManagement';
+import { usePrivacySettings } from '@/hooks/usePrivacySettings';
+import { User, School, Calendar, Mail, Save, Edit3, X, Shield, Lock, Database, AlertTriangle, Settings } from 'lucide-react';
 
 interface UserProfile {
   id: string;
@@ -33,12 +37,16 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [dataRetention, setDataRetention] = useState("30");
   const [formData, setFormData] = useState({
     full_name: '',
     name: '',
     school: '',
     years_experience: 0,
   });
+
+  // Privacy settings hook
+  const { settings: privacySettings, isLoading: privacyLoading, saveSettings, isSaving } = usePrivacySettings();
 
   useEffect(() => {
     if (user) {
@@ -141,6 +149,10 @@ const Profile = () => {
     setEditing(false);
   };
 
+  const handlePrivacySettingChange = (key: string, value: boolean) => {
+    saveSettings({ [key]: value });
+  };
+
   const getInitials = (name: string, email: string) => {
     if (name) {
       return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
@@ -167,7 +179,7 @@ const Profile = () => {
     return `${years}+ Years (Veteran)`;
   };
 
-  if (loading) {
+  if (loading || privacyLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
         <Navbar />
@@ -206,7 +218,7 @@ const Profile = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
-              <p className="text-gray-600 mt-1">Manage your account information and preferences</p>
+              <p className="text-gray-600 mt-1">Manage your account information, privacy settings, and preferences</p>
             </div>
             {!editing ? (
               <Button 
@@ -238,187 +250,329 @@ const Profile = () => {
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Profile Overview */}
-            <Card className="lg:col-span-1">
-              <CardHeader className="text-center">
-                <div className="flex justify-center mb-4">
-                  <Avatar className="h-24 w-24">
-                    <AvatarFallback className="bg-blue-600 text-white text-2xl">
-                      {getInitials(profile.full_name || profile.name || '', profile.email)}
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
-                <CardTitle className="text-xl">
-                  {profile.full_name || profile.name || 'Teacher'}
-                </CardTitle>
-                <p className="text-gray-600">{profile.email}</p>
-                <div className="flex justify-center mt-3">
-                  <Badge className={getPlanColor(profile.plan)}>
-                    {profile.plan?.charAt(0).toUpperCase() + profile.plan?.slice(1) || 'Free'} Plan
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <School className="w-5 h-5 text-gray-500" />
-                  <div>
-                    <p className="text-sm font-medium">School</p>
-                    <p className="text-sm text-gray-600">{profile.school || 'Not specified'}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <Calendar className="w-5 h-5 text-gray-500" />
-                  <div>
-                    <p className="text-sm font-medium">Experience</p>
+          <Tabs defaultValue="profile" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="profile" className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Profile Information
+              </TabsTrigger>
+              <TabsTrigger value="privacy" className="flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                Privacy & Settings
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="profile" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Profile Overview */}
+                <Card className="lg:col-span-1">
+                  <CardHeader className="text-center">
+                    <div className="flex justify-center mb-4">
+                      <Avatar className="h-24 w-24">
+                        <AvatarFallback className="bg-blue-600 text-white text-2xl">
+                          {getInitials(profile.full_name || profile.name || '', profile.email)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                    <CardTitle className="text-xl">
+                      {profile.full_name || profile.name || 'Teacher'}
+                    </CardTitle>
+                    <p className="text-gray-600">{profile.email}</p>
+                    <div className="flex justify-center mt-3">
+                      <Badge className={getPlanColor(profile.plan)}>
+                        {profile.plan?.charAt(0).toUpperCase() + profile.plan?.slice(1) || 'Free'} Plan
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <School className="w-5 h-5 text-gray-500" />
+                      <div>
+                        <p className="text-sm font-medium">School</p>
+                        <p className="text-sm text-gray-600">{profile.school || 'Not specified'}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <Calendar className="w-5 h-5 text-gray-500" />
+                      <div>
+                        <p className="text-sm font-medium">Experience</p>
+                        <p className="text-sm text-gray-600">
+                          {getExperienceLabel(profile.years_experience || 0)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <User className="w-5 h-5 text-gray-500" />
+                      <div>
+                        <p className="text-sm font-medium">Role</p>
+                        <p className="text-sm text-gray-600">{profile.role || 'Teacher'}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <Mail className="w-5 h-5 text-gray-500" />
+                      <div>
+                        <p className="text-sm font-medium">Member Since</p>
+                        <p className="text-sm text-gray-600">
+                          {new Date(profile.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Profile Details */}
+                <Card className="lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle>Profile Information</CardTitle>
                     <p className="text-sm text-gray-600">
-                      {getExperienceLabel(profile.years_experience || 0)}
+                      {editing ? 'Update your profile information below' : 'Your current profile information'}
                     </p>
-                  </div>
-                </div>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="full_name">Full Name</Label>
+                        {editing ? (
+                          <Input
+                            id="full_name"
+                            value={formData.full_name}
+                            onChange={(e) => handleInputChange('full_name', e.target.value)}
+                            placeholder="Enter your full name"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-700 p-2 bg-gray-50 rounded">
+                            {profile.full_name || 'Not specified'}
+                          </p>
+                        )}
+                      </div>
 
-                <div className="flex items-center gap-3">
-                  <User className="w-5 h-5 text-gray-500" />
-                  <div>
-                    <p className="text-sm font-medium">Role</p>
-                    <p className="text-sm text-gray-600">{profile.role || 'Teacher'}</p>
-                  </div>
-                </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Display Name</Label>
+                        {editing ? (
+                          <Input
+                            id="name"
+                            value={formData.name}
+                            onChange={(e) => handleInputChange('name', e.target.value)}
+                            placeholder="Enter your display name"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-700 p-2 bg-gray-50 rounded">
+                            {profile.name || 'Not specified'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
 
-                <div className="flex items-center gap-3">
-                  <Mail className="w-5 h-5 text-gray-500" />
-                  <div>
-                    <p className="text-sm font-medium">Member Since</p>
-                    <p className="text-sm text-gray-600">
-                      {new Date(profile.created_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Profile Details */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Profile Information</CardTitle>
-                <p className="text-sm text-gray-600">
-                  {editing ? 'Update your profile information below' : 'Your current profile information'}
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="full_name">Full Name</Label>
-                    {editing ? (
-                      <Input
-                        id="full_name"
-                        value={formData.full_name}
-                        onChange={(e) => handleInputChange('full_name', e.target.value)}
-                        placeholder="Enter your full name"
-                      />
-                    ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email Address</Label>
                       <p className="text-sm text-gray-700 p-2 bg-gray-50 rounded">
-                        {profile.full_name || 'Not specified'}
+                        {profile.email}
                       </p>
-                    )}
-                  </div>
+                      <p className="text-xs text-gray-500">Email cannot be changed from this page</p>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Display Name</Label>
-                    {editing ? (
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => handleInputChange('name', e.target.value)}
-                        placeholder="Enter your display name"
-                      />
-                    ) : (
-                      <p className="text-sm text-gray-700 p-2 bg-gray-50 rounded">
-                        {profile.name || 'Not specified'}
-                      </p>
-                    )}
+                    <div className="space-y-2">
+                      <Label htmlFor="school">School/Institution</Label>
+                      {editing ? (
+                        <Input
+                          id="school"
+                          value={formData.school}
+                          onChange={(e) => handleInputChange('school', e.target.value)}
+                          placeholder="Enter your school or institution name"
+                        />
+                      ) : (
+                        <p className="text-sm text-gray-700 p-2 bg-gray-50 rounded">
+                          {profile.school || 'Not specified'}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="years_experience">Years of Teaching Experience</Label>
+                      {editing ? (
+                        <Select 
+                          value={formData.years_experience?.toString()} 
+                          onValueChange={(value) => handleInputChange('years_experience', parseInt(value))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select years of experience" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">New Teacher (0 years)</SelectItem>
+                            <SelectItem value="1">1 Year</SelectItem>
+                            <SelectItem value="2">2 Years</SelectItem>
+                            <SelectItem value="3">3 Years</SelectItem>
+                            <SelectItem value="4">4 Years</SelectItem>
+                            <SelectItem value="5">5 Years</SelectItem>
+                            <SelectItem value="6">6 Years</SelectItem>
+                            <SelectItem value="7">7 Years</SelectItem>
+                            <SelectItem value="8">8 Years</SelectItem>
+                            <SelectItem value="9">9 Years</SelectItem>
+                            <SelectItem value="10">10+ Years</SelectItem>
+                            <SelectItem value="15">15+ Years</SelectItem>
+                            <SelectItem value="20">20+ Years</SelectItem>
+                            <SelectItem value="25">25+ Years</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <p className="text-sm text-gray-700 p-2 bg-gray-50 rounded">
+                          {getExperienceLabel(profile.years_experience || 0)}
+                        </p>
+                      )}
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-2">
+                      <Label>Account Status</Label>
+                      <div className="flex items-center gap-4">
+                        <Badge variant={profile.onboarding_complete ? "default" : "secondary"}>
+                          {profile.onboarding_complete ? "Setup Complete" : "Setup Pending"}
+                        </Badge>
+                        <Badge className={getPlanColor(profile.plan)}>
+                          {profile.plan?.charAt(0).toUpperCase() + profile.plan?.slice(1) || 'Free'} Plan
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="privacy" className="space-y-6">
+              {/* Privacy Overview */}
+              <Card className="p-6 bg-green-50 border-green-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <Shield className="w-6 h-6 text-green-600" />
+                  <h2 className="text-xl font-semibold text-green-900">Privacy Protection Active</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-green-600" />
+                    <span>End-to-end encryption</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-green-600" />
+                    <span>FERPA compliant</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Database className="w-4 h-4 text-green-600" />
+                    <span>GDPR compliant</span>
                   </div>
                 </div>
+              </Card>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <p className="text-sm text-gray-700 p-2 bg-gray-50 rounded">
-                    {profile.email}
-                  </p>
-                  <p className="text-xs text-gray-500">Email cannot be changed from this page</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="school">School/Institution</Label>
-                  {editing ? (
-                    <Input
-                      id="school"
-                      value={formData.school}
-                      onChange={(e) => handleInputChange('school', e.target.value)}
-                      placeholder="Enter your school or institution name"
+              {/* Data Handling Settings */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">Data Handling</h3>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="anonymize" className="text-base font-medium">
+                        Anonymize Student Data
+                      </Label>
+                      <p className="text-sm text-gray-600">
+                        Remove personally identifiable information from uploaded submissions
+                      </p>
+                    </div>
+                    <Switch
+                      id="anonymize"
+                      checked={privacySettings?.anonymize_student_names ?? true}
+                      onCheckedChange={(checked) => handlePrivacySettingChange('anonymize_student_names', checked)}
+                      disabled={isSaving}
                     />
-                  ) : (
-                    <p className="text-sm text-gray-700 p-2 bg-gray-50 rounded">
-                      {profile.school || 'Not specified'}
-                    </p>
-                  )}
-                </div>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="years_experience">Years of Teaching Experience</Label>
-                  {editing ? (
-                    <Select 
-                      value={formData.years_experience?.toString()} 
-                      onValueChange={(value) => handleInputChange('years_experience', parseInt(value))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select years of experience" />
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="ai-training" className="text-base font-medium">
+                        Allow AI Training with Your Content
+                      </Label>
+                      <p className="text-sm text-gray-600">
+                        Use your grading examples to improve AI model accuracy
+                      </p>
+                    </div>
+                    <Switch
+                      id="ai-training"
+                      checked={privacySettings?.allow_training_on_content ?? true}
+                      onCheckedChange={(checked) => handlePrivacySettingChange('allow_training_on_content', checked)}
+                      disabled={isSaving}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="auto-delete" className="text-base font-medium">
+                        Auto-delete Unfinalized Grades
+                      </Label>
+                      <p className="text-sm text-gray-600">
+                        Automatically remove AI-generated content that hasn't been approved
+                      </p>
+                    </div>
+                    <Switch
+                      id="auto-delete"
+                      checked={privacySettings?.auto_delete_training_data ?? true}
+                      onCheckedChange={(checked) => handlePrivacySettingChange('auto_delete_training_data', checked)}
+                      disabled={isSaving}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="retention" className="text-base font-medium">
+                      Data Retention Period
+                    </Label>
+                    <p className="text-sm text-gray-600 mb-2">
+                      How long to keep uploaded files and grading data
+                    </p>
+                    <Select value={dataRetention} onValueChange={setDataRetention}>
+                      <SelectTrigger className="w-full max-w-xs">
+                        <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0">New Teacher (0 years)</SelectItem>
-                        <SelectItem value="1">1 Year</SelectItem>
-                        <SelectItem value="2">2 Years</SelectItem>
-                        <SelectItem value="3">3 Years</SelectItem>
-                        <SelectItem value="4">4 Years</SelectItem>
-                        <SelectItem value="5">5 Years</SelectItem>
-                        <SelectItem value="6">6 Years</SelectItem>
-                        <SelectItem value="7">7 Years</SelectItem>
-                        <SelectItem value="8">8 Years</SelectItem>
-                        <SelectItem value="9">9 Years</SelectItem>
-                        <SelectItem value="10">10+ Years</SelectItem>
-                        <SelectItem value="15">15+ Years</SelectItem>
-                        <SelectItem value="20">20+ Years</SelectItem>
-                        <SelectItem value="25">25+ Years</SelectItem>
+                      <SelectContent className="bg-white">
+                        <SelectItem value="14">14 days</SelectItem>
+                        <SelectItem value="30">30 days</SelectItem>
+                        <SelectItem value="90">90 days</SelectItem>
+                        <SelectItem value="365">1 year</SelectItem>
+                        <SelectItem value="forever">Keep forever</SelectItem>
                       </SelectContent>
                     </Select>
-                  ) : (
-                    <p className="text-sm text-gray-700 p-2 bg-gray-50 rounded">
-                      {getExperienceLabel(profile.years_experience || 0)}
-                    </p>
-                  )}
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label>Account Status</Label>
-                  <div className="flex items-center gap-4">
-                    <Badge variant={profile.onboarding_complete ? "default" : "secondary"}>
-                      {profile.onboarding_complete ? "Setup Complete" : "Setup Pending"}
-                    </Badge>
-                    <Badge className={getPlanColor(profile.plan)}>
-                      {profile.plan?.charAt(0).toUpperCase() + profile.plan?.slice(1) || 'Free'} Plan
-                    </Badge>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              </Card>
+
+              {/* Data Management Component */}
+              <DataManagement />
+
+              {/* Compliance Information */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">Compliance & Legal</h3>
+                <div className="space-y-4 text-sm">
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <h4 className="font-medium text-blue-900 mb-2">FERPA Compliance</h4>
+                    <p className="text-blue-800">
+                      aiTA is designed to comply with the Family Educational Rights and Privacy Act (FERPA). 
+                      Student data is encrypted, access is restricted, and you maintain full control over your educational records.
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <h4 className="font-medium text-green-900 mb-2">GDPR Compliance</h4>
+                    <p className="text-green-800">
+                      We follow General Data Protection Regulation (GDPR) principles including data minimization, 
+                      purpose limitation, and your right to access, rectify, and delete your personal data.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
