@@ -16,6 +16,9 @@ import { getTextFromStoredFile } from '@/lib/fileProcessing';
 import { TeacherCommentModal } from '@/components/TeacherCommentModal';
 import { TeacherGradingPanel } from '@/components/TeacherGradingPanel';
 import { parseAIFeedback, extractCleanFeedback, extractCleanGrade } from '@/lib/aiParser';
+import { GrammarlyAnnotations } from '@/components/GrammarlyAnnotations';
+import { resolveAnchors, type AnchorRange } from '@/lib/annotations/resolveAnchors';
+import { AutoProcessingIndicator } from '@/components/AutoProcessingIndicator';
 
 interface Submission {
   id: string;
@@ -87,6 +90,13 @@ const SubmissionDetail = () => {
   const [feedbackTiles, setFeedbackTiles] = useState<FeedbackTile[]>([]);
   const [vocabularyCards, setVocabularyCards] = useState<VocabularyCard[]>([]);
   
+  // Grammarly-style state
+  const [acceptedComments, setAcceptedComments] = useState<Set<string>>(new Set());
+  const [rejectedComments, setRejectedComments] = useState<Set<string>>(new Set());
+  const [anchors, setAnchors] = useState<AnchorRange[]>([]);
+  const [processingStatus, setProcessingStatus] = useState<'idle' | 'extracting' | 'analyzing' | 'complete' | 'error'>('idle');
+  const [processingProgress, setProcessingProgress] = useState(0);
+  
   // Teacher comment states
   const [teacherComments, setTeacherComments] = useState<TeacherComment[]>([]);
   const [selectedText, setSelectedText] = useState<string>('');
@@ -132,8 +142,13 @@ const SubmissionDetail = () => {
   useEffect(() => {
     if (aiResponse) {
       processAIResponse(aiResponse);
+      // Convert inline comments to anchors for Grammarly-style display
+      if (aiResponse.inlineComments && submission?.essay) {
+        const newAnchors = resolveAnchors(submission.essay, aiResponse.inlineComments);
+        setAnchors(newAnchors);
+      }
     }
-  }, [aiResponse]);
+  }, [aiResponse, submission?.essay]);
 
   const fetchSubmissionData = async () => {
     try {
@@ -360,10 +375,15 @@ const SubmissionDetail = () => {
 
     console.log('Starting text extraction for:', submission.submission_storage_path);
     setExtractingText(true);
+    setProcessingStatus('extracting');
+    setProcessingProgress(30);
+    
     try {
       const extractedText = await getTextFromStoredFile(submission.submission_storage_path);
       console.log('Extracted text length:', extractedText?.length);
       console.log('Extracted text preview:', extractedText?.substring(0, 200));
+      
+      setProcessingProgress(70);
       
       if (extractedText && extractedText.trim()) {
         // Update the submission in the database
@@ -379,13 +399,18 @@ const SubmissionDetail = () => {
 
         // Update local state
         setSubmission(prev => prev ? { ...prev, essay: extractedText } : null);
+        setProcessingProgress(100);
+        setProcessingStatus('complete');
 
         toast({
           title: "Text extracted successfully!",
           description: `Extracted ${extractedText.length} characters from the document.`,
         });
+        
+        setTimeout(() => setProcessingStatus('idle'), 2000);
       } else {
         console.warn('No text extracted or empty text');
+        setProcessingStatus('error');
         toast({
           title: "No text found",
           description: "The document appears to be empty or text extraction failed.",
@@ -394,6 +419,7 @@ const SubmissionDetail = () => {
       }
     } catch (error) {
       console.error('Error extracting text:', error);
+      setProcessingStatus('error');
       toast({
         title: "Text extraction failed",
         description: error instanceof Error ? error.message : "Please try again.",
@@ -401,6 +427,11 @@ const SubmissionDetail = () => {
       });
     } finally {
       setExtractingText(false);
+      setTimeout(() => {
+        if (processingStatus !== 'complete') {
+          setProcessingStatus('idle');
+        }
+      }, 3000);
     }
   };
 
@@ -421,16 +452,28 @@ const SubmissionDetail = () => {
 
     console.log('Generating AI feedback for essay:', essayContent.substring(0, 100) + '...');
     setGenerating(true);
+    setProcessingStatus('analyzing');
+    setProcessingProgress(0);
+    
     try {
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setProcessingProgress(prev => Math.min(prev + 10, 90));
+      }, 500);
+
       const response = await generateGradingFeedback(
         essayContent,
         assignment.rubric_text || '',
         user.id
       );
 
+      clearInterval(progressInterval);
+      setProcessingProgress(100);
+
       console.log('AI Response received:', response);
       setAiResponse(response);
       setSuggestionsList(response.inlineComments || []);
+      setProcessingStatus('complete');
 
       // Save AI response to database
       const { error: updateError } = await supabase
@@ -451,14 +494,18 @@ const SubmissionDetail = () => {
         title: "AI feedback generated!",
         description: `Generated ${response.inlineComments?.length || 0} comments with ${Math.round(response.confidence * 100)}% confidence`,
       });
+      
+      setTimeout(() => setProcessingStatus('idle'), 2000);
 
     } catch (error) {
       console.error('Error generating feedback:', error);
+      setProcessingStatus('error');
       toast({
         title: "Failed to generate feedback",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive"
       });
+      setTimeout(() => setProcessingStatus('idle'), 3000);
     } finally {
       setGenerating(false);
     }
@@ -514,6 +561,81 @@ const SubmissionDetail = () => {
     } catch (error) {
       console.error('Error handling teacher action:', error);
     }
+  };
+
+  // Grammarly-style handlers
+  const handleAcceptComment = async (id: string) => {
+    setAcceptedComments(prev => new Set([...prev, id]));
+    const anchor = anchors.find(a => a.id === id);
+    if (anchor && user && submission) {
+      await supabase.from('teacher_edits').insert({
+        user_id: user.id,
+        submission_id: submission.id,
+        comment_id: id,
+        action_type: 'approved',
+        comment_text: anchor.comment
+      });
+    }
+    toast({
+      title: "Comment accepted",
+      description: "This feedback has been approved.",
+    });
+  };
+
+  const handleRejectComment = async (id: string) => {
+    setRejectedComments(prev => new Set([...prev, id]));
+    const anchor = anchors.find(a => a.id === id);
+    if (anchor && user && submission) {
+      await supabase.from('teacher_edits').insert({
+        user_id: user.id,
+        submission_id: submission.id,
+        comment_id: id,
+        action_type: 'declined',
+        comment_text: anchor.comment
+      });
+    }
+    toast({
+      title: "Comment rejected",
+      description: "This feedback has been dismissed.",
+    });
+  };
+
+  const handleEditComment = async (id: string, newComment: string) => {
+    // Update the anchor with new comment
+    setAnchors(prev => prev.map(a => a.id === id ? { ...a, comment: newComment } : a));
+    setAcceptedComments(prev => new Set([...prev, id]));
+    
+    if (user && submission) {
+      await supabase.from('teacher_edits').insert({
+        user_id: user.id,
+        submission_id: submission.id,
+        comment_id: id,
+        action_type: 'modified',
+        comment_text: newComment
+      });
+    }
+    toast({
+      title: "Comment edited",
+      description: "Your changes have been saved.",
+    });
+  };
+
+  const handleAcceptAll = async () => {
+    const newAccepted = new Set([...acceptedComments, ...anchors.map(a => a.id)]);
+    setAcceptedComments(newAccepted);
+    toast({
+      title: "All accepted",
+      description: `Accepted ${anchors.length} comments.`,
+    });
+  };
+
+  const handleRejectAll = async () => {
+    const newRejected = new Set([...rejectedComments, ...anchors.map(a => a.id)]);
+    setRejectedComments(newRejected);
+    toast({
+      title: "All rejected",
+      description: `Rejected ${anchors.length} comments.`,
+    });
   };
 
   const processAIResponse = (response: GradingResponse) => {
@@ -973,6 +1095,19 @@ const SubmissionDetail = () => {
     <div className="min-h-screen bg-gray-50 font-['Inter']">
       <Navbar />
       
+      {/* Auto-processing indicator */}
+      <AutoProcessingIndicator 
+        status={processingStatus}
+        progress={processingProgress}
+        message={
+          processingStatus === 'extracting' ? 'Reading document and extracting text...' :
+          processingStatus === 'analyzing' ? 'AI is analyzing the essay and generating feedback...' :
+          processingStatus === 'complete' ? 'Ready to review!' :
+          processingStatus === 'error' ? 'Something went wrong. Please try again.' :
+          undefined
+        }
+      />
+      
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="mb-6">
@@ -1034,9 +1169,9 @@ const SubmissionDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-240px)]">
           
           {/* Left Panel - Interactive Essay Editor */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b border-gray-100 bg-white">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-3">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center">
                   <FileText className="w-5 h-5 mr-2 text-blue-600" />
                   Essay Editor
@@ -1044,12 +1179,60 @@ const SubmissionDetail = () => {
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <span>{essayText.length} characters</span>
                   <span>•</span>
-                  <span>{suggestionsList.length} suggestions</span>
+                  <span>{anchors.length} suggestions</span>
                 </div>
               </div>
+              
+              {/* Bulk Actions & Progress */}
+              {anchors.length > 0 && (
+                <div className="flex items-center gap-3">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleAcceptAll}
+                    className="gap-1"
+                  >
+                    <Check className="w-3 h-3" />
+                    Accept All
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleRejectAll}
+                    className="gap-1"
+                  >
+                    <X className="w-3 h-3" />
+                    Reject All
+                  </Button>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <Progress 
+                        value={((acceptedComments.size + rejectedComments.size) / anchors.length) * 100}
+                        className="flex-1"
+                      />
+                      <span className="text-xs text-gray-600 whitespace-nowrap">
+                        {acceptedComments.size + rejectedComments.size} / {anchors.length}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="p-6 h-full overflow-y-auto">
-              {renderEssayWithHighlights()}
+            
+            <div className="p-6 flex-1 overflow-y-auto">
+              {essayText && anchors.length > 0 ? (
+                <GrammarlyAnnotations
+                  body={essayText}
+                  anchors={anchors}
+                  onAccept={handleAcceptComment}
+                  onReject={handleRejectComment}
+                  onEdit={handleEditComment}
+                  acceptedIds={acceptedComments}
+                  rejectedIds={rejectedComments}
+                />
+              ) : (
+                renderEssayWithHighlights()
+              )}
             </div>
           </div>
 
