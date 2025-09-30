@@ -10,6 +10,8 @@ interface GrammarlyAnnotationsProps {
   onEdit: (id: string, newComment: string) => void;
   acceptedIds?: Set<string>;
   rejectedIds?: Set<string>;
+  hoveredCommentId?: string | null;
+  onCommentHover?: (id: string | null) => void;
 }
 
 const categoryColors = {
@@ -29,7 +31,9 @@ export function GrammarlyAnnotations({
   onReject,
   onEdit,
   acceptedIds = new Set(),
-  rejectedIds = new Set()
+  rejectedIds = new Set(),
+  hoveredCommentId = null,
+  onCommentHover
 }: GrammarlyAnnotationsProps) {
   const [activeAnchor, setActiveAnchor] = useState<AnchorRange | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
@@ -82,7 +86,7 @@ export function GrammarlyAnnotations({
   }, [activeAnchor, onAccept, onReject, currentIndex, visibleAnchors]);
 
   const focusAnnotation = (anchor: AnchorRange) => {
-    const element = document.querySelector(`[data-annotation-id=\\"${anchor.id}\\"]`);
+    const element = document.querySelector(`[data-annotation-id="${anchor.id}"]`);
     if (element) {
       const rect = element.getBoundingClientRect();
       setTooltipPosition({ x: rect.left, y: rect.top });
@@ -91,21 +95,33 @@ export function GrammarlyAnnotations({
     }
   };
 
+  // Scroll into view when hovered from sidebar
+  useEffect(() => {
+    if (hoveredCommentId) {
+      const element = document.querySelector(`[data-annotation-id="${hoveredCommentId}"]`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [hoveredCommentId]);
+
   const handleAnnotationHover = useCallback((anchor: AnchorRange, event: React.MouseEvent) => {
     const rect = (event.target as HTMLElement).getBoundingClientRect();
     setTooltipPosition({ x: rect.left, y: rect.top });
     setActiveAnchor(anchor);
     setCurrentIndex(visibleAnchors.findIndex(a => a.id === anchor.id));
-  }, [visibleAnchors]);
+    onCommentHover?.(anchor.id);
+  }, [visibleAnchors, onCommentHover]);
 
   const handleMouseLeave = useCallback(() => {
     // Keep tooltip open for a moment to allow interaction
     setTimeout(() => {
       if (activeAnchor && !document.querySelector('[data-tooltip]:hover')) {
         setActiveAnchor(null);
+        onCommentHover?.(null);
       }
     }, 200);
-  }, [activeAnchor]);
+  }, [activeAnchor, onCommentHover]);
 
   // Split text into segments with annotations
   const renderAnnotatedText = () => {
@@ -128,12 +144,16 @@ export function GrammarlyAnnotations({
       const category = (anchor as any).category || 'default';
       const categoryKey = category.toLowerCase() as keyof typeof categoryColors;
       const colorClass = categoryColors[categoryKey] || categoryColors.default;
+      
+      // Enhanced highlighting when hovered from sidebar
+      const isHovered = hoveredCommentId === anchor.id;
+      const hoverClass = isHovered ? 'ring-2 ring-offset-2 ring-blue-500 shadow-lg scale-105 z-10' : '';
 
       segments.push(
         <span
           key={anchor.id}
           data-annotation-id={anchor.id}
-          className={`${colorClass} cursor-pointer transition-all hover:opacity-80 relative inline-block`}
+          className={`${colorClass} ${hoverClass} cursor-pointer transition-all hover:opacity-80 relative inline-block`}
           onMouseEnter={(e) => handleAnnotationHover(anchor, e)}
           onMouseLeave={handleMouseLeave}
           onClick={(e) => handleAnnotationHover(anchor, e)}

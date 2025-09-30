@@ -96,6 +96,7 @@ const SubmissionDetail = () => {
   const [anchors, setAnchors] = useState<AnchorRange[]>([]);
   const [processingStatus, setProcessingStatus] = useState<'idle' | 'extracting' | 'analyzing' | 'complete' | 'error'>('idle');
   const [processingProgress, setProcessingProgress] = useState(0);
+  const [hoveredCommentId, setHoveredCommentId] = useState<string | null>(null);
   
   // Teacher comment states
   const [teacherComments, setTeacherComments] = useState<TeacherComment[]>([]);
@@ -1229,6 +1230,8 @@ const SubmissionDetail = () => {
                   onEdit={handleEditComment}
                   acceptedIds={acceptedComments}
                   rejectedIds={rejectedComments}
+                  hoveredCommentId={hoveredCommentId}
+                  onCommentHover={setHoveredCommentId}
                 />
               ) : (
                 renderEssayWithHighlights()
@@ -1247,6 +1250,86 @@ const SubmissionDetail = () => {
             
             <div className="p-6 h-full overflow-y-auto space-y-6">
               
+              {/* AI Suggestions List */}
+              {anchors.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                    AI Suggestions ({anchors.filter(a => !acceptedComments.has(a.id) && !rejectedComments.has(a.id)).length})
+                  </h3>
+                  <div className="space-y-2">
+                    {anchors
+                      .filter(a => !acceptedComments.has(a.id) && !rejectedComments.has(a.id))
+                      .map((anchor, idx) => {
+                        const category = (anchor as any).category || 'feedback';
+                        const isHovered = hoveredCommentId === anchor.id;
+                        return (
+                          <Card 
+                            key={anchor.id}
+                            className={`cursor-pointer transition-all hover:shadow-md border ${
+                              isHovered ? 'ring-2 ring-blue-500 shadow-lg scale-[1.02]' : 'border-gray-200'
+                            }`}
+                            onMouseEnter={() => setHoveredCommentId(anchor.id)}
+                            onMouseLeave={() => setHoveredCommentId(null)}
+                            onClick={() => {
+                              const element = document.querySelector(`[data-annotation-id="${anchor.id}"]`);
+                              if (element) {
+                                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              }
+                            }}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-semibold">
+                                  {idx + 1}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Badge className={`text-xs ${getCategoryBadgeClass(category)}`}>
+                                      {category}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-gray-600 mb-2 line-clamp-1 font-mono">
+                                    "{anchor.text}"
+                                  </p>
+                                  <p className="text-sm text-gray-900 leading-relaxed">
+                                    {anchor.comment}
+                                  </p>
+                                  <div className="flex gap-2 mt-3">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="flex-1 text-xs h-7"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAcceptComment(anchor.id);
+                                      }}
+                                    >
+                                      <Check className="w-3 h-3 mr-1" />
+                                      Accept
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="flex-1 text-xs h-7"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRejectComment(anchor.id);
+                                      }}
+                                    >
+                                      <X className="w-3 h-3 mr-1" />
+                                      Reject
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+
               {/* Overall Score Ring */}
               {aiResponse && (
                 <div className="text-center bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6">
