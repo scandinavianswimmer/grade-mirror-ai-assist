@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_model_health: {
+        Row: {
+          average_response_time_ms: number | null
+          consecutive_failures: number | null
+          created_at: string | null
+          id: string
+          last_failure_at: string | null
+          last_success_at: string | null
+          model_name: string
+          provider: string
+          status: string
+          total_failures: number | null
+          total_requests: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          average_response_time_ms?: number | null
+          consecutive_failures?: number | null
+          created_at?: string | null
+          id?: string
+          last_failure_at?: string | null
+          last_success_at?: string | null
+          model_name: string
+          provider: string
+          status?: string
+          total_failures?: number | null
+          total_requests?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          average_response_time_ms?: number | null
+          consecutive_failures?: number | null
+          created_at?: string | null
+          id?: string
+          last_failure_at?: string | null
+          last_success_at?: string | null
+          model_name?: string
+          provider?: string
+          status?: string
+          total_failures?: number | null
+          total_requests?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ai_profiles: {
         Row: {
           ai_model_id: string | null
@@ -48,6 +93,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ai_request_logs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          fallback_model: string | null
+          function_name: string
+          id: string
+          model_name: string
+          provider: string
+          request_type: string | null
+          response_time_ms: number | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          fallback_model?: string | null
+          function_name: string
+          id?: string
+          model_name: string
+          provider: string
+          request_type?: string | null
+          response_time_ms?: number | null
+          status: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          fallback_model?: string | null
+          function_name?: string
+          id?: string
+          model_name?: string
+          provider?: string
+          request_type?: string | null
+          response_time_ms?: number | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       assignments: {
         Row: {
