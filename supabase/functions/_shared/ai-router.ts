@@ -47,13 +47,13 @@ export class AIRouter {
   private initializeModels(): AIModel[] {
     return [
       {
-        name: 'gemini-2.5-flash',
-        provider: 'lovable',
-        endpoint: 'https://ai.gateway.lovable.dev/v1/chat/completions',
+        name: 'gpt-5-mini',
+        provider: 'openai',
+        endpoint: 'https://api.openai.com/v1/chat/completions',
         priority: 1,
         maxRetries: 2,
         timeout: 30000,
-        costPerToken: 0,
+        costPerToken: 0.0002,
       },
       {
         name: 'gemini-pro',
@@ -65,13 +65,13 @@ export class AIRouter {
         costPerToken: 0.0001,
       },
       {
-        name: 'gpt-5-mini',
-        provider: 'openai',
-        endpoint: 'https://api.openai.com/v1/chat/completions',
+        name: 'gemini-2.5-flash',
+        provider: 'lovable',
+        endpoint: 'https://ai.gateway.lovable.dev/v1/chat/completions',
         priority: 3,
         maxRetries: 2,
         timeout: 30000,
-        costPerToken: 0.0002,
+        costPerToken: 0,
       },
       {
         name: 'claude-sonnet-4',
