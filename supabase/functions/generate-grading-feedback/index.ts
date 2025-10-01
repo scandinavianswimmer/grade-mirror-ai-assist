@@ -151,12 +151,18 @@ Return ONLY the JSON object with no markdown formatting, code blocks, or additio
     }
 
     const data = await response.json();
+    console.log('AI Gateway response received, status:', response.status);
+    
     const generatedText = data.choices?.[0]?.message?.content as string | undefined;
     if (!generatedText) {
-      throw new Error('No response from Gemini API');
+      console.error('No content in AI Gateway response:', JSON.stringify(data));
+      throw new Error('No response from AI Gateway');
     }
+    
+    console.log('AI Gateway generated text length:', generatedText.length);
 
     // Clean and parse the JSON response
+    console.log('Starting JSON parsing...');
     let gradingResponse: GradingResponse;
     try {
       // Strip markdown formatting if present
@@ -173,14 +179,23 @@ Return ONLY the JSON object with no markdown formatting, code blocks, or additio
       cleanedText = cleanedText.replace(/^`+|`+$/g, '');
       
       gradingResponse = JSON.parse(cleanedText);
+      console.log('JSON parsed successfully');
       
       // Validate required fields exist
       if (!gradingResponse.overallFeedback || !gradingResponse.suggestedGrade) {
+        console.error('Missing required fields in parsed response');
         throw new Error('Missing required fields in AI response');
       }
       
+      console.log('Grading response validated:', {
+        inlineCommentsCount: gradingResponse.inlineComments?.length || 0,
+        hasOverallFeedback: !!gradingResponse.overallFeedback,
+        suggestedGrade: gradingResponse.suggestedGrade,
+        confidence: gradingResponse.confidence
+      });
+      
     } catch (parseError) {
-      console.error('JSON parsing error:', parseError, 'Raw text:', generatedText);
+      console.error('JSON parsing error:', parseError, 'Raw text:', generatedText.substring(0, 500));
       // Fallback if JSON parsing fails
       gradingResponse = {
         inlineComments: [],
@@ -193,7 +208,8 @@ Return ONLY the JSON object with no markdown formatting, code blocks, or additio
     }
 
     // Log the grading session
-    await supabaseClient
+    console.log('Logging grading session to database...');
+    const { error: logError } = await supabaseClient
       .from('llm_sessions')
       .insert({
         user_id: userId,
@@ -203,6 +219,13 @@ Return ONLY the JSON object with no markdown formatting, code blocks, or additio
         confidence_score: gradingResponse.confidence
       });
 
+    if (logError) {
+      console.error('Failed to log session:', logError);
+    } else {
+      console.log('Session logged successfully');
+    }
+
+    console.log('✅ Grading completed successfully for user:', userId);
     return new Response(
       JSON.stringify(gradingResponse),
       {
