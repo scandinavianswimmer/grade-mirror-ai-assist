@@ -1,0 +1,54 @@
+{
+  "id": "04-mid-essay-holes",
+  "title": "Middling on-topic Holes essay (expected mid range)",
+  "category": "realistic",
+  "notes": "On-topic and addresses the theme, but the thesis is shallow, evidence is summarized rather than analyzed, and only loosely tied to fate vs. free will. Curated teacher reference at roughly 55-72/100, graded.",
+  "assignmentPrompt": "Write a literary analysis essay (400-600 words) on Louis Sachar's novel \"Holes\". Argue how the motif of fate vs. free will shapes Stanley Yelnats' character arc. Use at least two specific examples from the text and explain how they support your thesis.",
+  "classContext": "8th grade English Language Arts, on-level.",
+  "rubric": {
+    "totalPoints": 100,
+    "criteria": [
+      {
+        "name": "Thesis & Argument",
+        "weight": 3,
+        "maxScore": 10,
+        "levelDescriptors": {
+          "10": "Clear, arguable thesis about fate vs. free will sustained throughout.",
+          "6": "Thesis present but underdeveloped or inconsistently argued.",
+          "2": "No discernible thesis about the assigned theme."
+        }
+      },
+      {
+        "name": "Textual Evidence",
+        "weight": 3,
+        "maxScore": 10,
+        "levelDescriptors": {
+          "10": "Two or more specific, well-chosen examples from Holes, fully explained.",
+          "6": "Some evidence, thinly explained or loosely connected.",
+          "2": "No textual evidence from the novel."
+        }
+      },
+      {
+        "name": "Organization & Conventions",
+        "weight": 2,
+        "maxScore": 10,
+        "levelDescriptors": {
+          "10": "Logical structure, fluent prose, few errors.",
+          "6": "Generally organized; some lapses in flow or mechanics.",
+          "2": "Disorganized; frequent errors impede meaning."
+        }
+      }
+    ]
+  },
+  "submission": "Holes by Louis Sachar is about a boy named Stanley Yelnats who gets sent to Camp Green Lake. The book talks about fate and free will. Stanley thinks he is cursed and that is the fate part.\n\nFirst, Stanley gets arrested for stealing shoes that he did not steal. The shoes fell on him from a bridge. He thinks this happened because of the curse on his family. This shows fate because Stanley feels like bad things just keep happening to him no matter what.\n\nAt Camp Green Lake the boys have to dig holes every day. It is very hot and hard. Stanley makes a friend named Zero and he teaches Zero how to read. Later they run away from the camp together. They climb a big mountain and find water and onions which keeps them alive. This part is more about free will because Stanley chooses to help Zero instead of leaving him.\n\nIn the end the curse goes away and Stanley's family gets lucky again. So the book shows both fate and free will. Stanley starts out thinking everything is fate but then he makes his own choices. That is how fate and free will are both in the story. Stanley changes from the beginning to the end of the book.",
+  "expected": {
+    "disposition": "graded",
+    "scoreRange": { "min": 50, "max": 74 },
+    "flagsExpected": [],
+    "relevanceOnTopic": true
+  },
+  "gate": {
+    "type": "agreement",
+    "description": "Final score should land in the teacher's expected range (50-74). Used for agreement + calibration metrics; does not by itself hard-fail the run."
+  }
+}

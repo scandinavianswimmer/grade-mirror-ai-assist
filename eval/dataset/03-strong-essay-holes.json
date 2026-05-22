@@ -1,0 +1,54 @@
+{
+  "id": "03-strong-essay-holes",
+  "title": "Strong on-topic Holes essay (expected high range)",
+  "category": "realistic",
+  "notes": "A genuine, well-argued literary-analysis response with a clear thesis and explained textual evidence. Curated as a teacher-graded reference at roughly 85-100/100, graded (not withheld).",
+  "assignmentPrompt": "Write a literary analysis essay (400-600 words) on Louis Sachar's novel \"Holes\". Argue how the motif of fate vs. free will shapes Stanley Yelnats' character arc. Use at least two specific examples from the text and explain how they support your thesis.",
+  "classContext": "8th grade English Language Arts, on-level.",
+  "rubric": {
+    "totalPoints": 100,
+    "criteria": [
+      {
+        "name": "Thesis & Argument",
+        "weight": 3,
+        "maxScore": 10,
+        "levelDescriptors": {
+          "10": "Clear, arguable thesis about fate vs. free will sustained throughout.",
+          "6": "Thesis present but underdeveloped or inconsistently argued.",
+          "2": "No discernible thesis about the assigned theme."
+        }
+      },
+      {
+        "name": "Textual Evidence",
+        "weight": 3,
+        "maxScore": 10,
+        "levelDescriptors": {
+          "10": "Two or more specific, well-chosen examples from Holes, fully explained.",
+          "6": "Some evidence, thinly explained or loosely connected.",
+          "2": "No textual evidence from the novel."
+        }
+      },
+      {
+        "name": "Organization & Conventions",
+        "weight": 2,
+        "maxScore": 10,
+        "levelDescriptors": {
+          "10": "Logical structure, fluent prose, few errors.",
+          "6": "Generally organized; some lapses in flow or mechanics.",
+          "2": "Disorganized; frequent errors impede meaning."
+        }
+      }
+    ]
+  },
+  "submission": "In Louis Sachar's novel Holes, Stanley Yelnats believes his whole life is ruled by a curse, but his story argues the opposite: although fate sets the stage, Stanley's own choices are what finally break the family's bad luck. Sachar uses the motif of fate versus free will to transform Stanley from a passive victim into someone who takes control of his own future.\n\nAt the start of the novel, Stanley is convinced that everything bad that happens to him is the fault of his \"no-good-dirty-rotten-pig-stealing-great-great-grandfather.\" When he is wrongly arrested for stealing the sneakers that fell from the sky, he simply accepts it as one more sign of the curse. This shows Stanley as a character who hands his life over to fate. He does not fight the unfair sentence; he assumes bad luck is just who he is. Sachar uses this early belief to set up how far Stanley has to grow.\n\nThe turning point comes when Stanley carries Zero up the mountain known as God's Thumb. By this point Stanley has every reason to give up, yet he chooses to keep climbing and to keep his friend alive. This is a moment of pure free will. Nothing forces Stanley to save Zero, and saving him brings no obvious reward. When the two boys reach the water and the onions on the mountain, the \"curse\" finally begins to lift. Sachar deliberately ties the breaking of the family's bad luck to a choice Stanley makes, not to luck that happens to him.\n\nThese two examples work together to support the idea that fate and free will are in tension throughout the book. Stanley starts by blaming destiny, but Sachar rewards the moments when Stanley acts for himself and for others. By the end, Stanley is no longer a boy waiting for his luck to change; he is the reason it changes. The motif of fate versus free will is what drives his character arc from helpless to heroic.",
+  "expected": {
+    "disposition": "graded",
+    "scoreRange": { "min": 82, "max": 100 },
+    "flagsExpected": [],
+    "relevanceOnTopic": true
+  },
+  "gate": {
+    "type": "agreement",
+    "description": "Final score should land in the teacher's expected range (82-100). Used for the agreement + calibration metrics; counts against agreement if outside the range but does not by itself hard-fail the run."
+  }
+}
