@@ -157,7 +157,11 @@ const SubmissionDetail = () => {
         <mark
           key={a.id}
           data-id={a.id}
+          role="button"
+          tabIndex={0}
+          aria-label={`${a.type} note ${n}: ${a.comment}`}
           onClick={() => setActive(a.id)}
+          onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setActive(a.id); } }}
           className={`anno anno-${PEN[a.type]} ${active === a.id ? 'anno-active' : ''}`}
         >
           {essay.slice(s, e)}
