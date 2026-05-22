@@ -36,6 +36,8 @@ const CreateAssignment = () => {
     rubric: '',
     classId: ''
   });
+  // Explicit choice: grade against a rubric, or deliberately grade holistically (H20).
+  const [noRubric, setNoRubric] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -77,14 +79,16 @@ const CreateAssignment = () => {
     e.preventDefault();
     if (!user) return;
 
-    console.log('Creating assignment with data:', {
-      user_id: user.id,
-      title: formData.title,
-      description: formData.description,
-      rubric_text: formData.rubric,
-      class_id: formData.classId || null,
-      status: 'active'
-    });
+    // Rubric-centric product: require a rubric unless the teacher explicitly chooses
+    // holistic grading (H20).
+    if (!formData.rubric.trim() && !noRubric) {
+      toast({
+        title: 'Add a rubric',
+        description: 'Enter a grading rubric, or check "Grade holistically" to grade without one.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setLoading(true);
     try {
@@ -194,7 +198,7 @@ const CreateAssignment = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="rubric">Grading Rubric (Optional)</Label>
+                  <Label htmlFor="rubric">Grading Rubric</Label>
                   <Textarea
                     id="rubric"
                     name="rubric"
@@ -202,9 +206,19 @@ const CreateAssignment = () => {
                     onChange={handleInputChange}
                     placeholder="Enter your grading rubric here. Include criteria, point values, and expectations for different performance levels."
                     rows={6}
+                    disabled={noRubric}
                   />
+                  <label className="flex items-center gap-2 text-sm text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={noRubric}
+                      onChange={(e) => setNoRubric(e.target.checked)}
+                      className="h-4 w-4"
+                    />
+                    Grade holistically without a rubric (not recommended — rubric-aligned grading is more reliable)
+                  </label>
                   <p className="text-xs text-gray-500">
-                    Please enter the grading rubric for this specific assignment. A clear, analytic rubric with specific criteria and performance levels works best.
+                    A clear, analytic rubric with specific criteria and performance levels produces the most reliable, consistent grading.
                   </p>
                 </div>
 
