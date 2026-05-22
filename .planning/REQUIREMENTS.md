@@ -78,6 +78,14 @@ Scope: the full production-ready grading system. REQ-ID format `[CATEGORY]-[NN]`
 
 ## Traceability
 
-<!-- Filled by the roadmap: REQ-ID → Phase. -->
+REQ-ID → Phase (100% coverage; each requirement maps to exactly one phase).
 
-(pending roadmap)
+| Phase | Requirements |
+|-------|--------------|
+| 1 — Data foundation & isolation | OPS-01, OPS-02, SEC-01, SEC-02 |
+| 2 — Trustworthy grading core | GRADE-01, GRADE-02, GRADE-03, GRADE-04, GRADE-05, GRADE-06, GRADE-07 |
+| 3 — Human-in-the-loop review | HITL-01, HITL-02, HITL-03, HITL-04, HITL-05 |
+| 4 — Evaluation harness | EVAL-01, EVAL-02, EVAL-03, EVAL-04 |
+| 5 — Onboarding, classes & samples | ONBOARD-01, ONBOARD-02, ONBOARD-03, ONBOARD-04, ONBOARD-05 |
+| 6 — Teacher-style learning loop | LEARN-01, LEARN-02, LEARN-03, LEARN-04, LEARN-05, LEARN-06 |
+| 7 — Privacy, isolation hardening & launch | SEC-03, SEC-04, SEC-05, OPS-03 |
