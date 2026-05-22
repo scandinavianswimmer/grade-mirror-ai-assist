@@ -19,11 +19,16 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				'sans': ['"Times New Roman"', 'Times', 'serif'],
-				'serif': ['"Times New Roman"', 'Times', 'serif'],
-				'mono': ['"Times New Roman"', 'Times', 'serif'],
+				'sans': ['"Hanken Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+				'display': ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
+				'serif': ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
+				'mono': ['"Spline Sans Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
 			},
 			colors: {
+				praise: { DEFAULT: 'hsl(var(--praise))', soft: 'hsl(var(--praise-soft))' },
+				suggestion: { DEFAULT: 'hsl(var(--suggestion))', soft: 'hsl(var(--suggestion-soft))' },
+				critique: { DEFAULT: 'hsl(var(--critique))', soft: 'hsl(var(--critique-soft))' },
+				question: { DEFAULT: 'hsl(var(--question))', soft: 'hsl(var(--question-soft))' },
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
@@ -72,6 +77,11 @@ export default {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
+			},
+			boxShadow: {
+				sm: 'var(--shadow-sm)',
+				md: 'var(--shadow-md)',
+				lg: 'var(--shadow-lg)',
 			},
 			keyframes: {
 				'accordion-down': {

@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/components/AuthProvider'
-import { GraduationCap } from 'lucide-react'
+import { Feather, ShieldCheck } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -20,111 +19,105 @@ const Auth = () => {
   const { toast } = useToast()
   const navigate = useNavigate()
 
-  // Redirect if already authenticated
   useEffect(() => {
-    if (user) {
-      navigate('/')
-    }
+    if (user) navigate('/')
   }, [user, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-
     try {
       if (isLogin) {
         await signIn(email, password)
-        toast({
-          title: "Welcome back!",
-          description: "Successfully signed in to aiTA."
-        })
+        toast({ title: 'Welcome back', description: 'Signed in to aiTA.' })
         navigate('/')
       } else {
         await signUp(email, password, name)
-        toast({
-          title: "Account created!",
-          description: "Please check your email to verify your account."
-        })
-        // Don't navigate immediately for signup - wait for email verification
+        toast({ title: 'Account created', description: 'Check your email to verify your account.' })
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      })
+      toast({ title: 'Something went wrong', description: error.message, variant: 'destructive' })
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <GraduationCap className="w-8 h-8 text-blue-600" />
-            <span className="text-2xl font-bold text-gray-900">aiTA</span>
-          </div>
-          <h1 className="text-xl font-semibold">
-            {isLogin ? 'Sign in to your account' : 'Create your account'}
-          </h1>
+    <div className="grid min-h-screen lg:grid-cols-2">
+      {/* Brand / value panel */}
+      <aside className="relative hidden flex-col justify-between overflow-hidden bg-primary p-12 text-primary-foreground lg:flex">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)', backgroundSize: '22px 22px' }}
+        />
+        <div className="relative flex items-center gap-2.5">
+          <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary-foreground/15">
+            <Feather className="h-5 w-5" />
+          </span>
+          <span className="font-display text-2xl font-semibold tracking-tight">aiTA</span>
         </div>
+        <div className="relative max-w-md">
+          <h2 className="font-display text-4xl font-semibold leading-[1.1] tracking-tight">
+            Grade in your voice. Stay the final word.
+          </h2>
+          <p className="mt-5 text-lg leading-relaxed text-primary-foreground/80">
+            aiTA reads, annotates, and proposes rubric-aligned feedback — like a thoughtful TA in the margins.
+            You approve, edit, or reject every note.
+          </p>
+        </div>
+        <div className="relative flex items-center gap-2 text-sm text-primary-foreground/70">
+          <ShieldCheck className="h-4 w-4" />
+          Human-in-the-loop by design — never automated grading.
+        </div>
+      </aside>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
-            <div>
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required={!isLogin}
-                placeholder="Enter your full name"
-              />
+      {/* Form */}
+      <main className="flex items-center justify-center p-6">
+        <Card className="w-full max-w-md border-border/70 p-8 shadow-md animate-fade-up">
+          <div className="mb-8 lg:hidden">
+            <div className="flex items-center gap-2.5">
+              <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground">
+                <Feather className="h-5 w-5" />
+              </span>
+              <span className="font-display text-2xl font-semibold tracking-tight">aiTA</span>
             </div>
-          )}
-          
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="Enter your email"
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="Enter your password"
-            />
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Loading...' : (isLogin ? 'Sign In' : 'Sign Up')}
-          </Button>
-        </form>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">
+            {isLogin ? 'Welcome back' : 'Create your account'}
+          </h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            {isLogin ? 'Sign in to your grading workspace.' : 'Set up your teacher workspace in a minute.'}
+          </p>
 
-        <div className="text-center mt-6">
-          <button
-            type="button"
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-blue-600 hover:underline"
-          >
-            {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-          </button>
-        </div>
-      </Card>
+          <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+            {!isLogin && (
+              <div className="space-y-1.5">
+                <Label htmlFor="name">Full name</Label>
+                <Input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Ms. Rivera" />
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@school.edu" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" />
+            </div>
+            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+              {loading ? 'One moment…' : isLogin ? 'Sign in' : 'Create account'}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            {isLogin ? "New to aiTA?" : 'Already have an account?'}{' '}
+            <button type="button" onClick={() => setIsLogin(!isLogin)} className="font-medium text-primary underline-offset-4 hover:underline">
+              {isLogin ? 'Create an account' : 'Sign in'}
+            </button>
+          </div>
+        </Card>
+      </main>
     </div>
   )
 }
