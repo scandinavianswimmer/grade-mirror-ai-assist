@@ -88,7 +88,7 @@ aiTA is an AI-native instructional co-pilot for teachers. A teacher uploads an a
 | Stack: Gemini 2.5 Pro (core) + Flash (fast), Supabase + Cloud Run, Upstash Redis queue, Stripe, PostHog/custom analytics | User-provided recommendation table | — Pending |
 | Grading reframed as a visible multi-agent workflow (Rubric/Relevance-Risk/Grading/Annotation/Summary/Style agents) | Judges want agents/orchestration; "AI workforce" not "single API call" | — Pending |
 | Compliance language = "FERPA-aware," never "fully compliant" | Faking FERPA/GDPR is a startup-killer; real compliance is in progress (user) | — Pending |
-| Object storage backend: GCS vs Supabase buckets | **OPEN** — user prose says GCS ("big requirement"); stack table says Supabase buckets | ⚠️ Revisit (pending user decision) |
+| Object storage backend: **Supabase buckets** | RLS-native owner isolation, reuses migration 0011, built-in signed URLs, fastest; revisit GCS only if a concrete GCP driver appears | ✓ Good (decided 2026-05-22) |
 
 ## Evolution
 
