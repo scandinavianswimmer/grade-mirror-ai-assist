@@ -251,7 +251,9 @@ const SubmissionDetail = () => {
                     {grade.letter && <Badge variant="secondary" className="ml-1">{grade.letter}</Badge>}
                   </div>
                   {typeof grade.confidence === 'number' && (
-                    <p className="text-xs text-muted-foreground">Confidence {(grade.confidence * 100).toFixed(0)}%</p>
+                    <p className="text-xs text-muted-foreground" title="How complete the AI draft is — not a guarantee of correctness. Your review decides the grade.">
+                      AI completeness {(grade.confidence * 100).toFixed(0)}% · review required
+                    </p>
                   )}
                   {Array.isArray(grade.flags) && grade.flags.length > 0 && (
                     <div className="flex flex-wrap gap-1">

@@ -16,6 +16,12 @@ export interface GradingResponse {
   suggestedGrade: string;
   reasoning: string;
   confidence: number;
+  rubricBreakdown?: Array<{
+    criterion: string;
+    evidenceQuote: string;
+    commentSuggestion: string;
+    score: number;
+  }>;
 }
 
 export const generateGradingFeedback = async (

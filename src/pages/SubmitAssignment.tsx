@@ -223,13 +223,15 @@ const SubmitAssignment = () => {
                     <p className="text-sm text-blue-700 mt-2">{feedback.reasoning}</p>
                   </div>
 
-                  {/* Confidence Score */}
+                  {/* AI completeness — real value only, never a fabricated default (H18/M66) */}
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-semibold text-gray-800 mb-2">AI Confidence</h4>
+                    <h4 className="font-semibold text-gray-800 mb-2">AI Completeness</h4>
                     <p className="text-2xl font-bold text-gray-600">
-                      {Math.round((feedback.confidence || 0.8) * 100)}%
+                      {typeof feedback.confidence === 'number'
+                        ? `${Math.round(feedback.confidence * 100)}%`
+                        : 'Review required'}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">Assessment reliability</p>
+                    <p className="text-sm text-gray-600 mt-1">How complete the AI draft is — your review is required</p>
                   </div>
                 </div>
 

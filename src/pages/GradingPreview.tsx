@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, Edit, Star, Brain, Send, Loader2, RefreshCw } from "lucide-react";
+import { Check, Edit, Star, Brain, Loader2, RefreshCw } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useToast } from "@/hooks/use-toast";
 import { generateGradingFeedback, type GradingResponse } from "@/lib/geminiApi";
@@ -49,10 +49,9 @@ const renderWithHighlights = (
 const GradingPreview = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState<GradingResponse | null>(null);
-  const [finalGrade, setFinalGrade] = useState("A-");
-  const [overallFeedback, setOverallFeedback] = useState(
-    "This is a well-structured essay that demonstrates strong analytical thinking and clear writing. Your thesis is compelling and well-supported throughout the paper. The use of textual evidence is appropriate and effectively integrated. Consider expanding on your conclusion to more explicitly connect your analysis to broader themes in the work."
-  );
+  // No fabricated defaults — these populate only from a real AI response (H17).
+  const [finalGrade, setFinalGrade] = useState("");
+  const [overallFeedback, setOverallFeedback] = useState("");
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -173,27 +172,21 @@ In conclusion, Shakespeare masterfully weaves the theme of appearance versus rea
 
           {/* Grading Panel */}
           <div className="space-y-6">
-            {/* Rubric */}
+            {/* Rubric breakdown — from the actual AI response, never hardcoded ratings (H16/M67) */}
             <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Grading Rubric</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Thesis & Argument</span>
-                  <Badge className="bg-green-100 text-green-800">Excellent</Badge>
+              <h3 className="text-lg font-semibold mb-4">Rubric Breakdown</h3>
+              {aiResponse?.rubricBreakdown && aiResponse.rubricBreakdown.length > 0 ? (
+                <div className="space-y-3">
+                  {aiResponse.rubricBreakdown.map((item, i) => (
+                    <div key={i} className="flex justify-between items-center gap-3">
+                      <span className="text-sm">{item.criterion}</span>
+                      <Badge variant="secondary">{item.score}</Badge>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Textual Evidence</span>
-                  <Badge className="bg-green-100 text-green-800">Proficient</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Organization</span>
-                  <Badge className="bg-green-100 text-green-800">Proficient</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Writing Quality</span>
-                  <Badge className="bg-blue-100 text-blue-800">Good</Badge>
-                </div>
-              </div>
+              ) : (
+                <p className="text-sm text-gray-500">Run AI feedback to see a rubric-aligned breakdown.</p>
+              )}
             </Card>
 
             {/* AI Grade */}
@@ -242,11 +235,6 @@ In conclusion, Shakespeare masterfully weaves the theme of appearance versus rea
                 <Button onClick={handleFinalize} className="w-full">
                   <Check className="w-4 h-4 mr-2" />
                   Accept & Finalize Grade
-                </Button>
-                
-                <Button variant="outline" className="w-full">
-                  <Send className="w-4 h-4 mr-2" />
-                  Send to LMS
                 </Button>
               </div>
             </Card>
