@@ -38,6 +38,8 @@ const Profile = () => {
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [dataRetention, setDataRetention] = useState("30");
+  // Learned grading style the teacher can inspect and reset (M52).
+  const [styleSummary, setStyleSummary] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     full_name: '',
     name: '',
@@ -64,6 +66,24 @@ const Profile = () => {
   const handleRetentionChange = (value: string) => {
     setDataRetention(value);
     saveSettings({ retention_days: value === 'forever' ? null : parseInt(value, 10) });
+  };
+
+  // Load the teacher's learned grading style so they can inspect it (M52).
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('ai_profiles')
+      .select('grading_style_summary')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => setStyleSummary(data?.grading_style_summary ?? null));
+  }, [user]);
+
+  const handleResetStyle = async () => {
+    if (!user) return;
+    await supabase.from('ai_profiles').delete().eq('user_id', user.id);
+    setStyleSummary(null);
+    toast({ title: 'Learned style reset', description: 'aiTA will rebuild your style from new exemplars.' });
   };
 
   const fetchUserProfile = async () => {
@@ -558,6 +578,33 @@ const Profile = () => {
                     </Select>
                   </div>
                 </div>
+              </Card>
+
+              {/* Learned grading style — inspect & reset (M52) */}
+              <Card className="p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold">Your AI Grading Style</h3>
+                  {styleSummary && (
+                    <Button variant="outline" size="sm" onClick={handleResetStyle}>Reset learned style</Button>
+                  )}
+                </div>
+                {styleSummary ? (
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{styleSummary}</p>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    aiTA hasn't learned a style yet. Upload graded exemplars (with your feedback) to teach it your voice.
+                  </p>
+                )}
+              </Card>
+
+              {/* AI provider disclosure (M53) */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-2">AI Provider</h3>
+                <p className="text-sm text-gray-700">
+                  Grading and feedback are generated using <strong>Google Gemini</strong>, a third-party AI
+                  subprocessor. Submission text you grade is sent to Google for processing. You can disable
+                  style personalization above; see Google's terms for how they handle API data.
+                </p>
               </Card>
 
               {/* Data Management Component */}

@@ -29,8 +29,7 @@ export interface AIResponse {
   fallbackChain?: string[];
 }
 
-const CIRCUIT_BREAKER_THRESHOLD = 5; // failures before circuit opens
-const CIRCUIT_BREAKER_TIMEOUT = 60000; // 1 minute before retry
+const CIRCUIT_BREAKER_THRESHOLD = 5; // failures before circuit opens (M55: removed unused TIMEOUT)
 
 export class AIRouter {
   private supabase: SupabaseClient;
@@ -56,9 +55,9 @@ export class AIRouter {
         costPerToken: 0.0002,
       },
       {
-        name: 'gemini-pro',
+        name: 'gemini-2.5-flash',
         provider: 'gemini',
-        endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
+        endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
         priority: 2,
         maxRetries: 2,
         timeout: 30000,
