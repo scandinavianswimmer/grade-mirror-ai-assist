@@ -10,6 +10,7 @@ interface Submission {
   file_url?: string;
   essay?: string;
   ai_feedback?: string;
+  feedback_json?: unknown;
   final_grade?: string;
   teacher_notes?: string;
   assignments?: {
@@ -119,11 +120,11 @@ export const PdfSubmission: React.FC = () => {
 
   // Use essay if available, otherwise show a message
   const essayText = submission.essay || 'Essay content not available for PDF generation.';
-  
-  // Use ai_feedback if available, otherwise create empty feedback
-  let feedbackJson = submission.ai_feedback;
-  
-  // If no AI feedback, create empty structure
+
+  // feedback_json is the structured source of truth; fall back to ai_feedback for legacy rows (H28).
+  let feedbackJson: unknown = submission.feedback_json ?? submission.ai_feedback;
+
+  // If no structured feedback, create an empty structure
   if (!feedbackJson) {
     feedbackJson = JSON.stringify({
       inlineComments: [],
@@ -134,8 +135,8 @@ export const PdfSubmission: React.FC = () => {
       rubricBreakdown: []
     });
   }
-  
-  // If ai_feedback is already an object, stringify it
+
+  // If the feedback is already an object, stringify it for the renderer
   if (typeof feedbackJson === 'object') {
     feedbackJson = JSON.stringify(feedbackJson);
   }
@@ -143,7 +144,7 @@ export const PdfSubmission: React.FC = () => {
   return (
     <EssayFeedbackPdfRenderer
       essayText={essayText}
-      feedbackJson={feedbackJson}
+      feedbackJson={feedbackJson as string}
       meta={meta}
     />
   );
