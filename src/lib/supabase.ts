@@ -59,6 +59,7 @@ export interface TrainingData {
   id: string;
   user_id: string;
   data_type: 'assignment' | 'rubric' | 'feedback';
+  title?: string | null;
   file_url: string;
   processed: boolean;
   created_at: string;

@@ -225,6 +225,7 @@ export type Database = {
       }
       annotations: {
         Row: {
+          ai_comment: string | null
           comment: string
           created_at: string
           end_index: number | null
@@ -239,6 +240,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ai_comment?: string | null
           comment: string
           created_at?: string
           end_index?: number | null
@@ -253,6 +255,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ai_comment?: string | null
           comment?: string
           created_at?: string
           end_index?: number | null
@@ -774,6 +777,7 @@ export type Database = {
           model_id: string | null
           overall_max: number | null
           overall_score: number | null
+          rubric_snapshot: Json | null
           schema_version: string
           submission_id: string
           summary_feedback: string | null
@@ -789,6 +793,7 @@ export type Database = {
           model_id?: string | null
           overall_max?: number | null
           overall_score?: number | null
+          rubric_snapshot?: Json | null
           schema_version: string
           submission_id: string
           summary_feedback?: string | null
@@ -804,6 +809,7 @@ export type Database = {
           model_id?: string | null
           overall_max?: number | null
           overall_score?: number | null
+          rubric_snapshot?: Json | null
           schema_version?: string
           submission_id?: string
           summary_feedback?: string | null
@@ -1096,6 +1102,7 @@ export type Database = {
           file_url: string
           id: string
           processed: boolean | null
+          title: string | null
           user_id: string
         }
         Insert: {
@@ -1104,6 +1111,7 @@ export type Database = {
           file_url: string
           id?: string
           processed?: boolean | null
+          title?: string | null
           user_id: string
         }
         Update: {
@@ -1112,6 +1120,7 @@ export type Database = {
           file_url?: string
           id?: string
           processed?: boolean | null
+          title?: string | null
           user_id?: string
         }
         Relationships: [

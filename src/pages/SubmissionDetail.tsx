@@ -34,7 +34,7 @@ interface GradeRow {
 }
 interface AnnotationRow {
   id: string; start_index: number | null; end_index: number | null; quote: string;
-  comment: string; type: AnnoType; matched: boolean; status: string;
+  comment: string; ai_comment: string | null; type: AnnoType; matched: boolean; status: string;
 }
 
 const SubmissionDetail = () => {
@@ -71,7 +71,7 @@ const SubmissionDetail = () => {
 
     const { data: anns } = await supabase
       .from('annotations')
-      .select('id, start_index, end_index, quote, comment, type, matched, status')
+      .select('id, start_index, end_index, quote, comment, ai_comment, type, matched, status')
       .eq('submission_id', id)
       .order('start_index', { ascending: true });
     setAnnotations((anns as unknown as AnnotationRow[]) ?? []);
@@ -326,6 +326,11 @@ const SubmissionDetail = () => {
                       ) : (
                         <>
                           <p className="leading-relaxed text-foreground/90">{a.comment}</p>
+                          {a.status === 'edited' && a.ai_comment && a.ai_comment !== a.comment && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              <span className="font-medium">AI originally suggested:</span> <span className="line-through">{a.ai_comment}</span>
+                            </p>
+                          )}
                           <div className="mt-2 flex items-center gap-1">
                             <Button size="sm" variant={a.status === 'accepted' ? 'default' : 'outline'} className="h-7 gap-1 px-2 text-xs" onClick={(e) => { e.stopPropagation(); setStatus(a, 'accepted'); }}>
                               <Check className="h-3.5 w-3.5" /> Accept
