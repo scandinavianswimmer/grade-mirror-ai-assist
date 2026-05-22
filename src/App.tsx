@@ -32,6 +32,8 @@ const PodcastGenerator = lazy(() => import("./pages/PodcastGenerator"));
 const PodcastDetail = lazy(() => import("./pages/PodcastDetail"));
 const PdfSubmission = lazy(() => import("./pages/PdfSubmission").then((m) => ({ default: m.PdfSubmission })));
 const Pitch = lazy(() => import("./pages/Pitch"));
+const Metrics = lazy(() => import("./pages/Metrics"));
+const History = lazy(() => import("./pages/History"));
 
 const queryClient = new QueryClient();
 
@@ -246,6 +248,18 @@ const AppContent = () => {
       <Route path="/profile" element={
         <AuthGuard>
           <Profile />
+        </AuthGuard>
+      } />
+
+      <Route path="/metrics" element={
+        <AuthGuard>
+          <Metrics />
+        </AuthGuard>
+      } />
+
+      <Route path="/history" element={
+        <AuthGuard>
+          <History />
         </AuthGuard>
       } />
       

@@ -8,6 +8,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { createSubmissionWithFile } from '@/lib/submissionApi';
+import { analytics } from '@/lib/analytics';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import FileUpload from '@/components/FileUpload';
@@ -102,6 +103,11 @@ const AssignmentDetail = () => {
         assignmentId: assignment.id,
         studentName,
         file
+      });
+
+      analytics.capture('submission_uploaded', {
+        assignment_id: assignment.id,
+        extraction_status: ingest?.status ?? (ingestError ? 'failed' : 'ok'),
       });
 
       if (ingestError) {
