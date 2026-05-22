@@ -18,13 +18,24 @@ export const GRADING_MODELS: ModelSpec[] = [
 ];
 
 const FAIL_THRESHOLD = 5;
+// A model marked unhealthy is re-admitted (given another chance) after this cooldown, so a transient
+// failure of the preferred model (e.g. gemini-2.5-pro) doesn't permanently demote it to the fallback.
+const HEALTH_COOLDOWN_MS = 10 * 60 * 1000;
 
 // Returns grading models ordered by preference, filtered to those currently healthy.
 export async function getHealthyGradingModels(): Promise<ModelSpec[]> {
   const admin = adminClient();
-  const { data } = await admin.from("ai_model_health").select("model_id, healthy");
+  const { data } = await admin.from("ai_model_health").select("model_id, healthy, updated_at");
+  const now = Date.now();
   const unhealthy = new Set(
-    (data ?? []).filter((r) => r.healthy === false).map((r) => r.model_id),
+    (data ?? [])
+      .filter((r) => {
+        if (r.healthy !== false) return false;
+        // Past the cooldown? Re-admit so the model gets retried and can recover.
+        const ts = r.updated_at ? new Date(r.updated_at).getTime() : 0;
+        return now - ts < HEALTH_COOLDOWN_MS;
+      })
+      .map((r) => r.model_id),
   );
   // De-dup in case the override equals the fallback id.
   const seen = new Set<string>();
