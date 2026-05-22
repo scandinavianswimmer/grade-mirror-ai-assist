@@ -12,3 +12,6 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+# Replace aita.app with your production domain.
+Sitemap: https://aita.app/sitemap.xml

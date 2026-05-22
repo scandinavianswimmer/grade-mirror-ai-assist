@@ -1,0 +1,15 @@
+# aiTA
+
+> aiTA is an AI grading co-pilot for teachers. Teachers upload assignment instructions,
+> a rubric, and student submissions; aiTA drafts rubric-aligned scores and inline
+> annotations in the teacher's voice. Every result is human-in-the-loop: the teacher
+> accepts, edits, or dismisses each suggestion and approves the final grade.
+
+## Principles
+- Human-in-the-loop approval is mandatory; AI never finalizes a grade on its own.
+- Grading is rubric-aware and only runs when a teacher explicitly requests it.
+- Student work is private (encrypted in transit/at rest, access-restricted, teacher-controlled).
+
+## Notes for crawlers
+- This is a private, authenticated application; most routes require sign-in.
+- aiTA is not certified compliant with FERPA/GDPR; institutions should review before use.
