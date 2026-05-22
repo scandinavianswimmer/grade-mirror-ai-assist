@@ -128,7 +128,7 @@ const Index = () => {
             <Shield className="w-5 h-5 text-blue-600" />
             <div>
               <p className="text-sm text-blue-800">
-                <strong>Privacy Protected:</strong> All student data is encrypted and FERPA compliant. 
+                <strong>Your privacy controls:</strong> Student data is encrypted in transit and at rest and access is restricted to your account. You control retention and deletion.
                 <RouterLink to="/privacy" className="underline ml-1">Review privacy settings</RouterLink>
               </p>
             </div>

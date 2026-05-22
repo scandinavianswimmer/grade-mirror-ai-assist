@@ -451,20 +451,20 @@ const Profile = () => {
               <Card className="p-6 bg-green-50 border-green-200">
                 <div className="flex items-center gap-3 mb-4">
                   <Shield className="w-6 h-6 text-green-600" />
-                  <h2 className="text-xl font-semibold text-green-900">Privacy Protection Active</h2>
+                  <h2 className="text-xl font-semibold text-green-900">Your Privacy Controls</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div className="flex items-center gap-2">
                     <Lock className="w-4 h-4 text-green-600" />
-                    <span>End-to-end encryption</span>
+                    <span>Encrypted in transit &amp; at rest</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Shield className="w-4 h-4 text-green-600" />
-                    <span>FERPA compliant</span>
+                    <span>Access restricted to your account</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Database className="w-4 h-4 text-green-600" />
-                    <span>GDPR compliant</span>
+                    <span>You control retention &amp; deletion</span>
                   </div>
                 </div>
               </Card>
@@ -550,23 +550,26 @@ const Profile = () => {
               {/* Data Management Component */}
               <DataManagement />
 
-              {/* Compliance Information */}
+              {/* Privacy practices */}
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Compliance & Legal</h3>
+                <h3 className="text-lg font-semibold mb-4">Privacy Practices</h3>
                 <div className="space-y-4 text-sm">
                   <div className="p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-medium text-blue-900 mb-2">FERPA Compliance</h4>
+                    <h4 className="font-medium text-blue-900 mb-2">How we handle student data</h4>
                     <p className="text-blue-800">
-                      aiTA is designed to comply with the Family Educational Rights and Privacy Act (FERPA). 
-                      Student data is encrypted, access is restricted, and you maintain full control over your educational records.
+                      Submissions are stored in your account, encrypted in transit and at rest, with access
+                      restricted by authentication. We practice data minimization and give you controls to
+                      export and delete your data. Grading uses a third-party AI provider — see the Data
+                      Handling settings above to control whether your content is used to personalize grading.
                     </p>
                   </div>
-                  
-                  <div className="p-4 bg-green-50 rounded-lg">
-                    <h4 className="font-medium text-green-900 mb-2">GDPR Compliance</h4>
-                    <p className="text-green-800">
-                      We follow General Data Protection Regulation (GDPR) principles including data minimization, 
-                      purpose limitation, and your right to access, rectify, and delete your personal data.
+
+                  <div className="p-4 bg-amber-50 rounded-lg">
+                    <h4 className="font-medium text-amber-900 mb-2">Regulatory note</h4>
+                    <p className="text-amber-800">
+                      aiTA is not certified compliant with FERPA, GDPR, or similar regulations. Compliance for
+                      your use depends on your institution's policies and agreements. Review aiTA with your
+                      school or district before processing student records.
                     </p>
                   </div>
                 </div>

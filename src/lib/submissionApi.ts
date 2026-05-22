@@ -50,7 +50,7 @@ export const createSubmissionWithFile = async (data: CreateSubmissionData): Prom
       throw new Error(processResult.error || 'File processing failed');
     }
 
-    submissionData.file_url = processResult.url;
+    // Store the storage PATH only — never a public/expiring URL (C6). Sign on demand for display.
     submissionData.submission_storage_path = processResult.storagePath;
     // v2 column read by ingest-document + grade-submission.
     submissionData.file_path = processResult.storagePath;

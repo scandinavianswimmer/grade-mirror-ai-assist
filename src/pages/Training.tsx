@@ -30,13 +30,15 @@ const Training = () => {
       throw uploadError;
     }
 
-    const { data } = supabase.storage
+    // Private bucket — short-lived signed URL only (C6).
+    const { data } = await supabase.storage
       .from(bucket)
-      .getPublicUrl(filePath);
+      .createSignedUrl(filePath, 3600);
 
     return {
       success: true,
-      url: data.publicUrl
+      url: data?.signedUrl ?? null,
+      path: filePath
     };
   };
 
