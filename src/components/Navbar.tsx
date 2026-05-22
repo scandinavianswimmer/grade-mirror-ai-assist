@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LayoutDashboard, Sparkles, GraduationCap, LogOut, User, ChevronDown, Feather, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Sparkles, GraduationCap, LogOut, User, ChevronDown, Feather, CreditCard, BarChart3, History } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
 
@@ -23,6 +23,8 @@ const Navbar = () => {
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/submit-assignment', label: 'Grade', icon: Sparkles },
     { path: '/upload-training', label: 'Train', icon: GraduationCap },
+    { path: '/metrics', label: 'Metrics', icon: BarChart3 },
+    { path: '/history', label: 'History', icon: History },
   ];
 
   return (

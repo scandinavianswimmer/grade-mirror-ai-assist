@@ -9,6 +9,7 @@ import Navbar from '@/components/Navbar';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
+import { analytics } from '@/lib/analytics';
 import { statusBadgeClass, statusLabel, isFinalized } from '@/lib/submissionStatus';
 
 type AnnoType = 'praise' | 'suggestion' | 'error' | 'question';
@@ -83,17 +84,22 @@ const SubmissionDetail = () => {
   const runGrading = async () => {
     if (!id) return;
     setGrading(true);
+    const startedAt = Date.now();
+    analytics.capture('grade_started', { submission_id: id, is_regrade: Boolean(grade) });
     try {
       const { error } = await supabase.functions.invoke('grade-submission', { body: { submissionId: id } });
       if (error) {
         let msg = 'Grading failed';
         try { const body = await (error as any).context?.json?.(); if (body?.error) msg = `${body.error}${body.stage ? ` (${body.stage})` : ''}`; } catch { /* ignore */ }
+        analytics.capture('grade_completed', { submission_id: id, ok: false, duration_ms: Date.now() - startedAt });
         toast({ title: 'Could not grade', description: msg, variant: 'destructive' });
       } else {
+        analytics.capture('grade_completed', { submission_id: id, ok: true, duration_ms: Date.now() - startedAt });
         toast({ title: 'Graded', description: 'Review the AI’s notes — you have the final say.' });
         await load();
       }
     } catch (e: any) {
+      analytics.capture('grade_completed', { submission_id: id, ok: false, duration_ms: Date.now() - startedAt });
       toast({ title: 'Could not grade', description: e?.message ?? 'Unexpected error', variant: 'destructive' });
     } finally {
       setGrading(false);
@@ -104,6 +110,7 @@ const SubmissionDetail = () => {
     setAnnotations((prev) => prev.map((a) => (a.id === ann.id ? { ...a, status } : a)));
     await supabase.from('annotations').update({ status }).eq('id', ann.id);
     if (user) await supabase.from('annotation_edits').insert({ user_id: user.id, annotation_id: ann.id, action: status === 'accepted' ? 'accept' : 'reject' });
+    analytics.capture(status === 'accepted' ? 'annotation_accepted' : 'annotation_dismissed', { submission_id: id, annotation_id: ann.id, annotation_type: ann.type });
   };
 
   const saveEdit = async (ann: AnnotationRow) => {
@@ -112,6 +119,7 @@ const SubmissionDetail = () => {
     setEditing(null);
     await supabase.from('annotations').update({ comment: revised, status: 'edited' }).eq('id', ann.id);
     if (user) await supabase.from('annotation_edits').insert({ user_id: user.id, annotation_id: ann.id, action: 'edit', original: { comment: ann.comment }, revised: { comment: revised } });
+    analytics.capture('annotation_edited', { submission_id: id, annotation_id: ann.id, annotation_type: ann.type });
   };
 
   // Bulk review actions — persisted server-side so they survive reload (H12).
@@ -126,6 +134,7 @@ const SubmissionDetail = () => {
         targets.map((a) => ({ user_id: user.id, annotation_id: a.id, action: status === 'accepted' ? 'accept' : 'reject' })),
       );
     }
+    analytics.capture(status === 'accepted' ? 'annotation_accepted' : 'annotation_dismissed', { submission_id: id, bulk: true, count: targets.length });
     toast({ title: status === 'accepted' ? 'Accepted all notes' : 'Dismissed all notes' });
   };
 
@@ -134,6 +143,7 @@ const SubmissionDetail = () => {
     if (!id) return;
     await supabase.from('submissions').update({ status: 'finalized' }).eq('id', id);
     setSubmission((prev) => (prev ? { ...prev, status: 'finalized' } : prev));
+    analytics.capture('grade_finalized', { submission_id: id });
     toast({ title: 'Grade finalized', description: 'Marked as approved by you.' });
   };
 

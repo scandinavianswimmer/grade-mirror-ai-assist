@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ensureUserProfile } from '@/lib/ensureUserProfile';
 import type { User, Session } from '@supabase/supabase-js';
+import { analytics } from '@/lib/analytics';
 
 interface AuthContextType {
   user: User | null;
@@ -93,6 +94,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // safety net upserts a row (idempotent) so onboarding state always exists.
         if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
           void ensureUserProfile(session.user);
+        }
+
+        // Tie product analytics to the teacher; clear identity on sign-out (METRIC-04).
+        if (session?.user) {
+          analytics.identify(session.user.id);
+        } else if (event === 'SIGNED_OUT') {
+          analytics.reset();
         }
       }
     );
