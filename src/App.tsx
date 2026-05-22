@@ -10,6 +10,7 @@ import AuthGuard from "@/components/AuthGuard";
 import LoginOverlay from "@/components/LoginOverlay";
 import TeacherOnboarding from "@/components/onboarding/TeacherOnboarding";
 import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 // Route-level code splitting — keep the initial bundle small (M39). Heavy pages load on demand.
 const Index = lazy(() => import("./pages/Index"));
@@ -132,6 +133,16 @@ const AppContent = () => {
       <Routes>
         <Route path="/pitch" element={<Pitch />} />
         <Route path="*" element={<NotFound />} />
+      </Routes>
+    );
+  }
+
+  // OAuth return (AUTH-02): render the callback handler directly so the login
+  // overlay never flashes while Supabase establishes the session from the URL.
+  if (location.pathname === '/auth/callback') {
+    return (
+      <Routes>
+        <Route path="/auth/callback" element={<AuthCallback />} />
       </Routes>
     );
   }
@@ -264,6 +275,7 @@ const AppContent = () => {
       <Route path="/pdf/submission/:id" element={<PdfSubmission />} />
       <Route path="/pitch" element={<Pitch />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
