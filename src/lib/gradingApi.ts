@@ -1,26 +1,13 @@
 
 import { supabase } from './supabase';
 
-export const generateGradingFeedback = async (essayText: string, rubricText: string, userId: string) => {
+export const generateGradingFeedback = async (essayText: string, rubricText: string, _userId?: string) => {
   try {
-    // Get training data for the user
-    const { data: trainingData, error: trainingError } = await supabase
-      .from('training_data')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('processed', true);
-
-    if (trainingError) {
-      console.error('Error fetching training data:', trainingError);
-    }
-
-    // Call the edge function
+    // Training exemplars are fetched server-side, scoped to the authenticated teacher (C3).
     const { data, error } = await supabase.functions.invoke('generate-grading-feedback', {
       body: {
         essayText,
-        rubricText,
-        trainingData: trainingData || [],
-        userId
+        rubricText
       }
     });
 

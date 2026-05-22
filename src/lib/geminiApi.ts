@@ -24,25 +24,12 @@ export const generateGradingFeedback = async (
   userId: string
 ): Promise<GradingResponse> => {
   try {
-    // Fetch user's training data
-    const { data: trainingData, error: trainingError } = await supabase
-      .from('training_data')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('processed', true)
-      .limit(10);
-
-    if (trainingError) {
-      console.error('Error fetching training data:', trainingError);
-    }
-
-    // Call the Supabase Edge Function
+    // Training exemplars are fetched server-side (scoped to the authenticated teacher).
+    // The client never supplies training data — it cannot be trusted (C3).
     const { data, error } = await supabase.functions.invoke('generate-grading-feedback', {
       body: {
         essayText,
-        rubricText,
-        trainingData: trainingData || [],
-        userId
+        rubricText
       }
     });
 

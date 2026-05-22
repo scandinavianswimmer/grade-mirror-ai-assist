@@ -138,25 +138,20 @@ export const incrementFeedbackCount = async (userId: string): Promise<void> => {
   if (error) throw error;
 };
 
-// Generate AI Feedback
+// Generate AI Feedback. Training exemplars are fetched server-side, scoped to the
+// authenticated teacher (C3) — the client no longer supplies training data.
 export const generateAIFeedback = async (essay: string, rubric: string, userId: string) => {
-  // Get user's training examples for context
-  const trainingExamples = await getTrainingExamples(userId);
-  const recentExamples = trainingExamples.slice(0, 3);
-
   const { data, error } = await supabase.functions.invoke('generate-grading-feedback', {
     body: {
       essayText: essay,
-      rubricText: rubric,
-      trainingData: recentExamples,
-      userId
+      rubricText: rubric
     }
   });
 
   if (error) throw error;
-  
+
   // Increment feedback count
   await incrementFeedbackCount(userId);
-  
+
   return data;
 };
