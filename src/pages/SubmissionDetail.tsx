@@ -1,1640 +1,353 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Brain, Loader2, FileText, MessageSquare, Check, X, Target, Edit3, RotateCcw, ChevronDown, ChevronUp, Lightbulb } from 'lucide-react';
+import { ArrowLeft, Sparkles, Loader2, Check, X, Pencil, RotateCcw, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Textarea } from '@/components/ui/textarea';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
-import { generateGradingFeedback, type GradingResponse } from '@/lib/geminiApi';
-import { getTextFromStoredFile } from '@/lib/fileProcessing';
-import { TeacherCommentModal } from '@/components/TeacherCommentModal';
-import { TeacherGradingPanel } from '@/components/TeacherGradingPanel';
-import { parseAIFeedback, extractCleanFeedback, extractCleanGrade } from '@/lib/aiParser';
-import { GrammarlyAnnotations } from '@/components/GrammarlyAnnotations';
-import { resolveAnchors, type AnchorRange } from '@/lib/annotations/resolveAnchors';
-import { AutoProcessingIndicator } from '@/components/AutoProcessingIndicator';
+import { statusBadgeClass, statusLabel, isFinalized } from '@/lib/submissionStatus';
 
-interface Submission {
+type AnnoType = 'praise' | 'suggestion' | 'error' | 'question';
+const PEN: Record<AnnoType, string> = { praise: 'praise', suggestion: 'suggestion', error: 'critique', question: 'question' };
+// Static class strings so Tailwind's JIT generates them (no dynamic class names).
+const DOT: Record<AnnoType, string> = { praise: 'bg-praise', suggestion: 'bg-suggestion', error: 'bg-critique', question: 'bg-question' };
+
+interface SubmissionRow {
   id: string;
   assignment_id: string;
-  student_name: string;
-  essay: string;
-  file_url: string;
-  submission_storage_path?: string;
+  student_name: string | null;
+  essay: string | null;
+  extracted_text: string | null;
   status: string;
-  created_at: string;
-  ai_feedback?: string;
-  ai_grade?: string;
-  feedback_json?: any;
-  teacher_final_grade?: string;
-  teacher_notes?: string;
 }
-
-interface Assignment {
-  id: string;
-  title: string;
-  rubric_text?: string;
-  description?: string;
+interface Criterion {
+  name: string; weight: number; maxScore: number; score: number;
+  level?: string; rationale: string; verified: boolean; confidence: number;
 }
-
-interface FeedbackTile {
-  category: string;
-  score: number;
-  summary: string;
-  details: string;
-  examples: string[];
+interface GradeRow {
+  id: string; overall_score: number | null; overall_max: number | null; letter: string | null;
+  confidence: number | null; criteria: Criterion[]; summary_feedback: string | null; flags: string[]; model_id: string | null;
 }
-
-interface VocabularyCard {
-  word: string;
-  suggestions: string[];
-  reason: string;
-  position: number;
-}
-
-interface TeacherComment {
-  id: string;
-  text_start: number;
-  text_end: number;
-  comment_text: string;
-  comment_type: 'positive' | 'negative' | 'neutral';
-  created_at: string;
+interface AnnotationRow {
+  id: string; start_index: number | null; end_index: number | null; quote: string;
+  comment: string; type: AnnoType; matched: boolean; status: string;
 }
 
 const SubmissionDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [submission, setSubmission] = useState<Submission | null>(null);
-  const [assignment, setAssignment] = useState<Assignment | null>(null);
+
+  const [submission, setSubmission] = useState<SubmissionRow | null>(null);
+  const [grade, setGrade] = useState<GradeRow | null>(null);
+  const [annotations, setAnnotations] = useState<AnnotationRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const [extractingText, setExtractingText] = useState(false);
-  const [aiResponse, setAiResponse] = useState<GradingResponse | null>(null);
-  const [suggestionsList, setSuggestionsList] = useState<any[]>([]);
-  const [selectedCommentIndex, setSelectedCommentIndex] = useState<number | null>(null);
-  const [teacherActions, setTeacherActions] = useState<{[key: string]: 'approved' | 'declined' | 'modified'}>({});
-  const [activeCommentPopup, setActiveCommentPopup] = useState<{index: number, position: {x: number, y: number}} | null>(null);
-  const [modifyingComment, setModifyingComment] = useState<number | null>(null);
-  const [modifiedText, setModifiedText] = useState<string>('');
-  const [essayText, setEssayText] = useState<string>('');
-  const [liveFeedback, setLiveFeedback] = useState(false);
-  const [expandedTiles, setExpandedTiles] = useState<{[key: string]: boolean}>({});
-  const [overallScore, setOverallScore] = useState<number>(0);
-  const [feedbackTiles, setFeedbackTiles] = useState<FeedbackTile[]>([]);
-  const [vocabularyCards, setVocabularyCards] = useState<VocabularyCard[]>([]);
-  
-  // Grammarly-style state
-  const [acceptedComments, setAcceptedComments] = useState<Set<string>>(new Set());
-  const [rejectedComments, setRejectedComments] = useState<Set<string>>(new Set());
-  const [anchors, setAnchors] = useState<AnchorRange[]>([]);
-  const [processingStatus, setProcessingStatus] = useState<'idle' | 'extracting' | 'analyzing' | 'complete' | 'error'>('idle');
-  const [processingProgress, setProcessingProgress] = useState(0);
-  const [hoveredCommentId, setHoveredCommentId] = useState<string | null>(null);
-  
-  // Teacher comment states
-  const [teacherComments, setTeacherComments] = useState<TeacherComment[]>([]);
-  const [selectedText, setSelectedText] = useState<string>('');
-  const [textSelection, setTextSelection] = useState<{start: number, end: number} | null>(null);
-  const [commentModalOpen, setCommentModalOpen] = useState(false);
-  const [editingComment, setEditingComment] = useState<TeacherComment | null>(null);
-  
-  const editorRef = useRef<HTMLDivElement>(null);
+  const [grading, setGrading] = useState(false);
+  const [active, setActive] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
 
-  useEffect(() => {
-    if (id && user) {
-      fetchSubmissionData();
-      fetchTeacherComments();
-    }
-  }, [id, user]);
+  const load = useCallback(async () => {
+    if (!id) return;
+    const { data: sub } = await supabase
+      .from('submissions')
+      .select('id, assignment_id, student_name, essay, extracted_text, status')
+      .eq('id', id)
+      .single();
+    setSubmission(sub as SubmissionRow | null);
 
-  useEffect(() => {
-    // Auto-extract text if we have a file but no essay content
-    if (submission && submission.submission_storage_path && (!submission.essay || submission.essay.includes('[File'))) {
-      console.log('Auto-extracting text for submission:', {
-        id: submission.id,
-        storagePath: submission.submission_storage_path,
-        currentEssay: submission.essay?.substring(0, 100)
-      });
-      handleExtractText();
-    }
-  }, [submission]);
+    const { data: g } = await supabase
+      .from('submission_grades')
+      .select('id, overall_score, overall_max, letter, confidence, criteria, summary_feedback, flags, model_id')
+      .eq('submission_id', id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setGrade(g as unknown as GradeRow | null);
 
-  useEffect(() => {
-    // Auto-generate AI feedback if we have essay content but no AI response
-    if (submission && submission.essay && !submission.essay.includes('[File') && !aiResponse && !generating) {
-      console.log('Auto-generating AI feedback for extracted text');
-      handleGenerateAIFeedback();
-    }
-  }, [submission?.essay, aiResponse]);
+    const { data: anns } = await supabase
+      .from('annotations')
+      .select('id, start_index, end_index, quote, comment, type, matched, status')
+      .eq('submission_id', id)
+      .order('start_index', { ascending: true });
+    setAnnotations((anns as unknown as AnnotationRow[]) ?? []);
+    setLoading(false);
+  }, [id]);
 
-  useEffect(() => {
-    if (submission?.essay) {
-      setEssayText(submission.essay);
-    }
-  }, [submission]);
+  useEffect(() => { load(); }, [load]);
 
-  useEffect(() => {
-    if (aiResponse) {
-      processAIResponse(aiResponse);
-      // Convert inline comments to anchors for Grammarly-style display
-      if (aiResponse.inlineComments && submission?.essay) {
-        const newAnchors = resolveAnchors(submission.essay, aiResponse.inlineComments);
-        setAnchors(newAnchors);
-      }
-    }
-  }, [aiResponse, submission?.essay]);
-
-  const fetchSubmissionData = async () => {
+  const runGrading = async () => {
+    if (!id) return;
+    setGrading(true);
     try {
-      // Fetch submission
-      const { data: submissionData, error: submissionError } = await supabase
-        .from('submissions')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (submissionError) throw submissionError;
-      setSubmission(submissionData);
-
-      // Parse existing AI response if available
-      if (submissionData.feedback_json && typeof submissionData.feedback_json === 'object') {
-        const aiData = submissionData.feedback_json as unknown as GradingResponse;
-        setAiResponse(aiData);
-        setSuggestionsList(aiData.inlineComments || []);
-        processAIResponse(aiData);
-      } else if (submissionData.ai_feedback && typeof submissionData.ai_feedback === 'string') {
-        // Handle legacy data that might have JSON wrapped in markdown
-        try {
-          let cleanedFeedback = submissionData.ai_feedback.trim();
-          
-          // Check if it contains JSON wrapped in markdown
-          if (cleanedFeedback.includes('```json')) {
-            cleanedFeedback = cleanedFeedback.replace(/^.*```json\s*/, '').replace(/\s*```.*$/, '');
-          } else if (cleanedFeedback.includes('```')) {
-            cleanedFeedback = cleanedFeedback.replace(/^.*```\s*/, '').replace(/\s*```.*$/, '');
-          }
-          
-          // Remove any remaining backticks and try to parse
-          cleanedFeedback = cleanedFeedback.replace(/^`+|`+$/g, '').trim();
-          
-          if (cleanedFeedback.startsWith('{') && cleanedFeedback.endsWith('}')) {
-            const parsedData = JSON.parse(cleanedFeedback) as GradingResponse;
-            setAiResponse(parsedData);
-            setSuggestionsList(parsedData.inlineComments || []);
-            processAIResponse(parsedData);
-          }
-        } catch (error) {
-          console.log('Could not parse legacy AI feedback as JSON:', error);
-          // If parsing fails, we'll just use the fallback text display
-        }
-      }
-
-      // Fetch assignment details
-      const { data: assignmentData, error: assignmentError } = await supabase
-        .from('assignments')
-        .select('*')
-        .eq('id', submissionData.assignment_id)
-        .eq('user_id', user?.id)
-        .single();
-
-      if (assignmentError) throw assignmentError;
-      setAssignment(assignmentData);
-
-    } catch (error) {
-      console.error('Error fetching submission:', error);
-      toast({
-        title: "Error loading submission",
-        description: "Please try refreshing the page.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchTeacherComments = async () => {
-    if (!id || !user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('teacher_comments')
-        .select('*')
-        .eq('submission_id', id)
-        .order('text_start', { ascending: true });
-
-      if (error) throw error;
-      setTeacherComments((data || []) as TeacherComment[]);
-    } catch (error) {
-      console.error('Error fetching teacher comments:', error);
-    }
-  };
-
-  // Text selection handling for teacher comments
-  const handleTextSelection = () => {
-    if (!editorRef.current) return;
-
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-
-    const range = selection.getRangeAt(0);
-    if (!range.collapsed && range.toString().trim()) {
-      const selectedText = range.toString().trim();
-      
-      // Calculate text positions
-      const preCaretRange = range.cloneRange();
-      preCaretRange.selectNodeContents(editorRef.current);
-      preCaretRange.setEnd(range.startContainer, range.startOffset);
-      const textStart = preCaretRange.toString().length;
-      const textEnd = textStart + selectedText.length;
-
-      setSelectedText(selectedText);
-      setTextSelection({ start: textStart, end: textEnd });
-      setCommentModalOpen(true);
-    }
-  };
-
-  // Teacher comment CRUD operations
-  const handleSaveTeacherComment = async (commentData: Omit<TeacherComment, 'id' | 'created_at'>) => {
-    if (!user || !submission) return;
-
-    try {
-      if (editingComment) {
-        // Update existing comment
-        const { error } = await supabase
-          .from('teacher_comments')
-          .update(commentData)
-          .eq('id', editingComment.id);
-
-        if (error) throw error;
-
-        toast({
-          title: "Comment updated!",
-          description: "Your comment has been updated successfully.",
-        });
-      } else {
-        // Create new comment
-        const { error } = await supabase
-          .from('teacher_comments')
-          .insert({
-            ...commentData,
-            user_id: user.id,
-            submission_id: submission.id,
-          });
-
-        if (error) throw error;
-
-        toast({
-          title: "Comment added!",
-          description: "Your comment has been added successfully.",
-        });
-      }
-
-      // Refresh comments and reset states
-      await fetchTeacherComments();
-      setEditingComment(null);
-    } catch (error) {
-      console.error('Error saving teacher comment:', error);
-      toast({
-        title: "Error saving comment",
-        description: "Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleDeleteTeacherComment = async (commentId: string) => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from('teacher_comments')
-        .delete()
-        .eq('id', commentId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Comment deleted",
-        description: "The comment has been removed.",
-      });
-
-      await fetchTeacherComments();
-    } catch (error) {
-      console.error('Error deleting comment:', error);
-      toast({
-        title: "Error deleting comment",
-        description: "Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleEditTeacherComment = (comment: TeacherComment) => {
-    setEditingComment(comment);
-    setSelectedText(essayText.slice(comment.text_start, comment.text_end));
-    setTextSelection({ start: comment.text_start, end: comment.text_end });
-    setCommentModalOpen(true);
-  };
-
-  const handleSaveGrade = async (finalGrade: string, teacherNotes: string) => {
-    if (!user || !submission) return;
-
-    try {
-      const { error } = await supabase
-        .from('submissions')
-        .update({
-          teacher_final_grade: finalGrade,
-          teacher_notes: teacherNotes
-        })
-        .eq('id', submission.id);
-
-      if (error) throw error;
-
-      setSubmission(prev => prev ? {
-        ...prev,
-        teacher_final_grade: finalGrade,
-        teacher_notes: teacherNotes
-      } : null);
-    } catch (error) {
-      console.error('Error saving grade:', error);
-      throw error;
-    }
-  };
-
-  const handleExtractText = async () => {
-    if (!submission?.submission_storage_path) {
-      console.log('No storage path found:', submission);
-      return;
-    }
-
-    console.log('Starting text extraction for:', submission.submission_storage_path);
-    setExtractingText(true);
-    setProcessingStatus('extracting');
-    setProcessingProgress(30);
-    
-    try {
-      const extractedText = await getTextFromStoredFile(submission.submission_storage_path);
-      console.log('Extracted text length:', extractedText?.length);
-      console.log('Extracted text preview:', extractedText?.substring(0, 200));
-      
-      setProcessingProgress(70);
-      
-      if (extractedText && extractedText.trim()) {
-        // Update the submission in the database
-        const { error: updateError } = await supabase
-          .from('submissions')
-          .update({ essay: extractedText })
-          .eq('id', submission.id);
-
-        if (updateError) {
-          console.error('Error updating submission:', updateError);
-          throw updateError;
-        }
-
-        // Update local state
-        setSubmission(prev => prev ? { ...prev, essay: extractedText } : null);
-        setProcessingProgress(100);
-        setProcessingStatus('complete');
-
-        toast({
-          title: "Text extracted successfully!",
-          description: `Extracted ${extractedText.length} characters from the document.`,
-        });
-        
-        setTimeout(() => setProcessingStatus('idle'), 2000);
-      } else {
-        console.warn('No text extracted or empty text');
-        setProcessingStatus('error');
-        toast({
-          title: "No text found",
-          description: "The document appears to be empty or text extraction failed.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Error extracting text:', error);
-      setProcessingStatus('error');
-      toast({
-        title: "Text extraction failed",
-        description: error instanceof Error ? error.message : "Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setExtractingText(false);
-      setTimeout(() => {
-        if (processingStatus !== 'complete') {
-          setProcessingStatus('idle');
-        }
-      }, 3000);
-    }
-  };
-
-  const handleGenerateAIFeedback = async () => {
-    if (!submission || !assignment || !user) return;
-
-    // If we don't have essay content, try to use the example text for demo
-    let essayContent = submission.essay;
-    if (!essayContent || essayContent.includes('[File')) {
-      console.log('No essay content found, check if we should extract text first');
-      toast({
-        title: "No essay content",
-        description: "Please extract text from the document first.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    console.log('Generating AI feedback for essay:', essayContent.substring(0, 100) + '...');
-    setGenerating(true);
-    setProcessingStatus('analyzing');
-    setProcessingProgress(0);
-    
-    try {
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setProcessingProgress(prev => Math.min(prev + 10, 90));
-      }, 500);
-
-      const response = await generateGradingFeedback(
-        essayContent,
-        assignment.rubric_text || '',
-        user.id
-      );
-
-      clearInterval(progressInterval);
-      setProcessingProgress(100);
-
-      console.log('AI Response received:', response);
-      setAiResponse(response);
-      setSuggestionsList(response.inlineComments || []);
-      setProcessingStatus('complete');
-
-      // Save AI response to database
-      const { error: updateError } = await supabase
-        .from('submissions')
-        .update({
-          ai_grade: response.suggestedGrade,
-          ai_feedback: response.overallFeedback,
-          feedback_json: response as any,
-          status: 'ai_graded'
-        })
-        .eq('id', submission.id);
-
-      if (updateError) {
-        console.error('Error saving AI response:', updateError);
-      }
-
-      toast({
-        title: "AI feedback generated!",
-        description: `Generated ${response.inlineComments?.length || 0} comments with ${Math.round(response.confidence * 100)}% confidence`,
-      });
-      
-      setTimeout(() => setProcessingStatus('idle'), 2000);
-
-    } catch (error) {
-      console.error('Error generating feedback:', error);
-      setProcessingStatus('error');
-      toast({
-        title: "Failed to generate feedback",
-        description: error instanceof Error ? error.message : "Please try again.",
-        variant: "destructive"
-      });
-      setTimeout(() => setProcessingStatus('idle'), 3000);
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  // Handle teacher actions on suggestions
-  const handleTeacherAction = async (index: number, action: 'approved' | 'declined' | 'modified', modifiedComment?: string) => {
-    if (!user || !submission) return;
-
-    try {
-      // Update local state
-      setTeacherActions(prev => ({
-        ...prev,
-        [index]: action
-      }));
-
-      // Update modified comment if provided
-      if (action === 'modified' && modifiedComment) {
-        setSuggestionsList(prev => prev.map((suggestion, i) => 
-          i === index ? { ...suggestion, comment: modifiedComment } : suggestion
-        ));
-      }
-
-      // Save to database
-      const { error } = await supabase
-        .from('teacher_edits')
-        .insert({
-          user_id: user.id,
-          submission_id: submission.id,
-          comment_id: index.toString(),
-          action_type: action,
-          comment_text: modifiedComment || suggestionsList[index]?.comment || ''
-        });
-
+      const { error } = await supabase.functions.invoke('grade-submission', { body: { submissionId: id } });
       if (error) {
-        console.error('Error saving teacher action:', error);
-        toast({
-          title: "Error saving action",
-          description: "Please try again.",
-          variant: "destructive"
-        });
+        let msg = 'Grading failed';
+        try { const body = await (error as any).context?.json?.(); if (body?.error) msg = `${body.error}${body.stage ? ` (${body.stage})` : ''}`; } catch { /* ignore */ }
+        toast({ title: 'Could not grade', description: msg, variant: 'destructive' });
       } else {
-        toast({
-          title: `Comment ${action}`,
-          description: `Successfully ${action} the suggestion.`,
-        });
+        toast({ title: 'Graded', description: 'Review the AI’s notes — you have the final say.' });
+        await load();
       }
-      
-      // Close popup and reset states
-      setActiveCommentPopup(null);
-      setModifyingComment(null);
-      setModifiedText('');
-    } catch (error) {
-      console.error('Error handling teacher action:', error);
+    } catch (e: any) {
+      toast({ title: 'Could not grade', description: e?.message ?? 'Unexpected error', variant: 'destructive' });
+    } finally {
+      setGrading(false);
     }
   };
 
-  // Grammarly-style handlers
-  const handleAcceptComment = async (id: string) => {
-    setAcceptedComments(prev => new Set([...prev, id]));
-    const anchor = anchors.find(a => a.id === id);
-    if (anchor && user && submission) {
-      await supabase.from('teacher_edits').insert({
-        user_id: user.id,
-        submission_id: submission.id,
-        comment_id: id,
-        action_type: 'approved',
-        comment_text: anchor.comment
-      });
-    }
-    toast({
-      title: "Comment accepted",
-      description: "This feedback has been approved.",
-    });
+  const setStatus = async (ann: AnnotationRow, status: 'accepted' | 'rejected') => {
+    setAnnotations((prev) => prev.map((a) => (a.id === ann.id ? { ...a, status } : a)));
+    await supabase.from('annotations').update({ status }).eq('id', ann.id);
+    if (user) await supabase.from('annotation_edits').insert({ user_id: user.id, annotation_id: ann.id, action: status === 'accepted' ? 'accept' : 'reject' });
   };
 
-  const handleRejectComment = async (id: string) => {
-    setRejectedComments(prev => new Set([...prev, id]));
-    const anchor = anchors.find(a => a.id === id);
-    if (anchor && user && submission) {
-      await supabase.from('teacher_edits').insert({
-        user_id: user.id,
-        submission_id: submission.id,
-        comment_id: id,
-        action_type: 'declined',
-        comment_text: anchor.comment
-      });
-    }
-    toast({
-      title: "Comment rejected",
-      description: "This feedback has been dismissed.",
-    });
+  const saveEdit = async (ann: AnnotationRow) => {
+    const revised = draft.trim();
+    setAnnotations((prev) => prev.map((a) => (a.id === ann.id ? { ...a, comment: revised, status: 'edited' } : a)));
+    setEditing(null);
+    await supabase.from('annotations').update({ comment: revised, status: 'edited' }).eq('id', ann.id);
+    if (user) await supabase.from('annotation_edits').insert({ user_id: user.id, annotation_id: ann.id, action: 'edit', original: { comment: ann.comment }, revised: { comment: revised } });
   };
 
-  const handleEditComment = async (id: string, newComment: string) => {
-    // Update the anchor with new comment
-    setAnchors(prev => prev.map(a => a.id === id ? { ...a, comment: newComment } : a));
-    setAcceptedComments(prev => new Set([...prev, id]));
-    
-    if (user && submission) {
-      await supabase.from('teacher_edits').insert({
-        user_id: user.id,
-        submission_id: submission.id,
-        comment_id: id,
-        action_type: 'modified',
-        comment_text: newComment
-      });
-    }
-    toast({
-      title: "Comment edited",
-      description: "Your changes have been saved.",
-    });
-  };
-
-  const handleAcceptAll = async () => {
-    const newAccepted = new Set([...acceptedComments, ...anchors.map(a => a.id)]);
-    setAcceptedComments(newAccepted);
-    toast({
-      title: "All accepted",
-      description: `Accepted ${anchors.length} comments.`,
-    });
-  };
-
-  const handleRejectAll = async () => {
-    const newRejected = new Set([...rejectedComments, ...anchors.map(a => a.id)]);
-    setRejectedComments(newRejected);
-    toast({
-      title: "All rejected",
-      description: `Rejected ${anchors.length} comments.`,
-    });
-  };
-
-  const processAIResponse = (response: GradingResponse) => {
-    // Calculate overall score from letter grade
-    const gradeToScore = (grade: string): number => {
-      const cleanGrade = grade?.toUpperCase().trim() || '';
-      const gradeMap: { [key: string]: number } = {
-        'A+': 97, 'A': 93, 'A-': 90,
-        'B+': 87, 'B': 83, 'B-': 80,
-        'C+': 77, 'C': 73, 'C-': 70,
-        'D+': 67, 'D': 63, 'D-': 60,
-        'F': 50
-      };
-      return gradeMap[cleanGrade] || 75; // Default to C grade if unknown
-    };
-    
-    const score = gradeToScore(response.suggestedGrade || 'B');
-    setOverallScore(score);
-
-    // Process feedback into tiles
-    const tiles: FeedbackTile[] = [
-      {
-        category: 'Grammar',
-        score: Math.round(Math.random() * 3 + 7), // Mock scores for demo
-        summary: 'Minor grammar issues found',
-        details: 'Found several instances of subject-verb disagreement and comma splices. Focus on sentence structure.',
-        examples: ['Line 1: "The students is" should be "The students are"']
-      },
-      {
-        category: 'Clarity',
-        score: Math.round(Math.random() * 3 + 7),
-        summary: 'Writing could be clearer',
-        details: 'Some sentences are overly complex and could benefit from simplification.',
-        examples: ['Paragraph 2: Consider breaking down long sentences']
-      },
-      {
-        category: 'Vocabulary',
-        score: Math.round(Math.random() * 3 + 7),
-        summary: 'Good word choice overall',
-        details: 'Vocabulary is appropriate but some words are overused.',
-        examples: ['Word "important" appears 5 times']
-      },
-      {
-        category: 'Organization',
-        score: Math.round(Math.random() * 3 + 7),
-        summary: 'Well-structured essay',
-        details: 'Clear introduction, body, and conclusion. Good use of transitions.',
-        examples: ['Strong thesis statement', 'Logical paragraph flow']
-      },
-      {
-        category: 'Analysis',
-        score: Math.round(Math.random() * 3 + 7),
-        summary: 'Analysis needs depth',
-        details: 'Arguments are present but need more supporting evidence.',
-        examples: ['Add more specific examples', 'Strengthen counterarguments']
-      },
-      {
-        category: 'Thesis',
-        score: Math.round(Math.random() * 3 + 7),
-        summary: 'Clear thesis statement',
-        details: 'Thesis is well-defined and arguable.',
-        examples: ['Strong position taken', 'Could be more specific']
-      }
-    ];
-    setFeedbackTiles(tiles);
-
-    // Process vocabulary suggestions
-    const vocab: VocabularyCard[] = [
-      { word: 'important', suggestions: ['crucial', 'vital', 'significant'], reason: 'Overused word', position: 45 },
-      { word: 'good', suggestions: ['excellent', 'effective', 'beneficial'], reason: 'Vague adjective', position: 123 },
-      { word: 'things', suggestions: ['elements', 'factors', 'aspects'], reason: 'Too general', position: 234 }
-    ];
-    setVocabularyCards(vocab);
-  };
-
-  // Handle vocabulary actions
-  const handleVocabularyAction = async (vocabIndex: number, action: 'apply' | 'dismiss') => {
-    if (!user || !submission) return;
-
-    try {
-      const vocab = vocabularyCards[vocabIndex];
-      
-      if (action === 'apply') {
-        // Apply the first suggestion by default
-        const suggestion = vocab.suggestions[0];
-        
-        // Replace the word in the essay text
-        const regex = new RegExp(`\\b${vocab.word}\\b`, 'gi');
-        const newText = essayText.replace(regex, suggestion);
-        setEssayText(newText);
-        
-        // Update submission in database
-        await supabase
-          .from('submissions')
-          .update({ essay: newText })
-          .eq('id', submission.id);
-
-        toast({
-          title: "Word replaced!",
-          description: `Replaced "${vocab.word}" with "${suggestion}"`,
-        });
-      } else {
-        toast({
-          title: "Suggestion dismissed",
-          description: `Dismissed vocabulary suggestion for "${vocab.word}"`,
-        });
-      }
-      
-      // Remove this vocabulary card from the list
-      setVocabularyCards(prev => prev.filter((_, index) => index !== vocabIndex));
-      
-    } catch (error) {
-      console.error('Error handling vocabulary action:', error);
-      toast({
-        title: "Error",
-        description: "Failed to process vocabulary suggestion",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const toggleTile = (category: string) => {
-    setExpandedTiles(prev => ({
-      ...prev,
-      [category]: !prev[category]
-    }));
-  };
-
-  const handleEssayEdit = (newText: string) => {
-    setEssayText(newText);
-    if (liveFeedback) {
-      // Implement live feedback regeneration here
-      console.log('Live feedback would regenerate here');
-    }
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      grammar: 'text-red-600 bg-red-50 border-red-200',
-      clarity: 'text-blue-600 bg-blue-50 border-blue-200',
-      'word choice': 'text-yellow-600 bg-yellow-50 border-yellow-200',
-      evidence: 'text-green-600 bg-green-50 border-green-200',
-      vocabulary: 'text-yellow-600 bg-yellow-50 border-yellow-200',
-      organization: 'text-green-600 bg-green-50 border-green-200',
-      analysis: 'text-purple-600 bg-purple-50 border-purple-200',
-      thesis: 'text-orange-600 bg-orange-50 border-orange-200'
-    };
-    return colors[category.toLowerCase() as keyof typeof colors] || 'text-gray-600 bg-gray-50 border-gray-200';
-  };
-
-  const getHighlightColor = (category: string) => {
-    const colors = {
-      grammar: 'border-b-2 border-red-400 bg-red-50 hover:bg-red-100',
-      clarity: 'border-b-2 border-blue-400 bg-blue-50 hover:bg-blue-100',
-      'word choice': 'border-b-2 border-yellow-400 bg-yellow-50 hover:bg-yellow-100',
-      evidence: 'border-b-2 border-green-400 bg-green-50 hover:bg-green-100',
-      vocabulary: 'border-b-2 border-yellow-400 bg-yellow-50 hover:bg-yellow-100',
-      organization: 'border-b-2 border-green-400 bg-green-50 hover:bg-green-100',
-      analysis: 'border-b-2 border-purple-400 bg-purple-50 hover:bg-purple-100',
-      thesis: 'border-b-2 border-orange-400 bg-orange-50 hover:bg-orange-100'
-    };
-    return colors[category.toLowerCase() as keyof typeof colors] || 'border-b-2 border-gray-400 bg-gray-50 hover:bg-gray-100';
-  };
-
-  const getColorForCategory = (category: string, action?: string) => {
-    if (action === 'approved') return 'border-green-500 bg-green-100';
-    if (action === 'declined') return 'border-gray-400 bg-gray-100 opacity-50';
-    if (action === 'modified') return 'border-blue-500 bg-blue-100';
-    
-    return getHighlightColor(category);
-  };
-
-  const getCategoryBadgeClass = (category: string) => {
-    const badgeClasses = {
-      grammar: 'bg-red-100 text-red-800 border-red-200',
-      clarity: 'bg-blue-100 text-blue-800 border-blue-200',
-      organization: 'bg-green-100 text-green-800 border-green-200',
-      analysis: 'bg-purple-100 text-purple-800 border-purple-200',
-      thesis: 'bg-orange-100 text-orange-800 border-orange-200',
-      evidence: 'bg-pink-100 text-pink-800 border-pink-200',
-      vocabulary: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      'word choice': 'bg-yellow-100 text-yellow-800 border-yellow-200'
-    };
-    return badgeClasses[category as keyof typeof badgeClasses] || 'bg-gray-100 text-gray-800 border-gray-200';
-  };
-
-  const renderEssayWithHighlights = () => {
-    if (!essayText || essayText.trim() === '' || essayText.includes('[File')) {
-      return (
-        <div className="text-center py-8 text-gray-500">
-          <p className="mb-4">
-            {submission?.submission_storage_path 
-              ? 'Document uploaded but text not extracted yet.'
-              : 'No essay content available.'
-            }
-          </p>
-          {submission?.submission_storage_path && (
-            <Button 
-              onClick={handleExtractText}
-              disabled={extractingText}
-              variant="outline"
-              size="lg"
-            >
-              {extractingText ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Extracting Text...
-                </>
-              ) : (
-                <>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Extract Text from Document
-                </>
-              )}
-            </Button>
-          )}
-        </div>
+  // Bulk review actions — persisted server-side so they survive reload (H12).
+  const bulkSetStatus = async (status: 'accepted' | 'rejected') => {
+    const targets = annotations.filter((a) => a.status !== status);
+    if (targets.length === 0) return;
+    setAnnotations((prev) => prev.map((a) => ({ ...a, status })));
+    const ids = targets.map((a) => a.id);
+    await supabase.from('annotations').update({ status }).in('id', ids);
+    if (user) {
+      await supabase.from('annotation_edits').insert(
+        targets.map((a) => ({ user_id: user.id, annotation_id: a.id, action: status === 'accepted' ? 'accept' : 'reject' })),
       );
     }
+    toast({ title: status === 'accepted' ? 'Accepted all notes' : 'Dismissed all notes' });
+  };
 
-    let processedText = essayText;
+  // Teacher approves the grade — the human-in-the-loop finalize step (M48).
+  const finalize = async () => {
+    if (!id) return;
+    await supabase.from('submissions').update({ status: 'finalized' }).eq('id', id);
+    setSubmission((prev) => (prev ? { ...prev, status: 'finalized' } : prev));
+    toast({ title: 'Grade finalized', description: 'Marked as approved by you.' });
+  };
 
-    // Apply highlights if we have suggestions
-    if (suggestionsList.length > 0) {
-      const enhancedSuggestions = suggestionsList.map((suggestion, index) => ({
-        ...suggestion,
-        commentId: suggestion.commentId || `comment-${index}`,
-        originalIndex: index
-      }));
+  const essay = submission?.extracted_text || submission?.essay || '';
+  const placed = annotations
+    .filter((a) => a.matched && a.start_index != null && a.end_index != null && a.end_index > a.start_index && a.status !== 'rejected')
+    .sort((a, b) => (a.start_index! - b.start_index!));
+  const unplaced = annotations.filter((a) => (!a.matched || a.start_index == null) && a.status !== 'rejected');
 
-      const suggestionsWithPositions = enhancedSuggestions.map(suggestion => {
-        if (suggestion.startIndex !== undefined && suggestion.endIndex !== undefined) {
-          return suggestion;
-        }
-        
-        const textToFind = suggestion.text;
-        const startIndex = essayText.indexOf(textToFind);
-        if (startIndex >= 0) {
-          const endIndex = startIndex + textToFind.length;
-          return {
-            ...suggestion,
-            startIndex,
-            endIndex
-          };
-        }
-        return suggestion;
-      }).filter(s => s.startIndex !== undefined && s.startIndex >= 0);
-
-      suggestionsWithPositions.sort((a, b) => (a.startIndex || 0) - (b.startIndex || 0));
-      
-      let lastIndex = 0;
-      let result = '';
-      
-      for (const suggestion of suggestionsWithPositions) {
-        const startIdx = suggestion.startIndex as number;
-        const endIdx = suggestion.endIndex as number;
-        
-        if (startIdx >= lastIndex) {
-          result += processedText.substring(lastIndex, startIdx);
-          
-          const category = suggestion.category || 'general';
-          const action = teacherActions[suggestion.originalIndex];
-          const colorClass = getColorForCategory(category, action);
-          
-          result += `<span 
-            class="cursor-pointer transition-all duration-200 px-1 py-0.5 rounded-sm ${colorClass}" 
-            data-comment-id="${suggestion.commentId}"
-            data-comment-index="${suggestion.originalIndex}"
-            data-category="${category}"
-            title="${suggestion.popupText || suggestion.comment || 'Click to view comment'}"
-          >${processedText.substring(startIdx, endIdx)}</span>`;
-          
-          lastIndex = endIdx;
-        }
-      }
-      
-      if (lastIndex < processedText.length) {
-        result += processedText.substring(lastIndex);
-      }
-      
-      processedText = result;
-    }
-
-    return (
-      <div className="relative">
-        <div 
-          ref={editorRef}
-          className="prose max-w-none leading-relaxed text-base font-['Inter'] min-h-[400px] focus:outline-none p-4 border rounded-lg bg-white"
-          contentEditable={true}
-          suppressContentEditableWarning={true}
-          dangerouslySetInnerHTML={{ 
-            __html: processedText.replace(/\n/g, '<br/>').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
-          }}
-          onInput={(e) => {
-            const target = e.target as HTMLDivElement;
-            handleEssayEdit(target.innerText);
-          }}
-          onMouseUp={handleTextSelection}
-          onClick={(e) => {
-            const target = e.target as HTMLElement;
-            const commentIndex = target.getAttribute('data-comment-index');
-            if (commentIndex) {
-              const index = parseInt(commentIndex);
-              setSelectedCommentIndex(index);
-              
-              const rect = target.getBoundingClientRect();
-              setActiveCommentPopup({
-                index,
-                position: { x: rect.left + rect.width / 2, y: rect.bottom + 5 }
-              });
-            }
-          }}
-        />
-        
-        {/* Comment Popup */}
-        {activeCommentPopup && suggestionsList[activeCommentPopup.index] && (
-          <div 
-            className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-xl p-4 max-w-sm animate-in fade-in-0 zoom-in-95"
-            style={{
-              left: `${activeCommentPopup.position.x}px`,
-              top: `${activeCommentPopup.position.y}px`,
-              transform: 'translateX(-50%)'
-            }}
-          >
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Badge 
-                  className={`text-xs ${getCategoryBadgeClass(suggestionsList[activeCommentPopup.index]?.category || 'general')}`}
-                >
-                  {suggestionsList[activeCommentPopup.index]?.category || 'general'}
-                </Badge>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={() => setActiveCommentPopup(null)}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-              
-              <div>
-                <p className="text-xs text-gray-600 mb-2 italic">
-                  "{suggestionsList[activeCommentPopup.index]?.text}"
-                </p>
-                <p className="text-sm text-gray-800">
-                  {suggestionsList[activeCommentPopup.index]?.comment}
-                </p>
-              </div>
-              
-              {modifyingComment === activeCommentPopup.index ? (
-                <div className="space-y-2">
-                  <Textarea
-                    value={modifiedText}
-                    onChange={(e) => setModifiedText(e.target.value)}
-                    placeholder="Edit the comment..."
-                    className="text-sm"
-                    rows={3}
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        handleTeacherAction(activeCommentPopup.index, 'modified', modifiedText);
-                      }}
-                      className="flex-1"
-                    >
-                      Save
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setModifyingComment(null);
-                        setModifiedText('');
-                      }}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleTeacherAction(activeCommentPopup.index, 'approved')}
-                    className="flex-1 text-green-600 border-green-200 hover:bg-green-50"
-                  >
-                    <Check className="w-3 h-3 mr-1" />
-                    Accept
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setModifyingComment(activeCommentPopup.index);
-                      setModifiedText(suggestionsList[activeCommentPopup.index]?.comment || '');
-                    }}
-                    className="flex-1 text-blue-600 border-blue-200 hover:bg-blue-50"
-                  >
-                    <Edit3 className="w-3 h-3 mr-1" />
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleTeacherAction(activeCommentPopup.index, 'declined')}
-                    className="flex-1 text-red-600 border-red-200 hover:bg-red-50"
-                  >
-                    <X className="w-3 h-3 mr-1" />
-                    Dismiss
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    );
+  // Render essay with non-overlapping highlighted spans.
+  const renderEssay = () => {
+    const nodes: React.ReactNode[] = [];
+    let cursor = 0;
+    let n = 0;
+    placed.forEach((a) => {
+      const s = a.start_index!, e = a.end_index!;
+      if (s < cursor) return;
+      if (s > cursor) nodes.push(essay.slice(cursor, s));
+      n += 1;
+      nodes.push(
+        <mark
+          key={a.id}
+          data-id={a.id}
+          onClick={() => setActive(a.id)}
+          className={`anno anno-${PEN[a.type]} ${active === a.id ? 'anno-active' : ''}`}
+        >
+          {essay.slice(s, e)}
+          <sup className="metric ml-0.5 text-[0.6em] text-muted-foreground">{n}</sup>
+        </mark>,
+      );
+      cursor = e;
+    });
+    if (cursor < essay.length) nodes.push(essay.slice(cursor));
+    return nodes;
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin" />
-          </div>
-        </div>
+      <div className="min-h-screen"><Navbar />
+        <div className="container mx-auto px-4 py-20 text-center text-muted-foreground animate-pulse">Loading submission…</div>
       </div>
     );
   }
-
-  if (!submission || !assignment) {
+  if (!submission) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Submission not found</h2>
-            <Link to="/dashboard">
-              <Button variant="outline">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
-            </Link>
-          </div>
+      <div className="min-h-screen"><Navbar />
+        <div className="container mx-auto px-4 py-20 text-center">
+          <p className="text-muted-foreground">Submission not found.</p>
+          <Link to="/"><Button variant="outline" className="mt-4">Back to dashboard</Button></Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 font-['Inter']">
+    <div className="min-h-screen">
       <Navbar />
-      
-      {/* Auto-processing indicator */}
-      <AutoProcessingIndicator 
-        status={processingStatus}
-        progress={processingProgress}
-        message={
-          processingStatus === 'extracting' ? 'Reading document and extracting text...' :
-          processingStatus === 'analyzing' ? 'AI is analyzing the essay and generating feedback...' :
-          processingStatus === 'complete' ? 'Ready to review!' :
-          processingStatus === 'error' ? 'Something went wrong. Please try again.' :
-          undefined
-        }
-      />
-      
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center gap-4 mb-4">
-            <Link to="/dashboard">
-              <Button variant="ghost" size="sm" className="text-gray-600">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <Link to={`/assignment/${submission.assignment_id}`} className="mb-1 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="h-4 w-4" /> Back to assignment
             </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {assignment.title}
-              </h1>
-              <p className="text-gray-600 text-sm">
-                {submission.student_name} • Submitted {new Date(submission.created_at).toLocaleDateString()}
-              </p>
+            <div className="flex items-center gap-2">
+              <h1 className="font-display text-3xl font-semibold tracking-tight">{submission.student_name || 'Student submission'}</h1>
+              <span className={`rounded-full px-2 py-0.5 text-xs ${statusBadgeClass(submission.status)}`}>{statusLabel(submission.status)}</span>
             </div>
           </div>
-          
-          <div className="flex gap-3 mb-6">
-            <Button 
-              onClick={handleGenerateAIFeedback} 
-              disabled={generating || !essayText}
-              className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Analyzing Essay...
-                </>
-              ) : (
-                <>
-                  <Brain className="w-4 h-4 mr-2" />
-                  {aiResponse ? 'Re-analyze' : 'Analyze'} Essay
-                </>
-              )}
-            </Button>
-            
-            {aiResponse && (
-              <Button 
-                variant="outline"
-                onClick={() => setLiveFeedback(!liveFeedback)}
-                className={`shadow-sm ${liveFeedback ? 'bg-green-50 border-green-200 text-green-700' : ''}`}
-              >
-                <Target className={`w-4 h-4 mr-2 ${liveFeedback ? 'text-green-600' : ''}`} />
-                Live Feedback {liveFeedback ? 'On' : 'Off'}
+          <div className="flex items-center gap-2">
+            {grade && !isFinalized(submission.status) && (
+              <Button size="lg" variant="outline" className="gap-2" onClick={finalize}>
+                <ShieldCheck className="h-4 w-4" /> Finalize
               </Button>
             )}
-            
-            <Button variant="outline" className="shadow-sm">
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Regenerate All
+            <Button size="lg" className="gap-2" onClick={runGrading} disabled={grading || !essay}>
+              {grading ? <><Loader2 className="h-4 w-4 animate-spin" /> Grading…</> : <><Sparkles className="h-4 w-4" /> {grade ? 'Re-grade with aiTA' : 'Grade with aiTA'}</>}
             </Button>
           </div>
         </div>
 
-        {/* Main Content - Grammarly Style Two Panel Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-240px)]">
-          
-          {/* Left Panel - Interactive Essay Editor */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-100 bg-white">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <FileText className="w-5 h-5 mr-2 text-blue-600" />
-                  Essay Editor
-                </h2>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <span>{essayText.length} characters</span>
-                  <span>•</span>
-                  <span>{anchors.length} suggestions</span>
-                </div>
-              </div>
-              
-              {/* Bulk Actions & Progress */}
-              {anchors.length > 0 && (
-                <div className="flex items-center gap-3">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleAcceptAll}
-                    className="gap-1"
-                  >
-                    <Check className="w-3 h-3" />
-                    Accept All
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleRejectAll}
-                    className="gap-1"
-                  >
-                    <X className="w-3 h-3" />
-                    Reject All
-                  </Button>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <Progress 
-                        value={((acceptedComments.size + rejectedComments.size) / anchors.length) * 100}
-                        className="flex-1"
-                      />
-                      <span className="text-xs text-gray-600 whitespace-nowrap">
-                        {acceptedComments.size + rejectedComments.size} / {anchors.length}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <div className="p-6 flex-1 overflow-y-auto">
-              {essayText && anchors.length > 0 ? (
-                <GrammarlyAnnotations
-                  body={essayText}
-                  anchors={anchors}
-                  onAccept={handleAcceptComment}
-                  onReject={handleRejectComment}
-                  onEdit={handleEditComment}
-                  acceptedIds={acceptedComments}
-                  rejectedIds={rejectedComments}
-                  hoveredCommentId={hoveredCommentId}
-                  onCommentHover={setHoveredCommentId}
-                />
+        {!essay && (
+          <Card className="mb-6 border-suggestion/40 bg-suggestion-soft/40 p-4 text-sm">
+            <span className="flex items-center gap-2 text-foreground/80"><AlertTriangle className="h-4 w-4 text-suggestion" /> No extracted text on this submission yet — upload or ingest the document before grading.</span>
+          </Card>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+          {/* Manuscript */}
+          <Card className="overflow-hidden">
+            <CardHeader className="rule"><CardTitle className="font-display text-lg">Submission</CardTitle></CardHeader>
+            <CardContent className="pt-6">
+              {essay ? (
+                <div className="manuscript whitespace-pre-wrap">{renderEssay()}</div>
               ) : (
-                renderEssayWithHighlights()
+                <p className="text-muted-foreground">No text to display.</p>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          {/* Right Panel - Feedback Sidebar */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 bg-white">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                <MessageSquare className="w-5 h-5 mr-2 text-blue-600" />
-                Writing Assistant
-              </h2>
-            </div>
-            
-            <div className="p-6 h-full overflow-y-auto space-y-6">
-              
-              {/* AI Suggestions List */}
-              {anchors.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                    AI Suggestions ({anchors.filter(a => !acceptedComments.has(a.id) && !rejectedComments.has(a.id)).length})
-                  </h3>
-                  <div className="space-y-2">
-                    {anchors
-                      .filter(a => !acceptedComments.has(a.id) && !rejectedComments.has(a.id))
-                      .map((anchor, idx) => {
-                        const category = (anchor as any).category || 'feedback';
-                        const isHovered = hoveredCommentId === anchor.id;
-                        return (
-                          <Card 
-                            key={anchor.id}
-                            className={`cursor-pointer transition-all hover:shadow-md border ${
-                              isHovered ? 'ring-2 ring-blue-500 shadow-lg scale-[1.02]' : 'border-gray-200'
-                            }`}
-                            onMouseEnter={() => setHoveredCommentId(anchor.id)}
-                            onMouseLeave={() => setHoveredCommentId(null)}
-                            onClick={() => {
-                              const element = document.querySelector(`[data-annotation-id="${anchor.id}"]`);
-                              if (element) {
-                                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                              }
-                            }}
-                          >
-                            <CardContent className="p-4">
-                              <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-semibold">
-                                  {idx + 1}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <Badge className={`text-xs ${getCategoryBadgeClass(category)}`}>
-                                      {category}
-                                    </Badge>
-                                  </div>
-                                  <p className="text-sm text-gray-600 mb-2 line-clamp-1 font-mono">
-                                    "{anchor.text}"
-                                  </p>
-                                  <p className="text-sm text-gray-900 leading-relaxed">
-                                    {anchor.comment}
-                                  </p>
-                                  <div className="flex gap-2 mt-3">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="flex-1 text-xs h-7"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleAcceptComment(anchor.id);
-                                      }}
-                                    >
-                                      <Check className="w-3 h-3 mr-1" />
-                                      Accept
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="flex-1 text-xs h-7"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleRejectComment(anchor.id);
-                                      }}
-                                    >
-                                      <X className="w-3 h-3 mr-1" />
-                                      Reject
-                                    </Button>
-                                  </div>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
+          {/* Review rail */}
+          <div className="space-y-4">
+            {grade && (
+              <Card>
+                <CardHeader className="rule pb-3">
+                  <div className="flex items-end justify-between">
+                    <CardTitle className="font-display text-base">Grade</CardTitle>
+                    {grade.model_id && <span className="metric text-xs text-muted-foreground">{grade.model_id}</span>}
                   </div>
-                </div>
-              )}
+                </CardHeader>
+                <CardContent className="space-y-4 pt-4">
+                  <div className="flex items-baseline gap-2">
+                    <span className="metric text-4xl font-semibold text-primary">{grade.overall_score ?? '—'}</span>
+                    <span className="metric text-lg text-muted-foreground">/ {grade.overall_max ?? 100}</span>
+                    {grade.letter && <Badge variant="secondary" className="ml-1">{grade.letter}</Badge>}
+                  </div>
+                  {typeof grade.confidence === 'number' && (
+                    <p className="text-xs text-muted-foreground">Confidence {(grade.confidence * 100).toFixed(0)}%</p>
+                  )}
+                  {Array.isArray(grade.flags) && grade.flags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {grade.flags.map((f) => <Badge key={f} variant="outline" className="border-suggestion/50 text-xs text-suggestion">{f.replace(/_/g, ' ')}</Badge>)}
+                    </div>
+                  )}
+                  {Array.isArray(grade.criteria) && grade.criteria.length > 0 && (
+                    <div className="space-y-2 border-t border-border/70 pt-3">
+                      {grade.criteria.map((c, i) => (
+                        <div key={i} className="text-sm">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{c.name}</span>
+                            <span className="metric text-muted-foreground">{c.score}/{c.maxScore}{c.verified ? '' : ' ⚠'}</span>
+                          </div>
+                          {c.rationale && <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{c.rationale}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {grade.summary_feedback && (
+                    <div className="border-t border-border/70 pt-3 text-sm leading-relaxed text-foreground/90">{grade.summary_feedback}</div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
-              {/* Overall Score Ring */}
-              {aiResponse && (
-                <div className="text-center bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6">
-                  <div className="relative w-20 h-20 mx-auto mb-3">
-                    <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 100 100">
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="35"
-                        stroke="currentColor"
-                        strokeWidth="6"
-                        fill="transparent"
-                        className="text-gray-200"
-                      />
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="35"
-                        stroke="currentColor"
-                        strokeWidth="6"
-                        fill="transparent"
-                        strokeDasharray={`${2 * Math.PI * 35}`}
-                        strokeDashoffset={`${2 * Math.PI * 35 * (1 - overallScore / 100)}`}
-                        className="text-blue-600 transition-all duration-1000 ease-out"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xl font-bold text-gray-900">{overallScore}</span>
+            {/* Margin notes — human-in-the-loop */}
+            {(placed.length > 0 || unplaced.length > 0) && (
+              <Card>
+                <CardHeader className="rule pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="font-display text-base">Margin notes</CardTitle>
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs" onClick={() => bulkSetStatus('accepted')}>
+                        <Check className="h-3.5 w-3.5" /> Accept all
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs text-muted-foreground" onClick={() => bulkSetStatus('rejected')}>
+                        <X className="h-3.5 w-3.5" /> Dismiss all
+                      </Button>
                     </div>
                   </div>
-                  <p className="text-sm font-medium text-gray-700">Overall Score</p>
-                  <p className="text-xs text-gray-500">Great work! Room for improvement in a few areas.</p>
-                </div>
-              )}
-
-              {/* Feedback Category Tiles */}
-              {feedbackTiles.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Writing Categories</h3>
-                  {feedbackTiles.map((tile) => (
-                    <Collapsible
-                      key={tile.category}
-                      open={expandedTiles[tile.category]}
-                      onOpenChange={() => toggleTile(tile.category)}
+                </CardHeader>
+                <CardContent className="space-y-3 pt-4">
+                  {[...placed, ...unplaced].map((a, i) => (
+                    <div
+                      key={a.id}
+                      onClick={() => setActive(a.id)}
+                      className={`rounded-lg border p-3 text-sm transition-colors ${active === a.id ? 'border-primary bg-primary/5' : 'border-border bg-card'} ${a.status === 'accepted' ? 'opacity-100' : a.status === 'edited' ? '' : ''}`}
                     >
-                      <Card className="transition-all duration-200 hover:shadow-md border-0 shadow-sm">
-                        <CollapsibleTrigger asChild>
-                          <CardHeader className="cursor-pointer p-4 hover:bg-gray-50 transition-colors">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-3">
-                                <div className={`w-3 h-3 rounded-full ${getCategoryColor(tile.category).split(' ')[1]}`}></div>
-                                <div>
-                                  <p className="text-sm font-medium text-gray-900">{tile.category}</p>
-                                  <p className="text-xs text-gray-500">{tile.summary}</p>
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-lg font-bold text-gray-900">{tile.score}/10</span>
-                                {expandedTiles[tile.category] ? 
-                                  <ChevronUp className="w-4 h-4 text-gray-400" /> : 
-                                  <ChevronDown className="w-4 h-4 text-gray-400" />
-                                }
-                              </div>
-                            </div>
-                          </CardHeader>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <CardContent className="px-4 pb-4">
-                            <div className="border-t border-gray-100 pt-3">
-                              <p className="text-sm text-gray-700 mb-3 leading-relaxed">{tile.details}</p>
-                              {tile.examples.length > 0 && (
-                                <div className="bg-gray-50 rounded-lg p-3">
-                                  <p className="text-xs font-semibold text-gray-600 mb-2">Examples:</p>
-                                  <ul className="text-xs text-gray-600 space-y-1">
-                                    {tile.examples.map((example, idx) => (
-                                      <li key={idx} className="flex items-start">
-                                        <span className="text-blue-500 mr-2 mt-0.5">•</span>
-                                        <span className="flex-1">{example}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
-                          </CardContent>
-                        </CollapsibleContent>
-                      </Card>
-                    </Collapsible>
+                      <div className="mb-1.5 flex items-center gap-2">
+                        <span className={`inline-block h-2 w-2 rounded-full ${DOT[a.type]}`} />
+                        <span className="text-xs font-medium capitalize text-muted-foreground">{a.type}</span>
+                        {!a.matched && <Badge variant="outline" className="ml-auto text-[10px]">couldn’t place</Badge>}
+                        {a.status === 'accepted' && <ShieldCheck className="ml-auto h-3.5 w-3.5 text-praise" />}
+                        {a.status === 'edited' && <Pencil className="ml-auto h-3.5 w-3.5 text-suggestion" />}
+                      </div>
+                      <p className="mb-1 border-l-2 border-accent/60 pl-2 text-xs italic text-muted-foreground line-clamp-2">“{a.quote}”</p>
+                      {editing === a.id ? (
+                        <div className="mt-2 space-y-2">
+                          <Textarea value={draft} onChange={(e) => setDraft(e.target.value)} className="min-h-[70px] text-sm" />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => saveEdit(a)}>Save</Button>
+                            <Button size="sm" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="leading-relaxed text-foreground/90">{a.comment}</p>
+                          <div className="mt-2 flex items-center gap-1">
+                            <Button size="sm" variant={a.status === 'accepted' ? 'default' : 'outline'} className="h-7 gap-1 px-2 text-xs" onClick={(e) => { e.stopPropagation(); setStatus(a, 'accepted'); }}>
+                              <Check className="h-3.5 w-3.5" /> Accept
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs" onClick={(e) => { e.stopPropagation(); setEditing(a.id); setDraft(a.comment); }}>
+                              <Pencil className="h-3.5 w-3.5" /> Edit
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs text-muted-foreground" onClick={(e) => { e.stopPropagation(); setStatus(a, 'rejected'); }}>
+                              <X className="h-3.5 w-3.5" /> Dismiss
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   ))}
-                </div>
-              )}
+                </CardContent>
+              </Card>
+            )}
 
-              {/* Vocabulary Enhancement Cards */}
-              {vocabularyCards.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide flex items-center">
-                    <Lightbulb className="w-4 h-4 mr-1 text-yellow-500" />
-                    Vocabulary Enhancement
-                  </h3>
-                  {vocabularyCards.map((vocab, idx) => (
-                    <Card key={idx} className="border shadow-sm hover:shadow-md transition-shadow bg-white">
-                      <CardContent className="p-5">
-                        <div className="space-y-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="inline-flex items-center gap-2 mb-3">
-                                <span className="font-mono font-semibold text-lg text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200">
-                                  "{vocab.word}"
-                                </span>
-                                <Badge variant="outline" className="text-xs border-amber-200 text-amber-700 bg-amber-50">
-                                  {vocab.reason}
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="bg-gray-50 rounded-lg p-4">
-                            <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                              <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                              Better alternatives:
-                            </p>
-                            <div className="grid grid-cols-1 gap-2">
-                              {vocab.suggestions.map((suggestion, sidx) => (
-                                <div
-                                  key={sidx}
-                                  className="flex items-center justify-between p-2 bg-white rounded border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-colors cursor-pointer group"
-                                >
-                                  <span className="text-sm font-medium text-gray-800 group-hover:text-green-800">
-                                    {suggestion}
-                                  </span>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  >
-                                    <Check className="w-3 h-3 text-green-600" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          
-                           <div className="flex gap-3 pt-2">
-                             <Button 
-                               size="sm" 
-                               className="flex-1 bg-green-600 hover:bg-green-700 text-white shadow-sm"
-                               onClick={() => handleVocabularyAction(idx, 'apply')}
-                             >
-                               <Check className="w-4 h-4 mr-2" />
-                               Apply Suggestions
-                             </Button>
-                             <Button 
-                               size="sm" 
-                               variant="outline" 
-                               className="flex-1 border-gray-300 hover:bg-gray-50"
-                               onClick={() => handleVocabularyAction(idx, 'dismiss')}
-                             >
-                               <X className="w-4 h-4 mr-2" />
-                               Dismiss
-                             </Button>
-                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-
-              {/* Overall Assessment */}
-              {aiResponse && (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Overall Assessment</h3>
-                  <Card className="border shadow-sm bg-white">
-                    <CardContent className="p-6 space-y-6">
-                      
-                      {/* Teacher Comments Section */}
-                      <div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
-                          <h4 className="text-lg font-semibold text-gray-800">Teacher Comments</h4>
-                        </div>
-                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                          <p className="text-sm text-gray-700 leading-relaxed">
-                            {(() => {
-                              // Extract clean feedback text
-                              let feedbackText = aiResponse.overallFeedback;
-                              
-                              // If the feedback contains JSON structure, try to extract the overallFeedback field
-                              if (typeof feedbackText === 'string' && feedbackText.includes('"overallFeedback"')) {
-                                try {
-                                  // Clean markdown formatting first
-                                  let cleanText = feedbackText.trim();
-                                  if (cleanText.includes('```json')) {
-                                    cleanText = cleanText.replace(/^.*```json\s*/, '').replace(/\s*```.*$/, '');
-                                  } else if (cleanText.includes('```')) {
-                                    cleanText = cleanText.replace(/^.*```\s*/, '').replace(/\s*```.*$/, '');
-                                  }
-                                  cleanText = cleanText.replace(/^`+|`+$/g, '').trim();
-                                  
-                                  // Parse and extract overallFeedback
-                                  const parsed = JSON.parse(cleanText);
-                                  feedbackText = parsed.overallFeedback || feedbackText;
-                                } catch (error) {
-                                  console.log('Could not extract overallFeedback from JSON:', error);
-                                }
-                              }
-                              
-                              return typeof feedbackText === 'string' && feedbackText.trim() !== '' 
-                                ? feedbackText 
-                                : "This essay demonstrates solid understanding of the text with clear organization and relevant examples. The analysis could be strengthened with deeper exploration of themes and more detailed textual evidence. Overall, this is good work with room for growth in critical thinking and analytical depth.";
-                            })()}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {/* Grade and Rationale Section */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100">
-                          <h5 className="text-sm font-semibold text-gray-700 mb-2">Suggested Grade</h5>
-                          <div className="text-center">
-                            <div className="text-3xl font-bold text-blue-700">
-                              {aiResponse.suggestedGrade || 'B+'}
-                            </div>
-                            <p className="text-xs text-gray-600 mt-1">Final Assessment</p>
-                          </div>
-                        </div>
-                        
-                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                          <h5 className="text-sm font-semibold text-gray-700 mb-2">AI Confidence</h5>
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-gray-700">
-                              {Math.round((aiResponse.confidence || 0.8) * 100)}%
-                            </div>
-                            <p className="text-xs text-gray-600 mt-1">Accuracy Rating</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Grading Rationale */}
-                      <div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="w-1 h-6 bg-gray-500 rounded-full"></div>
-                          <h4 className="text-base font-semibold text-gray-800">Grading Rationale</h4>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                          <p className="text-sm text-gray-700 leading-relaxed">
-                            {typeof aiResponse.reasoning === 'string' && aiResponse.reasoning.trim() !== ''
-                              ? aiResponse.reasoning 
-                              : 'This grade reflects the essay\'s adherence to assignment requirements, organization, use of textual evidence, and depth of analysis. The writing demonstrates competent understanding with opportunities for improvement in analytical sophistication.'}
-                          </p>
-                        </div>
-                      </div>
-                      
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-
-              {/* Teacher Grading Panel */}
-              <div>
-                <TeacherGradingPanel
-                  teacherComments={teacherComments}
-                  aiComments={(() => {
-                    // Parse AI feedback to get clean inline comments
-                    const parsedFeedback = parseAIFeedback(aiResponse?.overallFeedback || '');
-                    const inlineComments = parsedFeedback?.inlineComments || aiResponse?.inlineComments || [];
-                    return inlineComments.map(c => ({
-                      text: c.text,
-                      comment: c.comment,
-                      category: c.category || 'General'
-                    }));
-                  })()}
-                  overallFeedback={extractCleanFeedback(aiResponse?.overallFeedback || '')}
-                  suggestedGrade={extractCleanGrade(aiResponse?.suggestedGrade || '')}
-                  teacherFinalGrade={submission?.teacher_final_grade}
-                  teacherNotes={submission?.teacher_notes}
-                  studentName={submission.student_name}
-                  assignmentTitle={assignment.title}
-                  essay={essayText}
-                  submissionId={submission.id}
-                  onSaveGrade={handleSaveGrade}
-                  onDeleteComment={handleDeleteTeacherComment}
-                  onEditComment={handleEditTeacherComment}
-                />
-              </div>
-            </div>
+            {!grade && essay && (
+              <Card className="border-dashed p-6 text-center text-sm text-muted-foreground">
+                <Sparkles className="mx-auto mb-2 h-6 w-6 text-primary/60" />
+                Not graded yet. Run aiTA to get rubric-aligned notes you can accept, edit, or dismiss.
+              </Card>
+            )}
           </div>
         </div>
       </div>
-
-      {/* Teacher Comment Modal */}
-      <TeacherCommentModal
-        isOpen={commentModalOpen}
-        onClose={() => {
-          setCommentModalOpen(false);
-          setEditingComment(null);
-          setSelectedText('');
-          setTextSelection(null);
-        }}
-        onSave={handleSaveTeacherComment}
-        selectedText={selectedText}
-        textStart={textSelection?.start || 0}
-        textEnd={textSelection?.end || 0}
-        existingComment={editingComment}
-      />
     </div>
   );
 };

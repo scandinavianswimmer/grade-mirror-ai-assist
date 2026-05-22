@@ -10,6 +10,7 @@ import { createSubmissionWithFile } from '@/lib/submissionApi';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import FileUpload from '@/components/FileUpload';
+import { statusBadgeClass, statusLabel } from '@/lib/submissionStatus';
 
 interface Assignment {
   id: string;
@@ -26,24 +27,6 @@ interface Submission {
   status: string;
   created_at: string;
 }
-
-const statusBadgeClass = (status: string): string => {
-  switch (status) {
-    case 'graded':
-    case 'ai_graded':
-      return 'bg-green-100 text-green-800';
-    case 'grading':
-    case 'uploaded':
-      return 'bg-blue-100 text-blue-800';
-    case 'needs_review':
-    case 'grade_error':
-      return 'bg-red-100 text-red-800';
-    case 'pending':
-      return 'bg-yellow-100 text-yellow-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
-};
 
 const AssignmentDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -266,7 +249,7 @@ const AssignmentDetail = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`px-2 py-1 rounded-full text-xs ${statusBadgeClass(submission.status)}`}>
-                          {submission.status.replace(/_/g, ' ').toUpperCase()}
+                          {statusLabel(submission.status)}
                         </span>
                         <Link to={`/submission/${submission.id}`}>
                           <Button variant="outline" size="sm">
