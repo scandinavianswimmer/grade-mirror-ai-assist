@@ -34,6 +34,18 @@
 ## Next Priority
 Production hardening and end-to-end validation
 
+## Audit remediation (2026-05-21) — all 80 findings addressed in code
+Worked the full dev audit in priority order (committed in logical batches; `tsc` + build green throughout).
+- **Sprint 1 (Critical C1–C10):** hardened all v1 edge functions (JWT-derived identity, server-side training fetch, prompt-injection delimiters, fail-closed parsing — no fabricated grade/confidence, redacted logging, CORS allowlist, atomic usage RPC); removed false FERPA/GDPR/E2E claims; private buckets + signed URLs; killed PII logs (incl. auth session/token); fixed XSS sink; verified explicit-consent grading; training consent now opt-in (+ grader gated on consent).
+- **Sprint 2 (workflow):** unified submission status state machine + finalize + status badges; persisted bulk accept/dismiss (per-annotation already persists/hydrates); removed mock/fallback grading output + reframed confidence as "AI completeness · review required"; rubric-driven scoring (deleted hardcoded letter map, explicit no-rubric mode); confirmed anchoring/evidence-verification already correct; deleted dead multi-render component.
+- **Sprint 3 (privacy/files):** separated style exemplars from graded submissions (`is_exemplar`); batch upload + unified extraction + editable student name + dropped `.doc`; PDF uses `feedback_json`, exports only teacher-approved comments, moderation flag; comprehensive delete (DB + storage) + honest "mask names" relabel + persisted retention.
+- **Sprint 4 (quality):** single Supabase client; real sitemap/llms.txt; vendor + route code-splitting (main bundle 1656kB→246kB); dashboard skeletons + fresh cache + no N+1 + always-show Unassigned; AI provider disclosure + learned-style inspect/reset + model-name fix + restricted ai_model_health RLS; CSP/security headers (`public/_headers`); a11y (focusable annotations, aria-labels, no Tab-hijack); audit trail (`ai_comment`, `rubric_snapshot`, training_data `title`); branding metadata.
+
+### Deploy follow-ups REQUIRED for these fixes to take effect
+1. **Apply new migrations on the cloud project (additive):** `migrations_v2/0003_usage_rpc.sql`, `0004_private_buckets.sql`, `0005_training_consent_default_off.sql`, `0006_separate_exemplars.sql`, `0007_retention_days.sql`, `0008_restrict_ai_health.sql`, `0009_audit_trail_columns.sql`.
+2. **Redeploy edge functions:** `generate-grading-feedback`, `increment-feedback-count`, `generate-style-summary`, `test-ai-grading`, `create-class`, `grade-submission`, `ingest-document` (they now use the shared `_shared` helpers).
+3. **Still pending (need a human/host):** rotate the exposed keys (sb_secret_, DB password, Gemini); set `GEMINI_STYLE_MODEL` secret if overriding; verify `public/_headers` is honored by the host (Netlify/Cloudflare) or replicate in CDN config; run `update-browserslist-db` on Node 20 (crashes on Node 23 here); browser/mobile + axe a11y pass; full grade round-trip smoke test.
+
 ---
 
 ## Environment & connections (no secrets stored here)
