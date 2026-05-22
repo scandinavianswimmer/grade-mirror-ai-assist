@@ -30,12 +30,14 @@ export interface UserLimits {
   plan: string;
 }
 
-// Training Examples API
+// Training Examples API. "Exemplars" are genuine teacher style samples (is_exemplar=true);
+// freemium graded submissions are stored in the same table but flagged is_exemplar=false (H21/M49).
 export const getTrainingExamples = async (userId: string): Promise<TrainingExample[]> => {
   const { data, error } = await supabase
     .from('training_examples')
     .select('*')
     .eq('user_id', userId)
+    .eq('is_exemplar', true)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -43,9 +45,13 @@ export const getTrainingExamples = async (userId: string): Promise<TrainingExamp
 };
 
 export const createTrainingExample = async (example: Omit<TrainingExample, 'id' | 'created_at'>): Promise<TrainingExample> => {
+  // A style exemplar is only meaningful with the teacher's own feedback (H22).
+  if (!example.feedback || !example.feedback.trim()) {
+    throw new Error('A training exemplar requires your feedback so aiTA can learn your style.');
+  }
   const { data, error } = await supabase
     .from('training_examples')
-    .insert(example)
+    .insert({ ...example, is_exemplar: true })
     .select()
     .single();
 
@@ -68,6 +74,7 @@ export const getSubmissions = async (userId: string): Promise<FreemiumSubmission
     .from('training_examples')
     .select('id, user_id, essay, rubric, feedback, grade, created_at')
     .eq('user_id', userId)
+    .eq('is_exemplar', false)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -86,7 +93,7 @@ export const getSubmissions = async (userId: string): Promise<FreemiumSubmission
 };
 
 export const createSubmission = async (submission: Omit<FreemiumSubmission, 'id' | 'created_at'>): Promise<FreemiumSubmission> => {
-  // For freemium users, we store submissions as training examples
+  // Freemium graded submissions live in the same table but are NOT style exemplars (H21/M49).
   const { data, error } = await supabase
     .from('training_examples')
     .insert({
@@ -94,7 +101,8 @@ export const createSubmission = async (submission: Omit<FreemiumSubmission, 'id'
       essay: submission.essay,
       rubric: submission.rubric,
       feedback: submission.ai_feedback,
-      grade: submission.ai_grade
+      grade: submission.ai_grade,
+      is_exemplar: false
     })
     .select()
     .single();

@@ -26,6 +26,7 @@ Deno.serve((req) => {
       .from("training_examples")
       .select("essay, rubric, feedback, grade")
       .eq("user_id", userId)
+      .eq("is_exemplar", true) // only genuine style exemplars (H21)
       .order("created_at", { ascending: false })
       .limit(20);
 

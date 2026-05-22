@@ -133,6 +133,7 @@ Deno.serve((req) => {
             .from("training_examples")
             .select("essay, feedback, grade")
             .eq("user_id", userId)
+            .eq("is_exemplar", true) // only genuine style exemplars, not graded submissions (H21)
             .order("created_at", { ascending: false })
             .limit(3)
         : { data: null };
