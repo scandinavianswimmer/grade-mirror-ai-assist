@@ -10,6 +10,7 @@ import TrainingDataManager from "@/components/TrainingDataManager";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
+import { extractTextFromFile } from "@/lib/fileUpload";
 
 const Training = () => {
   const [trainingProgress, setTrainingProgress] = useState(75);
@@ -42,20 +43,11 @@ const Training = () => {
     };
   };
 
-  const extractTextFromFile = async (file: File): Promise<string> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        resolve(e.target?.result as string || '');
-      };
-      reader.readAsText(file);
-    });
-  };
-
+  // Use the shared extraction pipeline (handles pdf/docx/txt) instead of a text-only reader (M44).
   const handleUploadTrainingData = async (fileType: 'assignment' | 'rubric') => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.pdf,.doc,.docx,.txt';
+    input.accept = '.pdf,.docx,.txt';
     
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];

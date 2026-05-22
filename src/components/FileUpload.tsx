@@ -11,14 +11,16 @@ interface FileUploadProps {
   maxSize?: number; // in MB
   placeholder?: string;
   showTextExtraction?: boolean;
+  multiple?: boolean;
 }
 
-const FileUpload = ({ 
-  onFileSelect, 
-  acceptedTypes = ['.txt', '.docx', '.pdf'], 
+const FileUpload = ({
+  onFileSelect,
+  acceptedTypes = ['.txt', '.docx', '.pdf'],
   maxSize = 5,
   placeholder = "Upload essay or document...",
-  showTextExtraction = false
+  showTextExtraction = false,
+  multiple = false
 }: FileUploadProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -39,18 +41,17 @@ const FileUpload = ({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      handleFileSelection(files[0]);
-    }
+    if (multiple) files.forEach((f) => handleFileSelection(f));
+    else if (files.length > 0) handleFileSelection(files[0]);
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files && files.length > 0) {
-      handleFileSelection(files[0]);
-    }
+    if (!files || files.length === 0) return;
+    if (multiple) Array.from(files).forEach((f) => handleFileSelection(f));
+    else handleFileSelection(files[0]);
   };
 
   const handleFileSelection = async (file: File) => {
@@ -192,6 +193,7 @@ const FileUpload = ({
             onChange={handleFileInput}
             className="hidden"
             id="file-upload"
+            multiple={multiple}
           />
           <label htmlFor="file-upload">
             <Button asChild className="cursor-pointer">
