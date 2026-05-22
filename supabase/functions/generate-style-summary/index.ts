@@ -21,6 +21,16 @@ Deno.serve((req) => {
 
     const db = userClient(req);
 
+    // Building a style profile IS training on teacher content — require explicit consent (C10).
+    const { data: privacy } = await db
+      .from("privacy_settings")
+      .select("allow_training_on_content")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (privacy?.allow_training_on_content !== true) {
+      throw new AppError(403, "consent", "Enable 'Allow AI training with your content' to build a style profile");
+    }
+
     // Fetch the teacher's own exemplars server-side (RLS-scoped). Never trust client input.
     const { data: examples } = await db
       .from("training_examples")

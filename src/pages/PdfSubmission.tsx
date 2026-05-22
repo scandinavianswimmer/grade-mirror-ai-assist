@@ -9,6 +9,7 @@ interface Submission {
   student_name: string;
   file_url?: string;
   essay?: string;
+  extracted_text?: string;
   ai_feedback?: string;
   feedback_json?: unknown;
   final_grade?: string;
@@ -118,8 +119,8 @@ export const PdfSubmission: React.FC = () => {
     course: submission.assignments?.classes?.class_name || submission.assignments?.course_name || 'Course'
   };
 
-  // Use essay if available, otherwise show a message
-  const essayText = submission.essay || 'Essay content not available for PDF generation.';
+  // Use the same text the grader used (server extraction), falling back to v1 essay.
+  const essayText = submission.extracted_text || submission.essay || 'Essay content not available for PDF generation.';
 
   // feedback_json is the structured source of truth; fall back to ai_feedback for legacy rows (H28).
   let feedbackJson: unknown = submission.feedback_json ?? submission.ai_feedback;

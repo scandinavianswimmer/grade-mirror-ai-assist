@@ -19,9 +19,10 @@ const Training = () => {
   const { user } = useAuth();
 
   const uploadFile = async (file: File, bucket: string) => {
+    if (!user) throw new Error('Not authenticated');
     const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `${fileName}`;
+    // uid-prefixed path so owner-scoped storage RLS allows only the owner (B1/C6).
+    const filePath = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
       .from(bucket)
@@ -31,14 +32,9 @@ const Training = () => {
       throw uploadError;
     }
 
-    // Private bucket — short-lived signed URL only (C6).
-    const { data } = await supabase.storage
-      .from(bucket)
-      .createSignedUrl(filePath, 3600);
-
+    // Persist the storage PATH (sign on read), never an expiring signed URL.
     return {
       success: true,
-      url: data?.signedUrl ?? null,
       path: filePath
     };
   };
@@ -72,7 +68,7 @@ const Training = () => {
           .insert({
             user_id: user.id,
             data_type: fileType,
-            file_url: uploadResult.url,
+            file_url: uploadResult.path,
             processed: false
           });
 

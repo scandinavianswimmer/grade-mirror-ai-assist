@@ -23,14 +23,14 @@ Do this before re-deploying so the new values are what gets wired in.
 - **Gemini key:** Google AI Studio → revoke the old key, create a new restricted one.
 
 ## 2. Apply migrations (additive — safe on the live v1+v2 cloud schema)
-Apply **only 0003 → 0009** in order. Do NOT apply `0001_baseline.sql` (clean-room reference only). `0002` is already applied.
+Apply **only 0003 → 0011** in order. Do NOT apply `0001_baseline.sql` (clean-room reference only). `0002` is already applied. (0010 adds the llm_sessions columns grade-submission needs; 0011 makes storage owner-scoped — both are go-live blockers found in review.)
 ```bash
 PW='<new_db_password>'
 HOST=aws-1-us-west-2.pooler.supabase.com
 USER=postgres.yhdobsmmhdvqswjpousc
 for f in 0003_usage_rpc 0004_private_buckets 0005_training_consent_default_off \
          0006_separate_exemplars 0007_retention_days 0008_restrict_ai_health \
-         0009_audit_trail_columns; do
+         0009_audit_trail_columns 0010_llm_sessions_v2_columns 0011_owner_scoped_storage; do
   echo "== applying $f =="
   PGPASSWORD="$PW" psql "host=$HOST port=5432 user=$USER dbname=postgres sslmode=require" \
     -v ON_ERROR_STOP=1 -f "supabase/migrations_v2/$f.sql" || { echo "FAILED on $f"; break; }
@@ -59,6 +59,12 @@ for fn in grade-submission ingest-document generate-grading-feedback \
   supabase functions deploy "$fn"
 done
 # (build-style-profile, privacy-tasks, record-feedback-usage are unchanged but harmless to redeploy.)
+
+# Remove the deprecated UNAUTHENTICATED functions if they were ever deployed — superseded by
+# the cron-gated privacy-tasks. Deleting them closes an unauthenticated mass-delete/mutate hole:
+for fn in anonymize-student-data cleanup-training-data scheduled-privacy-tasks; do
+  supabase functions delete "$fn" 2>/dev/null || true
+done
 ```
 
 ## 5. Frontend deploy
