@@ -54,14 +54,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    console.log('AuthProvider: Initializing...');
-    
-    // Get initial session
+    // Get initial session. Never log the session object — it contains the access token (C7).
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
-        console.error('AuthProvider: Error getting session:', error);
+        console.error('AuthProvider: failed to get session');
       }
-      console.log('AuthProvider: Initial session:', session);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -69,8 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('AuthProvider: Auth state changed:', event, session);
+      async (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -79,8 +75,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => subscription.unsubscribe();
   }, []);
-
-  console.log('AuthProvider: Rendering with state:', { user: !!user, session: !!session, loading });
 
   return (
     <AuthContext.Provider value={{ user, session, loading, signIn, signUp }}>

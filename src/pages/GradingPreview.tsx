@@ -11,6 +11,40 @@ import Navbar from "@/components/Navbar";
 import { useToast } from "@/hooks/use-toast";
 import { generateGradingFeedback, type GradingResponse } from "@/lib/geminiApi";
 import { useAuth } from "@/components/AuthProvider";
+import type { ReactNode } from "react";
+
+// Render essay text with highlighted comment spans as React nodes — never raw HTML (C8).
+// Text content is escaped by React; the comment is shown via the safe title attribute.
+const renderWithHighlights = (
+  text: string,
+  comments: { text: string; comment: string }[],
+): ReactNode[] => {
+  let nodes: ReactNode[] = [text];
+  comments.forEach((c, ci) => {
+    if (!c.text) return;
+    const next: ReactNode[] = [];
+    nodes.forEach((node, ni) => {
+      if (typeof node !== "string") { next.push(node); return; }
+      const idx = node.indexOf(c.text);
+      if (idx === -1) { next.push(node); return; }
+      const before = node.slice(0, idx);
+      const after = node.slice(idx + c.text.length);
+      if (before) next.push(before);
+      next.push(
+        <span
+          key={`hl-${ci}-${ni}-${idx}`}
+          className="bg-yellow-100 px-1 rounded cursor-help"
+          title={c.comment}
+        >
+          {c.text}
+        </span>,
+      );
+      if (after) next.push(after);
+    });
+    nodes = next;
+  });
+  return nodes;
+};
 
 const GradingPreview = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -127,25 +161,11 @@ In conclusion, Shakespeare masterfully weaves the theme of appearance versus rea
               
               <div className="prose max-w-none">
                 <div className="relative">
-                  {aiResponse?.inlineComments.map((comment, index) => {
-                    const textToHighlight = comment.text;
-                    const essayWithHighlights = sampleEssay.replace(
-                      textToHighlight,
-                      `<span class="bg-yellow-100 px-1 rounded cursor-pointer relative group">${textToHighlight}<span class="absolute left-0 top-full mt-1 bg-blue-600 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">${comment.comment}</span></span>`
-                    );
-                    return null; // This is just for mapping, actual rendering below
-                  })}
-                  
-                  <div 
-                    dangerouslySetInnerHTML={{ 
-                      __html: aiResponse?.inlineComments.reduce((text, comment) => {
-                        return text.replace(
-                          comment.text,
-                          `<span class="bg-yellow-100 px-1 rounded cursor-pointer relative group">${comment.text}<span class="absolute left-0 top-full mt-1 bg-blue-600 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">${comment.comment}</span></span>`
-                        );
-                      }, sampleEssay.replace(/\n/g, '</p><p class="mb-4">')) || sampleEssay.replace(/\n/g, '</p><p class="mb-4">')
-                    }} 
-                  />
+                  {sampleEssay.split(/\n{2,}/).map((para, i) => (
+                    <p key={`para-${i}`} className="mb-4">
+                      {renderWithHighlights(para, aiResponse?.inlineComments ?? [])}
+                    </p>
+                  ))}
                 </div>
               </div>
             </Card>

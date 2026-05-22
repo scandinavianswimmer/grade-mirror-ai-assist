@@ -32,14 +32,9 @@ export const EssayFeedbackPdfRenderer: React.FC<EssayFeedbackPdfRendererProps> =
     return <div className="p-8">Error: Unable to parse feedback data</div>;
   }
 
-  // Debug logging to see what we're getting
-  console.log('Raw feedbackJson:', feedbackJson);
-  console.log('Parsed feedback:', parsedFeedback);
-
-  // Resolve anchors from inline comments
+  // Resolve anchors from inline comments. Do not log essay/feedback content (C7).
   const anchors = resolveAnchors(essayText, parsedFeedback.inlineComments || []);
-  console.log('Resolved anchors:', anchors);
-  
+
   const handlePrint = () => {
     if (onPrint) {
       onPrint();
