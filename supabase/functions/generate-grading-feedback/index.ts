@@ -117,16 +117,25 @@ Deno.serve((req) => {
 
     const db = userClient(req);
 
-    // Training exemplars fetched server-side, scoped to the authenticated teacher (C3).
-    // Client-sent training data is never trusted.
+    // Training exemplars fetched server-side, scoped to the authenticated teacher (C3),
+    // and ONLY if the teacher has opted in to training on their content (C10).
     let trainingContext = "";
     try {
-      const { data: examples } = await db
-        .from("training_examples")
-        .select("essay, feedback, grade")
+      const { data: privacy } = await db
+        .from("privacy_settings")
+        .select("allow_training_on_content")
         .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(3);
+        .maybeSingle();
+      const consented = privacy?.allow_training_on_content === true;
+
+      const { data: examples } = consented
+        ? await db
+            .from("training_examples")
+            .select("essay, feedback, grade")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(3)
+        : { data: null };
       if (examples?.length) {
         trainingContext = examples
           .map((e, i) =>

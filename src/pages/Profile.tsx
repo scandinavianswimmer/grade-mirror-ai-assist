@@ -501,7 +501,7 @@ const Profile = () => {
                     </div>
                     <Switch
                       id="ai-training"
-                      checked={privacySettings?.allow_training_on_content ?? true}
+                      checked={privacySettings?.allow_training_on_content ?? false}
                       onCheckedChange={(checked) => handlePrivacySettingChange('allow_training_on_content', checked)}
                       disabled={isSaving}
                     />
