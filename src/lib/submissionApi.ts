@@ -9,53 +9,82 @@ export interface CreateSubmissionData {
   file?: File;
 }
 
-export const createSubmissionWithFile = async (data: CreateSubmissionData) => {
+export interface IngestResult {
+  status: string;
+  confidence: number;
+  pages: number;
+  length: number;
+  warnings: string[];
+}
+
+export interface CreateSubmissionResult {
+  submission: any;
+  ingest: IngestResult | null;
+  ingestError: string | null;
+}
+
+// Surface the structured error body an edge function returns (FunctionsHttpError hides it on .message).
+const readFunctionError = async (error: unknown): Promise<string> => {
+  try {
+    const body = await (error as any)?.context?.json?.();
+    if (body?.error) return `${body.error}${body.stage ? ` (${body.stage})` : ''}`;
+  } catch { /* ignore */ }
+  return (error as any)?.message ?? 'Unknown error';
+};
+
+export const createSubmissionWithFile = async (data: CreateSubmissionData): Promise<CreateSubmissionResult> => {
   const { assignmentId, studentName, essay, file } = data;
 
-  try {
-    console.log('Creating submission with file processing...');
+  let submissionData: any = {
+    assignment_id: assignmentId,
+    student_name: studentName,
+    status: 'uploaded',
+    processing_status: 'uploaded'
+  };
 
-    let submissionData: any = {
-      assignment_id: assignmentId,
-      student_name: studentName,
-      status: 'pending',
-      processing_status: 'uploaded'
-    };
+  // Process file if provided: uploads to the `submissions` bucket and returns its storage path.
+  if (file) {
+    const processResult = await processSubmissionFile(file, assignmentId, studentName);
 
-    // Process file if provided
-    if (file) {
-      const processResult = await processSubmissionFile(file, assignmentId, studentName);
-      
-      if (!processResult.success) {
-        throw new Error(processResult.error || 'File processing failed');
-      }
-
-      submissionData.file_url = processResult.url;
-      submissionData.submission_storage_path = processResult.storagePath;
-      
-      // Use extracted text or provided essay text
-      submissionData.essay = processResult.extractedText || essay;
-    } else if (essay) {
-      submissionData.essay = essay;
+    if (!processResult.success) {
+      throw new Error(processResult.error || 'File processing failed');
     }
 
-    console.log('Creating submission with data:', submissionData);
-
-    const { data: submission, error } = await supabase
-      .from('submissions')
-      .insert(submissionData)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    console.log('Submission created successfully:', submission.id);
-    return submission;
-
-  } catch (error) {
-    console.error('Error creating submission:', error);
-    throw error;
+    submissionData.file_url = processResult.url;
+    submissionData.submission_storage_path = processResult.storagePath;
+    // v2 column read by ingest-document + grade-submission.
+    submissionData.file_path = processResult.storagePath;
+    // Keep the client-side extraction as a v1 display fallback; ingest-document writes the
+    // authoritative extracted_text + extraction_confidence below.
+    submissionData.essay = processResult.extractedText || essay;
+  } else if (essay) {
+    submissionData.essay = essay;
   }
+
+  const { data: submission, error } = await supabase
+    .from('submissions')
+    .insert(submissionData)
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  // Server-side extraction. This is what makes the submission gradeable: grade-submission
+  // rejects anything without extracted_text or with extraction_confidence < 0.2.
+  let ingest: IngestResult | null = null;
+  let ingestError: string | null = null;
+  if (file && submission.file_path) {
+    const { data: ing, error: ingErr } = await supabase.functions.invoke('ingest-document', {
+      body: { submissionId: submission.id }
+    });
+    if (ingErr) {
+      ingestError = await readFunctionError(ingErr);
+    } else {
+      ingest = ing as IngestResult;
+    }
+  }
+
+  return { submission, ingest, ingestError };
 };
 
 export const updateSubmissionStatus = async (submissionId: string, status: string, processingStatus?: string) => {

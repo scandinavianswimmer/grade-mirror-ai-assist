@@ -27,6 +27,24 @@ interface Submission {
   created_at: string;
 }
 
+const statusBadgeClass = (status: string): string => {
+  switch (status) {
+    case 'graded':
+    case 'ai_graded':
+      return 'bg-green-100 text-green-800';
+    case 'grading':
+    case 'uploaded':
+      return 'bg-blue-100 text-blue-800';
+    case 'needs_review':
+    case 'grade_error':
+      return 'bg-red-100 text-red-800';
+    case 'pending':
+      return 'bg-yellow-100 text-yellow-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
 const AssignmentDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -84,17 +102,33 @@ const AssignmentDetail = () => {
       // Extract student name from filename (remove extension)
       const studentName = file.name.replace(/\.[^/.]+$/, "");
 
-      // Create submission using the API
-      await createSubmissionWithFile({
+      // Create submission + run server-side extraction (ingest-document).
+      const { ingest, ingestError } = await createSubmissionWithFile({
         assignmentId: assignment.id,
         studentName,
         file
       });
 
-      toast({
-        title: "Essay uploaded successfully!",
-        description: `${file.name} uploaded and ready for grading.`
-      });
+      if (ingestError) {
+        toast({
+          title: "Uploaded, but extraction failed",
+          description: `${file.name} was saved, but text extraction failed (${ingestError}). It needs manual review before grading.`,
+          variant: "destructive"
+        });
+      } else if (ingest?.status === 'needs_review') {
+        toast({
+          title: "Uploaded — needs review",
+          description: `Low-confidence extraction (${Math.round((ingest.confidence ?? 0) * 100)}%). Likely a scanned PDF; review before grading.`
+        });
+      } else {
+        const pct = ingest ? Math.round((ingest.confidence ?? 0) * 100) : null;
+        toast({
+          title: "Uploaded & ready to grade",
+          description: pct != null
+            ? `${file.name} extracted (${pct}% confidence). Open it to grade with aiTA.`
+            : `${file.name} uploaded and ready for grading.`
+        });
+      }
 
       // Refresh submissions
       fetchAssignmentData();
@@ -231,14 +265,8 @@ const AssignmentDetail = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          submission.status === 'pending' 
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : submission.status === 'ai_graded'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}>
-                          {submission.status.replace('_', ' ').toUpperCase()}
+                        <span className={`px-2 py-1 rounded-full text-xs ${statusBadgeClass(submission.status)}`}>
+                          {submission.status.replace(/_/g, ' ').toUpperCase()}
                         </span>
                         <Link to={`/submission/${submission.id}`}>
                           <Button variant="outline" size="sm">
