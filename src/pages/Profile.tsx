@@ -54,6 +54,18 @@ const Profile = () => {
     }
   }, [user]);
 
+  // Reflect the persisted retention choice (H32).
+  useEffect(() => {
+    if (privacySettings) {
+      setDataRetention(privacySettings.retention_days == null ? 'forever' : String(privacySettings.retention_days));
+    }
+  }, [privacySettings]);
+
+  const handleRetentionChange = (value: string) => {
+    setDataRetention(value);
+    saveSettings({ retention_days: value === 'forever' ? null : parseInt(value, 10) });
+  };
+
   const fetchUserProfile = async () => {
     if (!user) return;
 
@@ -476,10 +488,11 @@ const Profile = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <Label htmlFor="anonymize" className="text-base font-medium">
-                        Anonymize Student Data
+                        Mask Student Names
                       </Label>
                       <p className="text-sm text-gray-600">
-                        Remove personally identifiable information from uploaded submissions
+                        Replace student names with anonymous IDs in lists and exports. (This masks the
+                        display name only — it does not redact names that appear inside essay text.)
                       </p>
                     </div>
                     <Switch
@@ -531,7 +544,7 @@ const Profile = () => {
                     <p className="text-sm text-gray-600 mb-2">
                       How long to keep uploaded files and grading data
                     </p>
-                    <Select value={dataRetention} onValueChange={setDataRetention}>
+                    <Select value={dataRetention} onValueChange={handleRetentionChange}>
                       <SelectTrigger className="w-full max-w-xs">
                         <SelectValue />
                       </SelectTrigger>

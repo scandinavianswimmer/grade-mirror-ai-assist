@@ -7,14 +7,15 @@ export const runAutoDeleteTask = async () => {
   try {
     const { data: users, error } = await supabase
       .from('privacy_settings')
-      .select('user_id, auto_delete_training_data')
+      .select('user_id, auto_delete_training_data, retention_days')
       .eq('auto_delete_training_data', true)
 
     if (error) throw error
 
     for (const user of users || []) {
-      await deleteUnfinalizedGrades(user.user_id, 30) // Default 30 days
-      console.log(`Auto-deleted unfinalized grades for user: ${user.user_id}`)
+      // null retention_days = keep forever; otherwise honor the teacher's choice (H32).
+      const days = user.retention_days ?? 30
+      if (days > 0) await deleteUnfinalizedGrades(user.user_id, days)
     }
   } catch (error) {
     console.error('Auto-delete task failed:', error)

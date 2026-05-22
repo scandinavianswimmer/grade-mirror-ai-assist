@@ -643,6 +643,7 @@ export type Database = {
           auto_delete_training_data: boolean | null
           created_at: string | null
           id: string
+          retention_days: number | null
           user_id: string
         }
         Insert: {
@@ -651,6 +652,7 @@ export type Database = {
           auto_delete_training_data?: boolean | null
           created_at?: string | null
           id?: string
+          retention_days?: number | null
           user_id: string
         }
         Update: {
@@ -659,6 +661,7 @@ export type Database = {
           auto_delete_training_data?: boolean | null
           created_at?: string | null
           id?: string
+          retention_days?: number | null
           user_id?: string
         }
         Relationships: [

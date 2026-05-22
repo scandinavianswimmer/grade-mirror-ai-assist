@@ -2,13 +2,9 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 
-const supabaseUrl = 'https://rwiqwuohbcvhuvtlxlvh.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3aXF3dW9oYmN2aHV2dGx4bHZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3MDcwOTEsImV4cCI6MjA2NjI4MzA5MX0.8j4C62pwhQ7QKUYFoWu4ZiCiZ7dRGiY9ArpHr5TX1wQ';
-
-console.log('Supabase config:', { 
-  url: supabaseUrl, 
-  hasKey: !!supabaseAnonKey 
-});
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? 'https://yhdobsmmhdvqswjpousc.supabase.co';
+const supabaseAnonKey =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? 'sb_publishable_K6aT1ZXMuEfdgGYMuQ2IRg_Rz5sM6TB';
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -74,6 +70,7 @@ export interface PrivacySettings {
   anonymize_student_names: boolean;
   allow_training_on_content: boolean;
   auto_delete_training_data: boolean;
+  retention_days: number | null;
   created_at: string;
 }
 
