@@ -39,18 +39,33 @@ done
 All are idempotent (`add column if not exists` / `drop policy if exists`), so re-running is safe.
 
 ## 3. Set / verify function secrets
+
+**First, what these actually are** — only ONE is a real external API key:
+
+| Secret | What it is | Where it comes from | Required? |
+|---|---|---|---|
+| `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase's own keys | **Auto-injected** by the platform — do NOT set | n/a (never set) |
+| `GEMINI_API_KEY` | The only real external key | Google AI Studio (the rotated key) | **Yes** |
+| `GEMINI_GRADING_MODEL` | A model **name string**, not a key | You type it: `gemini-2.5-pro` | Recommended (likely already set) |
+| `GEMINI_STYLE_MODEL` | A model name string | You type it: `gemini-2.5-flash` | Optional (code defaults to flash) |
+| `CRON_SECRET` | A random password **you invent** to lock the privacy cron | `openssl rand -hex 32` | Only for privacy-tasks cron |
+| `ALLOWED_ORIGINS` | Your site's domain(s) for CORS | You type your prod URL | Yes for prod (defaults to localhost only) |
+
 ```bash
+supabase secrets list      # see what's already set (names only). GEMINI_GRADING_MODEL + CRON_SECRET were set previously.
+
 supabase secrets set \
   GEMINI_API_KEY='<new_gemini_key>' \
   GEMINI_GRADING_MODEL='gemini-2.5-pro' \
   GEMINI_STYLE_MODEL='gemini-2.5-flash' \
-  CRON_SECRET='<existing_or_new>' \
+  CRON_SECRET="$(openssl rand -hex 32)" \
   ALLOWED_ORIGINS='https://<your-prod-domain>,http://localhost:8080'
 # Only if you still use the v1 paste-essay flow (generate-grading-feedback uses the Lovable gateway):
 #   supabase secrets set LOVABLE_API_KEY='<key>'
 # Otherwise that function returns 503 by design (fail-closed) and the v2 grade-submission path is unaffected.
 ```
-> Update `ALLOWED_ORIGINS` to your real production domain or CORS will block the browser.
+> `ALLOWED_ORIGINS` must include your real production domain or the browser gets CORS-blocked.
+> Do NOT set any `SUPABASE_*` secret — the platform provides those automatically.
 
 ## 4. Redeploy edge functions (the ones changed in this PR)
 ```bash
