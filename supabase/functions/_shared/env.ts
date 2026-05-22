@@ -17,4 +17,13 @@ export const ENV = {
   geminiKey: () => requireEnv("GEMINI_API_KEY"),
   // Shared secret that gates service-role/cron-only functions (privacy-tasks).
   cronSecret: () => requireEnv("CRON_SECRET"),
+  // Billing (Phase 12 / Stripe). Set via: supabase secrets set STRIPE_SECRET_KEY=... etc.
+  stripeSecretKey: () => requireEnv("STRIPE_SECRET_KEY"),
+  stripeWebhookSecret: () => requireEnv("STRIPE_WEBHOOK_SECRET"),
+  // Map app plan -> Stripe Price ID. Configure per-plan price IDs as secrets (never hardcode).
+  stripePriceId: (plan: string) =>
+    requireEnv(`STRIPE_PRICE_${plan.toUpperCase()}`),
+  // Where Stripe sends the teacher back after Checkout / the Customer Portal. e.g.
+  //   https://app.aita.example  (no trailing slash). Defaults to localhost for dev.
+  appUrl: () => optionalEnv("APP_URL", "http://localhost:5173"),
 };

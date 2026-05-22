@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LayoutDashboard, Sparkles, GraduationCap, LogOut, User, ChevronDown, Feather } from 'lucide-react';
+import { LayoutDashboard, Sparkles, GraduationCap, LogOut, User, ChevronDown, Feather, CreditCard } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
 
@@ -85,6 +85,10 @@ const Navbar = () => {
                   <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile &amp; style</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/billing')} className="cursor-pointer">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    <span>Plans &amp; billing</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive focus:text-destructive">
