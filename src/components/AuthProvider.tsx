@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { ensureUserProfile } from '@/lib/ensureUserProfile';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -9,6 +10,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -17,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   signIn: async () => {},
   signUp: async () => {},
+  signInWithGoogle: async () => {},
 });
 
 export const useAuth = () => {
@@ -53,6 +56,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (error) throw error;
   };
 
+  // AUTH-02: Continue with Google via Supabase Auth's Google OAuth provider.
+  // redirectTo is the running app's origin so Supabase can deliver the session
+  // back via the URL on return (detectSessionInUrl is on by default).
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) throw error;
+  };
+
   useEffect(() => {
     // Get initial session. Never log the session object — it contains the access token (C7).
     supabase.auth.getSession().then(({ data: { session }, error }) => {
@@ -66,10 +82,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // AUTH-03: bootstrap the profile basics downstream depends on for BOTH
+        // email/password and Google paths. The DB trigger normally creates the
+        // `users` row, but OAuth metadata may lack a `name`; this client-side
+        // safety net upserts a row (idempotent) so onboarding state always exists.
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
+          void ensureUserProfile(session.user);
+        }
       }
     );
 
@@ -77,7 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signInWithGoogle }}>
       {children}
     </AuthContext.Provider>
   );

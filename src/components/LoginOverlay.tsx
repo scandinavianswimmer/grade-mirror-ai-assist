@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/components/AuthProvider';
 import { GraduationCap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import GoogleIcon from '@/components/icons/GoogleIcon';
 
 interface LoginOverlayProps {
   onLoginSuccess: () => void;
@@ -18,8 +19,9 @@ const LoginOverlay: React.FC<LoginOverlayProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, signInWithGoogle, user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -62,6 +64,22 @@ const LoginOverlay: React.FC<LoginOverlayProps> = ({ onLoginSuccess }) => {
     }
   };
 
+  // AUTH-02: Google OAuth. Returns to the app origin where AuthProvider's
+  // onAuthStateChange picks up the session and dismisses this overlay.
+  const handleGoogle = async () => {
+    setGoogleLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch (error: any) {
+      toast({
+        title: "Google sign-in failed",
+        description: error.message,
+        variant: "destructive"
+      });
+      setGoogleLoading(false);
+    }
+  };
+
   if (!isVisible) {
     return null;
   }
@@ -85,6 +103,23 @@ const LoginOverlay: React.FC<LoginOverlayProps> = ({ onLoginSuccess }) => {
           </CardHeader>
 
           <CardContent>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full bg-white/70"
+              onClick={handleGoogle}
+              disabled={googleLoading || loading}
+            >
+              <GoogleIcon className="mr-2 h-4 w-4" />
+              {googleLoading ? 'Redirecting…' : 'Continue with Google'}
+            </Button>
+
+            <div className="my-4 flex items-center gap-3 text-xs uppercase tracking-wide text-gray-500">
+              <span className="h-px flex-1 bg-gray-300" />
+              or
+              <span className="h-px flex-1 bg-gray-300" />
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
                 <div>

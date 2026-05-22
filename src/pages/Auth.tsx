@@ -7,6 +7,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { Feather, ShieldCheck } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import GoogleIcon from '@/components/icons/GoogleIcon'
 
 const Auth = () => {
   const [searchParams] = useSearchParams()
@@ -15,7 +16,8 @@ const Auth = () => {
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
-  const { signIn, signUp, user } = useAuth()
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const { signIn, signUp, signInWithGoogle, user } = useAuth()
   const { toast } = useToast()
   const navigate = useNavigate()
 
@@ -39,6 +41,18 @@ const Auth = () => {
       toast({ title: 'Something went wrong', description: error.message, variant: 'destructive' })
     } finally {
       setLoading(false)
+    }
+  }
+
+  // AUTH-02: redirects to Google; the session is delivered back on return and
+  // picked up by AuthProvider's onAuthStateChange (no navigate needed here).
+  const handleGoogle = async () => {
+    setGoogleLoading(true)
+    try {
+      await signInWithGoogle()
+    } catch (error: any) {
+      toast({ title: 'Google sign-in failed', description: error.message, variant: 'destructive' })
+      setGoogleLoading(false)
     }
   }
 
@@ -90,7 +104,25 @@ const Auth = () => {
             {isLogin ? 'Sign in to your grading workspace.' : 'Set up your teacher workspace in a minute.'}
           </p>
 
-          <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="mt-7 w-full"
+            onClick={handleGoogle}
+            disabled={googleLoading || loading}
+          >
+            <GoogleIcon className="mr-2 h-4 w-4" />
+            {googleLoading ? 'Redirecting…' : 'Continue with Google'}
+          </Button>
+
+          <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            or
+            <span className="h-px flex-1 bg-border" />
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <div className="space-y-1.5">
                 <Label htmlFor="name">Full name</Label>
