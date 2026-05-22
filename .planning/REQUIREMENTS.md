@@ -60,6 +60,67 @@ Scope: the full production-ready grading system. REQ-ID format `[CATEGORY]-[NN]`
 - [ ] **OPS-02**: Edge functions are deployed and the frontend points at the correct project; failed inserts are checked, not silently swallowed.
 - [ ] **OPS-03**: Exposed secrets (DB password, service-role key, Gemini key) are rotated before public exposure.
 
+## Auth & Account Creation — `AUTH`
+
+- [ ] **AUTH-01**: A teacher can create an account + sign in with email/password (Supabase Auth).
+- [ ] **AUTH-02**: A teacher can create an account + sign in with **Google** (Supabase Auth Google OAuth provider).
+- [ ] **AUTH-03**: Account creation captures the required profile basics that downstream grading + DB depend on (feeds ONBOARD).
+
+## Agentic Grading Workflow — `AGENT`
+
+- [ ] **AGENT-01**: Grading is orchestrated as named, individually-observable agents — Rubric, Relevance/Risk, Grading, Annotation, Feedback-Summary, Style — not a single opaque call.
+- [ ] **AGENT-02**: Each agent step logs input/output/model/latency/tokens (demo-ready AI job/event logs).
+- [ ] **AGENT-03**: The UI surfaces the agent pipeline + per-step status so the system reads as an "AI workforce," not one API call.
+- [ ] **AGENT-04**: A Risk/Plagiarism-review agent flags suspicious submissions (off-topic, injection, likely-AI-generated) for teacher attention.
+
+## Auditability & Explainability — `AUDIT`
+
+- [ ] **AUDIT-01**: Every grade shows confidence (overall + per criterion).
+- [ ] **AUDIT-02**: Every criterion shows its supporting citation/evidence quote located in the submission.
+- [ ] **AUDIT-03**: Grading is explainable — a per-criterion rationale is visible to the teacher.
+- [ ] **AUDIT-04**: All teacher edits are tracked (original AI wording vs edited, who/when).
+- [ ] **AUDIT-05**: Teacher approval layer — no grade/feedback is "final" without explicit teacher sign-off.
+
+## Async Jobs & Reliability — `JOBS` / `RELY`
+
+- [ ] **JOBS-01**: Grading runs as async jobs via a queue (Upstash Redis) + worker (Cloud Run), not blocking the request.
+- [ ] **JOBS-02**: Jobs are idempotent and retried on transient failure — no duplicate or lost grades.
+- [ ] **JOBS-03**: Uploads never silently fail; failures are retried or surfaced to the teacher.
+- [ ] **JOBS-04**: Teacher edits are never lost (safe, conflict-aware persistence).
+- [ ] **JOBS-05**: Job/event logs are queryable and shown in a jobs view.
+- [ ] **RELY-01**: The app degrades gracefully (no crash/freeze) on model/API/network failure — explicit errors, never a fabricated grade.
+- [ ] **RELY-02**: A failed grading job is visibly retryable, never silently stuck.
+
+## Analytics, Metrics & Observability — `METRIC` / `OBS`
+
+- [ ] **METRIC-01**: Track grading time saved, avg teacher edits per submission, rubric-alignment confidence, feedback turnaround.
+- [ ] **METRIC-02**: Track edit-rate-over-time per teacher — the measurable continuous-improvement signal.
+- [ ] **METRIC-03**: A teacher dashboard surfaces these metrics.
+- [ ] **METRIC-04**: Product analytics (PostHog or custom) capture key events.
+- [ ] **OBS-01**: Request tracing spans the agent pipeline (one trace per grading job).
+- [ ] **OBS-02**: Grading history is queryable per teacher / class / assignment.
+
+## Storage & Parsing — `STORE`
+
+- [ ] **STORE-01**: Student submissions + teacher samples are stored in object storage (**backend per Key Decision: GCS vs Supabase buckets**), owner-scoped, no public URLs, signed/expiring access.
+- [ ] **STORE-02**: Robust PDF/DOCX/TXT parsing (incl. scanned/OCR fallback) with confidence; low-confidence routes to manual review.
+
+## Billing — `BILL`
+
+- [ ] **BILL-01**: Stripe integration — a teacher can subscribe to and manage a paid plan.
+- [ ] **BILL-02**: Plan/usage gating (free vs paid limits).
+
+## Deploy & Domain — `DEPLOY`
+
+- [ ] **DEPLOY-01**: The frontend is hosted and connected to a custom domain (HTTPS).
+- [ ] **DEPLOY-02**: CI/CD for edge functions + frontend.
+- [ ] **DEPLOY-03**: Production config — CORS/allowed-origins, security headers, secrets rotated.
+
+## Compliance — `COMPLY`
+
+- [ ] **COMPLY-01**: FERPA-aware workflows + teacher-controlled review; all copy says "FERPA-aware," NEVER "fully FERPA/GDPR compliant" unless legally verified.
+- [ ] **COMPLY-02**: Data retention/deletion + consent controls structured to support a future formal compliance review.
+
 ---
 
 ## v2 / Deferred
@@ -83,9 +144,16 @@ REQ-ID → Phase (100% coverage; each requirement maps to exactly one phase).
 | Phase | Requirements |
 |-------|--------------|
 | 1 — Data foundation & isolation | OPS-01, OPS-02, SEC-01, SEC-02 |
-| 2 — Trustworthy grading core | GRADE-01, GRADE-02, GRADE-03, GRADE-04, GRADE-05, GRADE-06, GRADE-07 |
-| 3 — Human-in-the-loop review | HITL-01, HITL-02, HITL-03, HITL-04, HITL-05 |
-| 4 — Evaluation harness | EVAL-01, EVAL-02, EVAL-03, EVAL-04 |
-| 5 — Onboarding, classes & samples | ONBOARD-01, ONBOARD-02, ONBOARD-03, ONBOARD-04, ONBOARD-05 |
-| 6 — Teacher-style learning loop | LEARN-01, LEARN-02, LEARN-03, LEARN-04, LEARN-05, LEARN-06 |
-| 7 — Privacy, isolation hardening & launch | SEC-03, SEC-04, SEC-05, OPS-03 |
+| 2 — Trustworthy grading core | GRADE-01..07 |
+| 3 — Agentic grading workflow | AGENT-01, AGENT-02, AGENT-03, AGENT-04 |
+| 4 — Async jobs & reliability | JOBS-01..05, RELY-01, RELY-02 |
+| 5 — HITL review & audit layer | HITL-01..05, AUDIT-01..05 |
+| 6 — Auth & account creation | AUTH-01, AUTH-02, AUTH-03 |
+| 7 — Onboarding, classes & samples | ONBOARD-01..05 |
+| 8 — Storage backend & parsing | STORE-01, STORE-02 |
+| 9 — Teacher memory & improvement loop | LEARN-01..06 |
+| 10 — Evaluation harness | EVAL-01..04 |
+| 11 — Analytics, metrics & observability | METRIC-01..04, OBS-01, OBS-02 |
+| 12 — Billing | BILL-01, BILL-02 |
+| 13 — Privacy, compliance & FERPA-aware | SEC-03, SEC-04, SEC-05, COMPLY-01, COMPLY-02 |
+| 14 — Deploy & custom domain | DEPLOY-01, DEPLOY-02, DEPLOY-03, OPS-03 |

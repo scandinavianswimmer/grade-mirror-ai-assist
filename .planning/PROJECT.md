@@ -83,6 +83,12 @@ aiTA is an AI-native instructional co-pilot for teachers. A teacher uploads an a
 | Per-teacher sandbox isolation (no shared learning pool) | User: learning must not be "corrupted by other teachers" | — Pending |
 | Eval harness gates all prompt/model changes | Only way "better over time" is falsifiable + the 100/100 regression is caught | — Pending |
 | Drive GSD manually (gsd-sdk CLI absent; gsd-pi v2.80.0 installed) | Skill's CLI not on PATH; user chose "I drive it directly" | ✓ Good |
+| Scope expanded to a full agentic AI platform (auth, agents, jobs/queue, analytics, billing, deploy) | User brief 2026-05-22: "this is what is next" + judges want operational realness | — Pending |
+| Auth = Supabase Auth + Google OAuth provider | Satisfies "Google sign-in option" AND "Auth: Supabase" with no conflict | — Pending |
+| Stack: Gemini 2.5 Pro (core) + Flash (fast), Supabase + Cloud Run, Upstash Redis queue, Stripe, PostHog/custom analytics | User-provided recommendation table | — Pending |
+| Grading reframed as a visible multi-agent workflow (Rubric/Relevance-Risk/Grading/Annotation/Summary/Style agents) | Judges want agents/orchestration; "AI workforce" not "single API call" | — Pending |
+| Compliance language = "FERPA-aware," never "fully compliant" | Faking FERPA/GDPR is a startup-killer; real compliance is in progress (user) | — Pending |
+| Object storage backend: GCS vs Supabase buckets | **OPEN** — user prose says GCS ("big requirement"); stack table says Supabase buckets | ⚠️ Revisit (pending user decision) |
 
 ## Evolution
 

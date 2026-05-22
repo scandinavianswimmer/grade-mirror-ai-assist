@@ -1,99 +1,106 @@
 # aiTA — Roadmap (Production Milestone 1)
 
-**7 phases** | **34 requirements mapped** | 100% v1 coverage ✓
+**14 phases** | full v1 requirement coverage ✓
 
-Phases are ordered by dependency and each delivers an end-to-end, observable capability (vertical slices). Goal-backward: the milestone is done when grading is valid, learns the teacher's style, the teacher controls every output, and each teacher's data + learning is isolated — all proven by an eval harness.
+Expanded from grading-only to an operationally-real, agentic AI platform: valid grading + a visible AI-agent workflow + reliability/async infra + auditability + teacher-memory learning loop + measurable analytics + auth/billing/storage + deploy to a custom domain. Ordering is dependency- and demo-impact-driven (judges want: agents, orchestration, auditability, reliability, measurable improvement, scalability, live on a domain).
 
 | # | Phase | Goal | Requirements |
 |---|-------|------|--------------|
-| 1 | Data foundation & isolation | Correct, owner-isolated v2 schema live; no silent write failures | OPS-01, OPS-02, SEC-01, SEC-02 |
-| 2 | Trustworthy grading core | A grade is valid: rubric-mandatory, relevance-gated, level-calibrated | GRADE-01..07 |
-| 3 | Human-in-the-loop review | Teacher accepts/edits/dismisses every note; states persist; finalize/export | HITL-01..05 |
-| 4 | Evaluation harness | Grading quality is measured + gated; regressions caught | EVAL-01..04 |
-| 5 | Onboarding, classes & samples | Gated onboarding → class (subject/level) → ≥10 samples ingested | ONBOARD-01..05 |
-| 6 | Teacher-style learning loop | Style profile reaches the grader; edits improve grading over time | LEARN-01..06 |
-| 7 | Privacy, isolation hardening & launch | Scoped retrieval, FERPA controls, secret rotation, eval-gated go-live | SEC-03, SEC-04, SEC-05, OPS-03 |
+| 1 | Data foundation & isolation | Correct, owner-isolated v2 schema; no silent writes | OPS-01, OPS-02, SEC-01, SEC-02 |
+| 2 | Trustworthy grading core | A grade is valid: rubric-mandatory, relevance-gated, calibrated | GRADE-01..07 |
+| 3 | Agentic grading workflow | Grading is a visible, logged multi-agent pipeline | AGENT-01..04 |
+| 4 | Async jobs & reliability | Grading is queued, retried, never loses work | JOBS-01..05, RELY-01..02 |
+| 5 | HITL review & audit layer | Teacher controls + full audit/explainability | HITL-01..05, AUDIT-01..05 |
+| 6 | Auth & account creation | Email + Google sign-in via Supabase Auth | AUTH-01..03 |
+| 7 | Onboarding, classes & samples | Gated setup → class (subject/level) → ≥10 samples | ONBOARD-01..05 |
+| 8 | Storage backend & parsing | Owner-scoped object storage + robust parsing | STORE-01..02 |
+| 9 | Teacher memory & improvement loop | Style reaches grader; edits improve grading; measurable | LEARN-01..06 |
+| 10 | Evaluation harness | Quality measured + gated; regressions caught | EVAL-01..04 |
+| 11 | Analytics, metrics & observability | Measurable outcomes + tracing + grading history | METRIC-01..04, OBS-01..02 |
+| 12 | Billing | Stripe plans + usage gating | BILL-01..02 |
+| 13 | Privacy, compliance & FERPA-aware | Scoped retrieval, data controls, honest compliance language | SEC-03..05, COMPLY-01..02 |
+| 14 | Deploy & custom domain | Hosted, on a custom domain, CI/CD, secrets rotated | DEPLOY-01..03, OPS-03 |
 
 ---
 
 ### Phase 1: Data foundation & isolation
-**Goal:** The v2 cloud schema is fully applied and every teacher-owned row + storage object is owner-scoped, with no silently-swallowed write failures — the correct, isolated foundation everything else writes to.
-**Mode:** mvp
-**Requirements:** OPS-01, OPS-02, SEC-01, SEC-02
-**Success Criteria:**
-1. Migrations `0003–0011` are applied to cloud; `annotations.ai_comment` and all v2 columns exist (the annotations 400 is gone).
-2. RLS on every teacher-owned table (submissions, grades, annotations, edits, profiles, samples, exemplars) provably blocks cross-teacher reads/writes.
-3. Uploaded files have no public URL; access is via expiring signed URLs only.
-4. Edge-function inserts check for errors and surface them (no silent failures like the current annotation insert).
+**Goal:** v2 schema fully applied; every teacher-owned row + storage object owner-scoped; no silently-swallowed write failures.
+**Mode:** mvp · **Requirements:** OPS-01, OPS-02, SEC-01, SEC-02
+**Success Criteria:** (1) migrations `0003–0011` applied (annotations 400 gone); (2) RLS provably blocks cross-teacher access on every teacher-owned table; (3) no public file URLs, signed URLs only; (4) edge inserts check + surface errors.
+*Prereq:* migration apply needs DB password (user).
 
-*Prerequisite:* migration apply needs the DB password (user runs `GO-LIVE-RUNBOOK.md` §2); policies + code authored by aiTA.
+### Phase 2: Trustworthy grading core ✅ code complete (awaiting deploy)
+**Goal:** A grade is valid — rubric-mandatory, relevance-gated, level-calibrated, primary model.
+**Mode:** mvp · **Requirements:** GRADE-01..07
+**Success Criteria:** (1) no grade without a structured rubric (auto-synthesized when absent); (2) off-topic content (oil-change case) withheld via deterministic relevance gate; (3) flags change disposition, not just annotate; (4) calibration varies by level/harshness; (5) `gemini-2.5-pro` on the happy path.
 
-### Phase 2: Trustworthy grading core
-**Goal:** A produced grade is valid — aligned to a real rubric, refusing to reward off-assignment work, calibrated to the class level and teacher harshness, on the primary model.
-**Mode:** mvp
-**Requirements:** GRADE-01, GRADE-02, GRADE-03, GRADE-04, GRADE-05, GRADE-06, GRADE-07
-**Success Criteria:**
-1. Grading is blocked without a structured rubric; the teacher is guided to author or auto-generate one (strict rubric synthesized from prompt + subject/level, editable).
-2. The motor-oil-on-a-Holes-essay case (and similar off-topic content) is scored low / "needs review" via a deterministic relevance gate, not the model's self-report.
-3. `off_topic` / `low_confidence` / `unverified_evidence` change the disposition (floor/withhold/review), not just annotate.
-4. The same essay scores measurably differently across class levels / harshness settings.
-5. The rendered grade shows `gemini-2.5-pro` as the model used on the happy path.
+### Phase 3: Agentic grading workflow
+**Goal:** Grading reads as an AI workforce — named, individually-logged agents (Rubric, Relevance/Risk, Grading, Annotation, Feedback-Summary, Style) orchestrated with visible per-step status.
+**Mode:** mvp · **Requirements:** AGENT-01..04
+**Success Criteria:** (1) the engine is structured as discrete named agents behind an orchestrator; (2) each agent logs input/output/model/latency/tokens; (3) the UI shows the pipeline + per-step status; (4) a Risk/Plagiarism agent flags off-topic/injection/likely-AI-generated work.
 
-### Phase 3: Human-in-the-loop review
-**Goal:** The teacher has final say — every annotation and the grade can be accepted, edited, or dismissed, and those decisions persist and export cleanly.
-**Mode:** mvp
-**Requirements:** HITL-01, HITL-02, HITL-03, HITL-04, HITL-05
-**Success Criteria:**
-1. Inline annotations render anchored to the quoted spans and survive reload.
-2. Accept / edit / dismiss (and accept-all / dismiss-all) persist across reload.
-3. An edited note shows "AI originally suggested…".
-4. Finalize locks the grade; export contains only accepted/edited notes (no internal AI-confidence; harsh-wording banner when applicable).
+### Phase 4: Async jobs & reliability
+**Goal:** Grading is a queued, retried, durable job — the app never crashes, freezes, loses uploads, or drops teacher edits.
+**Mode:** mvp · **Requirements:** JOBS-01..05, RELY-01..02
+**Success Criteria:** (1) grading runs via Upstash Redis queue + Cloud Run worker, non-blocking; (2) jobs idempotent + retried, no dup/lost grades; (3) uploads + edits never silently fail; (4) failed jobs are visibly retryable; (5) a jobs/events view is queryable.
 
-### Phase 4: Evaluation harness
-**Goal:** Grading quality is measurable and every prompt/model change is gated against regressions — "better over time" becomes falsifiable.
-**Mode:** mvp
-**Requirements:** EVAL-01, EVAL-02, EVAL-03, EVAL-04
-**Success Criteria:**
-1. A versioned reference dataset exists (curated off-topic + injection cases + teacher-graded cases).
-2. An eval run reports agreement-with-teacher, calibration error, off-topic catch rate, injection-resistance rate.
-3. A change that reintroduces "100/100 on unrelated content" fails the gate.
-4. The eval is runnable on demand with one command and reproducible.
+### Phase 5: HITL review & audit layer
+**Goal:** The teacher has final say with full auditability — accept/edit/dismiss persists, every grade is explainable with confidence + citations + edit history.
+**Mode:** mvp · **Requirements:** HITL-01..05, AUDIT-01..05
+**Success Criteria:** (1) annotations render/accept/edit/dismiss persist across reload; (2) confidence + evidence citation shown per criterion; (3) per-criterion rationale visible; (4) edits tracked (AI-original vs edited); (5) nothing final without teacher approval; clean export.
 
-### Phase 5: Onboarding, classes & samples
-**Goal:** A new teacher is taken through a gated setup that captures who they are and how they teach, and ingests ≥10 of their past grading samples — the inputs the learning loop needs.
-**Mode:** mvp
-**Requirements:** ONBOARD-01, ONBOARD-02, ONBOARD-03, ONBOARD-04, ONBOARD-05
-**Success Criteria:**
-1. A new teacher completes onboarding (type, subjects, grade levels, baseline harshness) before reaching the dashboard.
-2. A teacher creates a class with subject + level that feeds grading calibration; multiple classes are supported and independently configured.
-3. A teacher uploads ≥10 past samples that are parsed (PDF/DOCX/TXT) and stored in their sandbox.
-4. Grading unlocks only when prerequisites are met (or explicit cold-start opt-in), with clear UI state; advanced classes prompt for more detail.
+### Phase 6: Auth & account creation
+**Goal:** A teacher can create an account with email/password or Google.
+**Mode:** mvp · **Requirements:** AUTH-01..03
+**Success Criteria:** (1) email/password sign-up + sign-in; (2) Google OAuth sign-up + sign-in via Supabase Auth; (3) account creation captures required profile basics feeding onboarding.
 
-### Phase 6: Teacher-style learning loop
-**Goal:** The grader actually sounds like the teacher and gets better with every batch — the style profile reaches the grading prompt and teacher edits feed back into it.
-**Mode:** mvp
-**Requirements:** LEARN-01, LEARN-02, LEARN-03, LEARN-04, LEARN-05, LEARN-06
-**Success Criteria:**
-1. A per-teacher, per-subject-level calibration/style profile is built from the ≥10 samples.
-2. The profile is injected into the grading prompt — the same essay graded with vs without the profile differs in voice/standards.
-3. Teacher approve/edit/dismiss actions update the profile and/or few-shot exemplars.
-4. The eval harness shows grading agreement improving toward the teacher's standards across successive batches.
-5. Cold-start (<10 samples) grades conservatively and bootstraps from first edits.
+### Phase 7: Onboarding, classes & samples
+**Goal:** Gated onboarding captures who the teacher is + ingests ≥10 samples; classes carry subject/level.
+**Mode:** mvp · **Requirements:** ONBOARD-01..05
+**Success Criteria:** (1) gated onboarding (type/subjects/levels/harshness); (2) class subject+level feeds calibration; multi-class; (3) ≥10 samples uploaded + parsed into the teacher's sandbox; (4) grading unlock gating + advanced-class prompts.
 
-### Phase 7: Privacy, isolation hardening & launch
-**Goal:** Production-ready: learning retrieval is provably teacher-scoped, teachers control their data per FERPA, secrets are rotated, and go-live is gated on a green eval.
-**Mode:** mvp
-**Requirements:** SEC-03, SEC-04, SEC-05, OPS-03
-**Success Criteria:**
-1. Grade-time style/exemplar retrieval is provably scoped to the grading teacher (a second teacher's data can never influence a grade).
-2. A teacher can view, set retention for, and delete all their data (DB rows + storage objects); deletion is verified complete.
-3. Student-submission PII + training-consent are enforced (no unconsented exemplar use).
-4. Exposed secrets (DB password, service-role key, Gemini key) are rotated; go-live gated on a passing eval run.
+### Phase 8: Storage backend & parsing
+**Goal:** Submissions + samples in owner-scoped object storage with robust parsing.
+**Mode:** mvp · **Requirements:** STORE-01..02
+**Success Criteria:** (1) object storage (GCS or Supabase buckets per Key Decision) is owner-scoped, no public URLs, signed/expiring access; (2) PDF/DOCX/TXT parsing with confidence + OCR fallback; low-confidence → manual review.
+
+### Phase 9: Teacher memory & continuous-improvement loop
+**Goal:** The grader sounds like the teacher and improves measurably with every batch.
+**Mode:** mvp · **Requirements:** LEARN-01..06
+**Success Criteria:** (1) per-teacher/per-level calibration profile from samples; (2) profile injected into the grader (with vs without differs); (3) approve/edit/dismiss updates profile + exemplars; (4) eval shows agreement improving / edit-rate dropping over batches; (5) cold-start path.
+
+### Phase 10: Evaluation harness
+**Goal:** Grading quality is measurable and every prompt/model change is gated.
+**Mode:** mvp · **Requirements:** EVAL-01..04
+**Success Criteria:** (1) versioned reference dataset (off-topic + injection + teacher cases); (2) metrics: agreement, calibration error, off-topic catch, injection resistance; (3) the 100/100-on-unrelated regression fails the gate; (4) one-command reproducible run.
+
+### Phase 11: Analytics, metrics & observability
+**Goal:** Measurable outcomes + operational visibility — the "measurable intelligence improvement" story.
+**Mode:** mvp · **Requirements:** METRIC-01..04, OBS-01..02
+**Success Criteria:** (1) track time-saved, avg edits, alignment confidence, turnaround; (2) edit-rate-over-time per teacher; (3) teacher metrics dashboard; (4) product analytics events (PostHog/custom); (5) request tracing per grading job; (6) queryable grading history.
+
+### Phase 12: Billing
+**Goal:** Teachers can pay; usage is gated by plan.
+**Mode:** mvp · **Requirements:** BILL-01..02
+**Success Criteria:** (1) Stripe subscribe + manage plan; (2) free/paid usage gating enforced.
+
+### Phase 13: Privacy, compliance & FERPA-aware
+**Goal:** Provably teacher-scoped learning + honest, defensible compliance posture.
+**Mode:** mvp · **Requirements:** SEC-03..05, COMPLY-01..02
+**Success Criteria:** (1) grade-time retrieval provably teacher-scoped (no cross-teacher influence); (2) teacher can view/retain/delete all data (rows + storage); (3) consent enforced (no unconsented exemplars); (4) all copy is "FERPA-aware," never "fully compliant"; (5) retention/deletion structured for a future legal review.
+
+### Phase 14: Deploy & custom domain
+**Goal:** Live on a custom domain, production-configured, CI/CD, secrets rotated.
+**Mode:** mvp · **Requirements:** DEPLOY-01..03, OPS-03
+**Success Criteria:** (1) frontend hosted + connected to the user's custom domain over HTTPS; (2) CI/CD for functions + frontend; (3) prod CORS/headers set + exposed secrets rotated.
 
 ---
 
 ## Notes
-- Brownfield: Phases evolve the existing v2 backend + Marginalia UI; they do not rebuild working pieces (live grading round-trip, ingestion, injection resistance, schema-constrained engine).
-- Ordering rationale: foundation/isolation (1) → valid grade (2) → teacher control (3) → measurement (4) → inputs for learning (5) → the learning loop (6) → hardening + launch (7). Phase 4 can begin once Phase 2 lands; Phase 6 depends on 3+5.
+- **Brownfield:** evolve the existing v2 backend + Marginalia UI; reuse working pieces (live grading round-trip, ingestion, injection resistance, schema-constrained engine).
+- **Stack (locked unless noted):** Gemini 2.5 Pro (core) + Flash (fast tasks); Supabase (Auth + Postgres + edge functions) + Cloud Run (queue worker / long jobs); Upstash Redis (queue); Stripe (billing); PostHog or custom (analytics); object storage backend **pending Key Decision (GCS vs Supabase buckets)**.
+- **Auth:** Supabase Auth with Google OAuth provider — satisfies both "Google sign-in option" and "Auth: Supabase."
+- **Compliance:** never claim "fully FERPA/GDPR compliant" — "FERPA-aware workflows + teacher-controlled review" only.
+- **Demo-impact ordering:** Phases 2–5 + 9–11 carry the judge-facing story (valid grading, agent workforce, reliability, auditability, measurable improvement). Phase 14 makes it live on a domain.
 
-*Last updated: 2026-05-22 after initialization*
+*Last updated: 2026-05-22 after scope expansion (auth/storage/infra/agents/analytics/billing/deploy).*
