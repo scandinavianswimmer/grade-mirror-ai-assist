@@ -225,6 +225,19 @@ Deno.serve((req) => {
       throw new AppError(500, "grade_persist", `Failed to save grade: ${gradeRes.error?.message ?? "unknown"}`);
     }
 
+    // Re-grade hygiene: a (re)grade replaces the prior AI pass, so clear this submission's existing
+    // annotations before inserting the fresh set — otherwise notes pile up across re-grades (duplicates).
+    // Best-effort + non-fatal (the grade is already saved); delete edits first since the v1 cloud schema
+    // may lack ON DELETE CASCADE on annotation_edits.annotation_id, which would otherwise block the delete.
+    const { data: priorAnns } = await db.from("annotations").select("id").eq("submission_id", submissionId);
+    if (priorAnns && priorAnns.length) {
+      const priorIds = priorAnns.map((a) => a.id);
+      const { error: edDelErr } = await db.from("annotation_edits").delete().in("annotation_id", priorIds);
+      if (edDelErr) console.error(`[grade-submission] annotation_edits cleanup failed: ${edDelErr.message}`);
+      const { error: annDelErr } = await db.from("annotations").delete().eq("submission_id", submissionId);
+      if (annDelErr) console.error(`[grade-submission] annotation cleanup failed: ${annDelErr.message}`);
+    }
+
     if (result.annotations.length) {
       const { error: annErr } = await db.from("annotations").insert(
         result.annotations.map((a) => ({
