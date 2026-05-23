@@ -37,13 +37,16 @@ Deno.serve((req) => {
     }
     const jobId = crypto.randomUUID(); // groups this grading run's agent_events steps (AGENT-02)
 
+    // Select user_id only for the internal worker path (the v1 schema may lack it); the normal JWT
+    // path relies on RLS for ownership, so it stays on the original v1-safe column set.
+    const submissionCols = "id, assignment_id, extracted_text, extraction_confidence, status" + (isInternal ? ", user_id" : "");
     const { data: submission, error: subErr } = await db
       .from("submissions")
-      .select("id, assignment_id, extracted_text, extraction_confidence, status, user_id")
+      .select(submissionCols)
       .eq("id", submissionId)
       .single();
     if (subErr || !submission) throw new AppError(404, "submission", "Submission not found");
-    if (isInternal && submission.user_id !== userId) {
+    if (isInternal && (submission as { user_id?: string }).user_id !== userId) {
       throw new AppError(403, "forbidden", "Submission does not belong to the provided userId");
     }
 
@@ -53,23 +56,33 @@ Deno.serve((req) => {
     }
 
     // Assignment + class context: the relevance gate needs the task; calibration needs the level.
+    // Essential prompt: `instructions` is present on both v1 and v2 schemas (the relevance gate +
+    // rubric synthesis depend on it). Other columns are loaded best-effort below so a missing v2
+    // column on the not-yet-migrated cloud schema can't break grading.
     const { data: asg } = await db
       .from("assignments")
-      .select("title, instructions, course_name, class_id")
+      .select("instructions")
       .eq("id", submission.assignment_id)
       .maybeSingle();
-    const assignmentPrompt = [asg?.title, asg?.instructions].filter(Boolean).join("\n\n").trim();
+    let assignmentPrompt = (asg?.instructions ?? "").trim();
 
+    // Title + class context for calibration — best-effort (may be absent on older schemas).
     let classContext: string | undefined;
-    if (asg?.class_id) {
+    const { data: asgMeta } = await db
+      .from("assignments")
+      .select("title, course_name, class_id")
+      .eq("id", submission.assignment_id)
+      .maybeSingle();
+    if (asgMeta?.title) assignmentPrompt = [asgMeta.title, assignmentPrompt].filter(Boolean).join("\n\n").trim();
+    if (asgMeta?.class_id) {
       const { data: cls } = await db
         .from("classes")
         .select("name, details")
-        .eq("id", asg.class_id)
+        .eq("id", asgMeta.class_id)
         .maybeSingle();
       if (cls) {
         const details = typeof cls.details === "object" && cls.details ? JSON.stringify(cls.details) : "";
-        classContext = [cls.name, asg?.course_name, details].filter(Boolean).join(" · ").slice(0, 600);
+        classContext = [cls.name, asgMeta.course_name, details].filter(Boolean).join(" · ").slice(0, 600);
       }
     }
 
@@ -117,29 +130,42 @@ Deno.serve((req) => {
 
     if (!rubric) {
       await db.from("submissions").update({ status: "grading" }).eq("id", submissionId);
-      rubricSynthesized = true;
-      const synth = await synthesizeRubric(assignmentPrompt, classContext);
-      rubric = toRubricInput(synth);
-      // Persist so the teacher can review/edit and grading is reproducible.
-      const { data: newRubric, error: rubErr } = await db
-        .from("rubrics")
-        .insert({ user_id: userId, assignment_id: submission.assignment_id, total_points: synth.totalPoints })
-        .select("id")
-        .single();
-      if (rubErr) throw new AppError(500, "rubric_persist", `Failed to save synthesized rubric: ${rubErr.message}`);
-      if (newRubric) {
-        const { error: critErr } = await db.from("rubric_criteria").insert(
-          synth.criteria.map((c, i) => ({
-            user_id: userId,
-            rubric_id: newRubric.id,
-            name: c.name,
-            weight: c.weight,
-            max_score: c.maxScore,
-            level_descriptors: { "Full marks": c.fullMarks, "No marks": c.noMarks },
-            sort_order: i,
-          })),
-        );
-        if (critErr) throw new AppError(500, "rubric_persist", `Failed to save rubric criteria: ${critErr.message}`);
+      try {
+        const synth = await synthesizeRubric(assignmentPrompt, classContext);
+        rubric = toRubricInput(synth);
+        rubricSynthesized = true;
+        // Persist so the teacher can review/edit and grading is reproducible (best-effort).
+        const { data: newRubric, error: rubErr } = await db
+          .from("rubrics")
+          .insert({ user_id: userId, assignment_id: submission.assignment_id, total_points: synth.totalPoints })
+          .select("id")
+          .single();
+        if (rubErr) {
+          console.error(`[grade-submission] rubric persist failed (grading with synthesized rubric anyway): ${rubErr.message}`);
+        } else if (newRubric) {
+          const { error: critErr } = await db.from("rubric_criteria").insert(
+            synth.criteria.map((c, i) => ({
+              user_id: userId,
+              rubric_id: newRubric.id,
+              name: c.name,
+              weight: c.weight,
+              max_score: c.maxScore,
+              level_descriptors: { "Full marks": c.fullMarks, "No marks": c.noMarks },
+              sort_order: i,
+            })),
+          );
+          if (critErr) console.error(`[grade-submission] rubric_criteria persist failed: ${critErr.message}`);
+        }
+      } catch (e) {
+        // RELY-01: a synthesis failure (e.g. model error) must not crash grading — fall back to the
+        // assignment instructions as a free-text rubric so grading still proceeds.
+        console.error(`[grade-submission] rubric synthesis failed, using free-text fallback: ${e instanceof Error ? e.message : String(e)}`);
+        rubric = {
+          totalPoints: 100,
+          criteria: [],
+          freeText: assignmentPrompt || "Grade the submission holistically for quality and relevance to the assignment.",
+        };
+        rubricSynthesized = false;
       }
     }
 
@@ -172,27 +198,31 @@ Deno.serve((req) => {
     const trace: AgentStep[] = [rubricStep, ...outcome.trace];
 
     // Persist grade under the owner's RLS context. The grade is the critical write — fail loud (OPS-02).
-    const { data: grade, error: gradeErr } = await db
-      .from("submission_grades")
-      .insert({
-        user_id: userId,
-        submission_id: submissionId,
-        schema_version: result.schemaVersion,
-        overall_score: result.overall.score,
-        overall_max: result.overall.maxScore,
-        letter: result.overall.letter ?? null,
-        confidence: result.overall.confidence,
-        criteria: result.criteria,
-        summary_feedback: result.summaryFeedback,
-        flags: result.flags,
-        model_id: result.modelId,
-        rubric_snapshot: rubric, // snapshot the rubric used so later edits don't rewrite history (M69)
-      })
-      .select("id")
-      .single();
-    if (gradeErr || !grade) {
+    const gradeRow: Record<string, unknown> = {
+      user_id: userId,
+      submission_id: submissionId,
+      schema_version: result.schemaVersion,
+      overall_score: result.overall.score,
+      overall_max: result.overall.maxScore,
+      letter: result.overall.letter ?? null,
+      confidence: result.overall.confidence,
+      criteria: result.criteria,
+      summary_feedback: result.summaryFeedback,
+      flags: result.flags,
+      model_id: result.modelId,
+      rubric_snapshot: rubric, // snapshot the rubric used so later edits don't rewrite history (M69)
+    };
+    let gradeRes = await db.from("submission_grades").insert(gradeRow).select("id").single();
+    if (gradeRes.error && /rubric_snapshot/.test(gradeRes.error.message)) {
+      // v1 schema (pre-migration) lacks rubric_snapshot — retry without it; migrations add it back.
+      console.error("[grade-submission] rubric_snapshot column missing; persisting grade without snapshot");
+      delete gradeRow.rubric_snapshot;
+      gradeRes = await db.from("submission_grades").insert(gradeRow).select("id").single();
+    }
+    const grade = gradeRes.data;
+    if (gradeRes.error || !grade) {
       await db.from("submissions").update({ status: "grade_error" }).eq("id", submissionId);
-      throw new AppError(500, "grade_persist", `Failed to save grade: ${gradeErr?.message ?? "unknown"}`);
+      throw new AppError(500, "grade_persist", `Failed to save grade: ${gradeRes.error?.message ?? "unknown"}`);
     }
 
     if (result.annotations.length) {
