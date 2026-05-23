@@ -258,6 +258,10 @@ INSERT INTO public.submissions (id, assignment_id, student_name, essay, extracte
  'uploaded', now() - interval '7 hours')
 ON CONFLICT (id) DO UPDATE SET assignment_id=EXCLUDED.assignment_id, student_name=EXCLUDED.student_name, essay=EXCLUDED.essay, extracted_text=EXCLUDED.extracted_text, status=EXCLUDED.status;
 
+-- The grader gates on extraction_confidence >= 0.2 (NULL is treated as 0 → "needs manual review").
+-- These essays are clean typed text, so mark them fully extracted.
+UPDATE public.submissions SET extraction_confidence = 1.0 WHERE id::text LIKE '5e55%';
+
 COMMIT;
 
 -- Verify:
