@@ -188,71 +188,71 @@ WHERE id LIKE 'a5519%' AND (instructions IS NULL OR instructions = '');
 -- HERO A: Gatsby symbolism (a5519001) — varied ability + 2 edge cases.
 INSERT INTO public.submissions (id, assignment_id, student_name, essay, extracted_text, status, created_at) VALUES
 -- high achiever
-('5ub00001-0000-4000-8000-000000000001','a5519001-0000-4000-8000-000000000001','Sofia Reyes',
+('5e550001-0000-4000-8000-000000000001','a5519001-0000-4000-8000-000000000001','Sofia Reyes',
  'Fitzgerald never lets the green light be simple hope. When Gatsby reaches for the "single green light, minute and far away," the adjectives do the arguing: the dream is luminous only because it stays out of reach. Green—growth, money, envy—lets one image hold Gatsby''s aspiration and its rot at once. By the novel''s end, Nick reframes the light as "the orgastic future that year by year recedes before us," widening Gatsby''s private longing into a national condition. Fitzgerald''s symbol indicts the American Dream not for failing, but for being designed to recede.',
  'Fitzgerald never lets the green light be simple hope. When Gatsby reaches for the "single green light, minute and far away," the adjectives do the arguing: the dream is luminous only because it stays out of reach. Green—growth, money, envy—lets one image hold Gatsby''s aspiration and its rot at once. By the novel''s end, Nick reframes the light as "the orgastic future that year by year recedes before us," widening Gatsby''s private longing into a national condition. Fitzgerald''s symbol indicts the American Dream not for failing, but for being designed to recede.',
  'uploaded', now() - interval '20 hours'),
 -- strong analysis, weak structure
-('5ub00002-0000-4000-8000-000000000002','a5519001-0000-4000-8000-000000000001','Marcus Johnson',
+('5e550002-0000-4000-8000-000000000002','a5519001-0000-4000-8000-000000000001','Marcus Johnson',
  'The valley of ashes is where the dream goes to die. Fitzgerald describes it as a "fantastic farm where ashes grow like wheat," which is ironic because nothing grows there but poverty. The eyes of Dr. T.J. Eckleburg watch over it like a god that gave up. Also the green light is in the book and it means hope for Gatsby. The rich people drive through the ashes and never stop. This shows the American Dream leaves people behind. The symbols all connect to money and class which is the theme.',
  'The valley of ashes is where the dream goes to die. Fitzgerald describes it as a "fantastic farm where ashes grow like wheat," which is ironic because nothing grows there but poverty. The eyes of Dr. T.J. Eckleburg watch over it like a god that gave up. Also the green light is in the book and it means hope for Gatsby. The rich people drive through the ashes and never stop. This shows the American Dream leaves people behind. The symbols all connect to money and class which is the theme.',
  'uploaded', now() - interval '19 hours'),
 -- struggling writer
-('5ub00003-0000-4000-8000-000000000003','a5519001-0000-4000-8000-000000000001','Tyler Nguyen',
+('5e550003-0000-4000-8000-000000000003','a5519001-0000-4000-8000-000000000001','Tyler Nguyen',
  'In the Great Gatsby there are alot of symbols. The green light is hope. The eyes are like god watching everyone. The valley of ashes is poor. Gatsby wants Daisy and the green light shows that. The american dream is about being rich. Gatsby was poor and got rich but he was not happy. So the dream is not real. These symbols show the theme of the american dream in the book.',
  'In the Great Gatsby there are alot of symbols. The green light is hope. The eyes are like god watching everyone. The valley of ashes is poor. Gatsby wants Daisy and the green light shows that. The american dream is about being rich. Gatsby was poor and got rich but he was not happy. So the dream is not real. These symbols show the theme of the american dream in the book.',
  'uploaded', now() - interval '18 hours'),
 -- english language learner (ideas present, language developing)
-('5ub00004-0000-4000-8000-000000000004','a5519001-0000-4000-8000-000000000001','Diego Hernández',
+('5e550004-0000-4000-8000-000000000004','a5519001-0000-4000-8000-000000000001','Diego Hernández',
  'The green light have big meaning in the story. Gatsby see it every night and he reach his hand to it. For him it is the future with Daisy and also to be important person. But the light is far and small, so the dream is difficult to touch. I think Fitzgerald want to say the american dream give hope but also make people sad because they can not reach. The color green is like money and also like hope, two things together.',
  'The green light have big meaning in the story. Gatsby see it every night and he reach his hand to it. For him it is the future with Daisy and also to be important person. But the light is far and small, so the dream is difficult to touch. I think Fitzgerald want to say the american dream give hope but also make people sad because they can not reach. The color green is like money and also like hope, two things together.',
  'uploaded', now() - interval '17 hours'),
 -- EDGE: off-topic (trust/relevance-gate demo)
-('5ub00005-0000-4000-8000-000000000005','a5519001-0000-4000-8000-000000000001','Brandon Davis',
+('5e550005-0000-4000-8000-000000000005','a5519001-0000-4000-8000-000000000001','Brandon Davis',
  'The best way to improve your jump shot is consistent practice. Start with proper form: feet shoulder-width apart, elbow under the ball, and follow through with your wrist. Shoot 100 free throws a day and track your makes. Watching film of professional shooters like Steph Curry can also help you learn arc and release timing. Strength training for your legs adds range over time.',
  'The best way to improve your jump shot is consistent practice. Start with proper form: feet shoulder-width apart, elbow under the ball, and follow through with your wrist. Shoot 100 free throws a day and track your makes. Watching film of professional shooters like Steph Curry can also help you learn arc and release timing. Strength training for your legs adds range over time.',
  'uploaded', now() - interval '16 hours'),
 -- EDGE: extremely short
-('5ub00006-0000-4000-8000-000000000006','a5519001-0000-4000-8000-000000000001','Logan Mitchell',
+('5e550006-0000-4000-8000-000000000006','a5519001-0000-4000-8000-000000000001','Logan Mitchell',
  'The green light means hope and the american dream. Gatsby wants Daisy.',
  'The green light means hope and the american dream. Gatsby wants Daisy.',
  'uploaded', now() - interval '15 hours'),
 -- HERO B: MLK Rhetorical Analysis (a5519005) — AP Lang.
 -- strong AP writer
-('5ub00007-0000-4000-8000-000000000007','a5519005-0000-4000-8000-000000000005','Priya Patel',
+('5e550007-0000-4000-8000-000000000007','a5519005-0000-4000-8000-000000000005','Priya Patel',
  'King turns his imprisonment into his credential. Writing to clergymen who called him an "outsider," he answers not with defensiveness but with lineage: he stands "as Paul," carrying "the gospel of freedom" beyond his own town. By aligning himself with the prophets his audience reveres, King reframes his presence in Birmingham as obligation, not intrusion. The move is strategic humility—he concedes his outsider status only to dissolve it, converting the clergy''s strongest objection into the very proof of his moral authority.',
  'King turns his imprisonment into his credential. Writing to clergymen who called him an "outsider," he answers not with defensiveness but with lineage: he stands "as Paul," carrying "the gospel of freedom" beyond his own town. By aligning himself with the prophets his audience reveres, King reframes his presence in Birmingham as obligation, not intrusion. The move is strategic humility—he concedes his outsider status only to dissolve it, converting the clergy''s strongest objection into the very proof of his moral authority.',
  'uploaded', now() - interval '14 hours'),
 -- gifted but unfocused
-('5ub00008-0000-4000-8000-000000000008','a5519005-0000-4000-8000-000000000005','Aaliyah Williams',
+('5e550008-0000-4000-8000-000000000008','a5519005-0000-4000-8000-000000000005','Aaliyah Williams',
  'MLK''s letter is incredibly powerful and honestly still relevant today. He uses ethos by mentioning he is president of the SCLC, pathos when he describes his daughter asking why she can''t go to the amusement park, and logic about just and unjust laws. The part about "wait" almost always meaning "never" is so true. He also references Socrates and the Boston Tea Party. There are so many strategies packed in here that it''s hard to pick just one, but they all work together to make his case undeniable.',
  'MLK''s letter is incredibly powerful and honestly still relevant today. He uses ethos by mentioning he is president of the SCLC, pathos when he describes his daughter asking why she can''t go to the amusement park, and logic about just and unjust laws. The part about "wait" almost always meaning "never" is so true. He also references Socrates and the Boston Tea Party. There are so many strategies packed in here that it''s hard to pick just one, but they all work together to make his case undeniable.',
  'uploaded', now() - interval '13 hours'),
 -- inconsistent effort / summary-heavy
-('5ub00009-0000-4000-8000-000000000009','a5519005-0000-4000-8000-000000000005','Ethan Carter',
+('5e550009-0000-4000-8000-000000000009','a5519005-0000-4000-8000-000000000005','Ethan Carter',
  'In his letter MLK responds to the clergy who criticized the protests. He explains why he is in Birmingham and that injustice anywhere is a threat to justice everywhere. He talks about just and unjust laws and gives examples. He says he is disappointed in the white moderate. Then he talks about being an extremist for love. At the end he hopes for brotherhood. He uses ethos pathos and logos throughout the letter to make his points to the audience.',
  'In his letter MLK responds to the clergy who criticized the protests. He explains why he is in Birmingham and that injustice anywhere is a threat to justice everywhere. He talks about just and unjust laws and gives examples. He says he is disappointed in the white moderate. Then he talks about being an extremist for love. At the end he hopes for brotherhood. He uses ethos pathos and logos throughout the letter to make his points to the audience.',
  'uploaded', now() - interval '12 hours'),
 -- EDGE: likely AI-generated (uniform, polished, generic — risk-flag demo)
-('5ub00010-0000-4000-8000-000000000010','a5519005-0000-4000-8000-000000000005','Hannah Lee',
+('5e550010-0000-4000-8000-000000000010','a5519005-0000-4000-8000-000000000005','Hannah Lee',
  'In his seminal "Letter from Birmingham Jail," Dr. Martin Luther King Jr. masterfully employs a tripartite rhetorical framework to advance his argument. Firstly, through ethos, he establishes credibility. Secondly, through pathos, he evokes profound emotional resonance. Thirdly, through logos, he constructs an irrefutable logical foundation. Furthermore, his strategic utilization of allusion and anaphora enhances persuasive efficacy. In conclusion, King''s rhetorical mastery renders his argument both compelling and enduring, cementing the letter''s status as a paragon of persuasive discourse.',
  'In his seminal "Letter from Birmingham Jail," Dr. Martin Luther King Jr. masterfully employs a tripartite rhetorical framework to advance his argument. Firstly, through ethos, he establishes credibility. Secondly, through pathos, he evokes profound emotional resonance. Thirdly, through logos, he constructs an irrefutable logical foundation. Furthermore, his strategic utilization of allusion and anaphora enhances persuasive efficacy. In conclusion, King''s rhetorical mastery renders his argument both compelling and enduring, cementing the letter''s status as a paragon of persuasive discourse.',
  'uploaded', now() - interval '11 hours'),
 -- HERO C lite: Necklace short response (a5519003) — 2 quick ones for volume.
-('5ub00011-0000-4000-8000-000000000011','a5519003-0000-4000-8000-000000000003','Mia Gonzalez',
+('5e550011-0000-4000-8000-000000000011','a5519003-0000-4000-8000-000000000003','Mia Gonzalez',
  'A central theme of "The Necklace" is that vanity costs more than it is worth. Mathilde borrows a glittering necklace to appear wealthy, then loses it and spends ten years in poverty to replace it. The cruel irony lands in the final line, when Madame Forestier reveals the original was "worth at most five hundred francs." Maupassant uses that reveal to show that Mathilde''s real loss was not the jewels but the years she traded for an illusion.',
  'A central theme of "The Necklace" is that vanity costs more than it is worth. Mathilde borrows a glittering necklace to appear wealthy, then loses it and spends ten years in poverty to replace it. The cruel irony lands in the final line, when Madame Forestier reveals the original was "worth at most five hundred francs." Maupassant uses that reveal to show that Mathilde''s real loss was not the jewels but the years she traded for an illusion.',
  'uploaded', now() - interval '10 hours'),
-('5ub00012-0000-4000-8000-000000000012','a5519003-0000-4000-8000-000000000003','Jacob Kim',
+('5e550012-0000-4000-8000-000000000012','a5519003-0000-4000-8000-000000000003','Jacob Kim',
  'The theme of The Necklace is be happy with what you have. Mathilde was not happy and she wanted to be rich. She lost the necklace and had to work for ten years. Then she found out it was fake. If she was happy before none of this would happen. So the theme is do not be greedy.',
  'The theme of The Necklace is be happy with what you have. Mathilde was not happy and she wanted to be rich. She lost the necklace and had to work for ten years. Then she found out it was fake. If she was happy before none of this would happen. So the theme is do not be greedy.',
  'uploaded', now() - interval '9 hours'),
 -- Social media argument (a5519002) — 2 for volume.
-('5ub00013-0000-4000-8000-000000000013','a5519002-0000-4000-8000-000000000002','Zoe Anderson',
+('5e550013-0000-4000-8000-000000000013','a5519002-0000-4000-8000-000000000002','Zoe Anderson',
  'The government should regulate social media for minors because the platforms are designed to be addictive and that harms developing brains. Internal research leaked from a major platform showed the company knew its app worsened body image for teen girls and built it anyway. A reasonable counterargument is that regulation threatens free speech—but age-based design rules limit how a product manipulates children, not what anyone is allowed to say. We already regulate tobacco and gambling for minors; attention-engineering deserves the same scrutiny.',
  'The government should regulate social media for minors because the platforms are designed to be addictive and that harms developing brains. Internal research leaked from a major platform showed the company knew its app worsened body image for teen girls and built it anyway. A reasonable counterargument is that regulation threatens free speech—but age-based design rules limit how a product manipulates children, not what anyone is allowed to say. We already regulate tobacco and gambling for minors; attention-engineering deserves the same scrutiny.',
  'uploaded', now() - interval '8 hours'),
-('5ub00014-0000-4000-8000-000000000014','a5519002-0000-4000-8000-000000000002','Carlos Ramírez',
+('5e550014-0000-4000-8000-000000000014','a5519002-0000-4000-8000-000000000002','Carlos Ramírez',
  'Social media is bad and should be regulated. It makes people feel bad about themselves and spreads fake news. Kids spend too much time on it instead of doing homework. The government needs to step in and fix this problem before it gets worse for our generation.',
  'Social media is bad and should be regulated. It makes people feel bad about themselves and spreads fake news. Kids spend too much time on it instead of doing homework. The government needs to step in and fix this problem before it gets worse for our generation.',
  'uploaded', now() - interval '7 hours')
@@ -268,10 +268,10 @@ SELECT
   (SELECT count(*) FROM public.training_examples WHERE user_id = :teacher) AS training,
   (SELECT count(*) FROM public.classes WHERE user_id = :teacher) AS classes,
   (SELECT count(*) FROM public.assignments WHERE user_id = :teacher) AS assignments,
-  (SELECT count(*) FROM public.submissions s JOIN public.assignments a ON a.id=s.assignment_id WHERE a.user_id = :teacher AND s.id LIKE '5ub%') AS seeded_submissions;
+  (SELECT count(*) FROM public.submissions s JOIN public.assignments a ON a.id=s.assignment_id WHERE a.user_id = :teacher AND s.id LIKE '5e55%') AS seeded_submissions;
 
 -- ── UNDO (uncomment to remove ONLY the seeded demo content) ───────────────────
--- DELETE FROM public.submissions WHERE id LIKE '5ub%';
+-- DELETE FROM public.submissions WHERE id LIKE '5e55%';
 -- DELETE FROM public.assignments WHERE id LIKE 'a5519%';
 -- DELETE FROM public.classes WHERE id LIKE 'c1a55%';
 -- DELETE FROM public.training_examples WHERE id LIKE '5a4a%';
