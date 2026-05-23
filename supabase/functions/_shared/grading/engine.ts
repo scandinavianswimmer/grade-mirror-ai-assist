@@ -118,14 +118,21 @@ function renderRubric(r: RubricInput): string {
   return `RUBRIC (total ${r.totalPoints} pts):\n${lines.join("\n")}`;
 }
 
-// The cacheable prefix: system + calibration + rubric. Identical across a class's submissions => cache hits.
-function buildCachedSystem(rubric: RubricInput, classContext?: string): string {
+// The cacheable prefix: system + calibration + teacher style + rubric. Stable across a class's
+// submissions (same rubric + same teacher style) ⇒ implicit prompt-cache hits.
+function buildCachedSystem(rubric: RubricInput, classContext?: string, styleProfile?: string): string {
   const calibration = classContext
     ? `\n\nCLASS CONTEXT — calibrate your standards to this level. Higher grade levels and honors/AP/gifted
 classes demand more sophistication; do NOT inflate scores. Hold the work to what is expected of THIS class:
 ${classContext}`
     : "";
-  return `${SYSTEM_PROMPT}${calibration}\n\n${renderRubric(rubric)}`;
+  // LEARN-03: emulate THIS teacher's voice, emphasis, and standards from their distilled style profile.
+  const style = styleProfile
+    ? `\n\nTEACHER GRADING STYLE — write feedback in this teacher's voice and apply their emphasis and
+standards (distilled from their past grading). Stay within the rubric; do not invent new criteria:
+${styleProfile}`
+    : "";
+  return `${SYSTEM_PROMPT}${calibration}${style}\n\n${renderRubric(rubric)}`;
 }
 
 // Volatile per-submission content, AFTER the cache breakpoint, with the essay clearly delimited.
@@ -142,6 +149,7 @@ export interface GradeInput {
   rubric: RubricInput;
   assignmentPrompt?: string; // raw assignment task, used for the relevance gate + reference
   classContext?: string; // subject / grade level / program, used for calibration
+  styleProfile?: string; // the teacher's distilled grading style (Phase 9), injected into the prompt
 }
 
 // Normalize confidence to 0..1: handle 0-10 (÷10) and 0-100 (÷100) readings, then clamp.
@@ -235,7 +243,7 @@ function finalize(modelInput: unknown, input: GradeInput, modelId: string): Grad
 async function callModel(model: ModelSpec, input: GradeInput, deterministic: boolean) {
   return await geminiGenerateJSON({
     modelId: model.id,
-    systemText: buildCachedSystem(input.rubric, input.classContext), // stable prefix → cache hits
+    systemText: buildCachedSystem(input.rubric, input.classContext, input.styleProfile), // stable prefix → cache hits
     userContent: buildUserContent(input.essay), // volatile, delimited essay
     jsonSchema: GRADING_TOOL_INPUT_SCHEMA as unknown as Record<string, unknown>,
     deterministic,
@@ -362,7 +370,14 @@ export async function gradeSubmission(input: GradeInput): Promise<GradeOutcome> 
       // each as a discrete pipeline step so the workflow reads as an AI workforce (AGENT-01/03).
       trace.push({ agent: "annotation", status: "ok", modelId: model.id, latencyMs: 0, detail: { count: result.annotations.length, matched: result.annotations.filter((a) => a.matched).length } });
       trace.push({ agent: "feedback_summary", status: "ok", modelId: model.id, latencyMs: 0, detail: { length: result.summaryFeedback.length } });
-      trace.push({ agent: "style", status: "skipped", latencyMs: 0, detail: { reason: "teacher style profile wired in Phase 9" } });
+      trace.push({
+        agent: "style",
+        status: input.styleProfile ? "ok" : "skipped",
+        latencyMs: 0,
+        detail: input.styleProfile
+          ? { applied: true, chars: input.styleProfile.length }
+          : { reason: "no teacher style profile yet (cold start — bootstraps from your edits)" },
+      });
 
       // Low overall confidence ⇒ surface for review rather than presenting as settled (GRADE-04).
       const disposition = result.overall.confidence < 0.5 ? "needs_review" : "graded";

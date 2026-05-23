@@ -56,6 +56,18 @@ Deno.serve((req) => {
       }
     }
 
+    // Teacher style profile (Phase 9 / LEARN-03): injected into the grader so feedback matches the
+    // teacher's voice + standards. Absent for new teachers (cold start) — grading proceeds rubric-only.
+    let styleProfile: string | undefined;
+    {
+      const { data: prof } = await db
+        .from("teacher_style_profiles")
+        .select("style_summary")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (prof?.style_summary) styleProfile = prof.style_summary as string;
+    }
+
     // Load the structured rubric. If none exists, synthesize a strict one from the assignment +
     // class level and persist it (GRADE-02) — never grade against model-invented generic criteria.
     const { data: rubricRow } = await db
@@ -133,6 +145,7 @@ Deno.serve((req) => {
         rubric,
         assignmentPrompt,
         classContext,
+        styleProfile,
       });
     } catch (err) {
       await db.from("submissions").update({ status: "grade_error" }).eq("id", submissionId);

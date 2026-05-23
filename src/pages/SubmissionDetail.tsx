@@ -139,13 +139,38 @@ const SubmissionDetail = () => {
     toast({ title: status === 'accepted' ? 'Accepted all notes' : 'Dismissed all notes' });
   };
 
+  // LEARN-04/05: turn the teacher's reviewed feedback into a reinforcement example + refresh the
+  // style profile so future grading adapts toward how THIS teacher grades. Consent-gated (SEC-05),
+  // best-effort (never blocks finalize).
+  const learnFromFinalized = async () => {
+    try {
+      if (!user || !grade) return;
+      const { data: consent } = await supabase
+        .from('privacy_settings').select('allow_training_on_content').eq('user_id', user.id).maybeSingle();
+      if (!consent?.allow_training_on_content) return;
+      const reviewed = annotations
+        .filter((a) => a.status === 'accepted' || a.status === 'edited')
+        .map((a) => `- ${a.comment}`);
+      const feedback = [grade.summary_feedback, ...reviewed].filter(Boolean).join('\n');
+      const text = submission?.extracted_text || submission?.essay || '';
+      if (!text || !feedback) return;
+      await supabase.from('training_examples').insert({
+        user_id: user.id, essay: text, feedback, grade: String(grade.overall_score ?? ''), source: 'reinforcement',
+      });
+      await supabase.functions.invoke('build-style-profile', { body: {} });
+    } catch {
+      /* learning is best-effort; never block the teacher */
+    }
+  };
+
   // Teacher approves the grade — the human-in-the-loop finalize step (M48).
   const finalize = async () => {
     if (!id) return;
     await supabase.from('submissions').update({ status: 'finalized' }).eq('id', id);
     setSubmission((prev) => (prev ? { ...prev, status: 'finalized' } : prev));
     analytics.capture('grade_finalized', { submission_id: id });
-    toast({ title: 'Grade finalized', description: 'Marked as approved by you.' });
+    toast({ title: 'Grade finalized', description: 'Approved by you — aiTA will learn from your edits.' });
+    void learnFromFinalized();
   };
 
   const essay = submission?.extracted_text || submission?.essay || '';
