@@ -2,8 +2,25 @@
 
 > Note: this project's GSD was driven manually (no `gsd-sdk` CLI installed — `gsd-pi` v2.80.0 is the installed tool but uses a different interface). Planning artifacts live in `.planning/` (PROJECT.md, ROADMAP.md, REQUIREMENTS.md, STATE.md), NOT `.gsd/`. Work is on branch **`aita-production-build`** (PR **#2** → main). Cloud Supabase ref: `yhdobsmmhdvqswjpousc`.
 
-## Last action
-Added the bulk **"Grade all ungraded"** button to `src/pages/AssignmentDetail.tsx` (calls the deployed `grade-enqueue` fn). Build green, committed (`f34fa16`). Working tree clean.
+## Last action (2026-05-23, verify session)
+Ran a **full E2E live verify** in-browser (chrome-devtools MCP) against cloud. Confirmed working live: off-topic gate (oil-change → **0/100 + off_topic + needs_review**), inline annotations, **HITL Accept persists across reload** (DB `status:accepted` + green UI state — the a11y tree doesn't expose the selected-button style, verify visually), agent-pipeline trace, strong essay → 100/100, Metrics dashboard. Found + **fixed two grading bugs** (committed, NOT yet deployed):
+- `56ee14b` — rubric synthesis truncated: ran on flash w/ 2048 tokens + default thinking → thinking ate the budget → empty JSON → silent free-text fallback. Added `thinkingBudget` to `geminiGenerateJSON`; synth now `thinkingBudget:0` + 4096 tokens.
+- `9023e54` — **duplicate annotations on re-grade**: `grade-submission` inserted a new annotation set without clearing the old one (saw 9 near-dup praise notes on the Stanley essay). Now deletes prior annotations (+ their edits, edits-first for v1-schema safety) before inserting. Best-effort/non-fatal.
+
+Both fixes are in `grade-submission`'s path → **redeploy `grade-submission` to activate them.** Working tree clean (branch 55 ahead of main).
+
+### Open observations from the verify (not yet fixed)
+- **Stanley essay shows "Grading failed" with a full 100/100 grade visible** — a *failed* re-grade set `status=grade_error` (index.ts:194) but the earlier grade row still displays (read is `created_at.desc limit 1`). Resolves once re-graded successfully on the deployed fixes; deeper fix = don't show a stale grade under `grade_error`.
+- **Generic Clarity/Accuracy/Depth criteria** instead of assignment-specific — the synth free-text fallback (the `56ee14b` target). Re-grade after deploy to confirm assignment-specific criteria now appear.
+- **Metrics "Feedback turnaround 2685.0 hrs"** — stale test data (2025 uploads, 2026 grades). Cosmetic; fresh demo data reads as minutes.
+- **`ensureUserProfile` 403** still firing in browser console (OAuth bootstrap migration `supabase/migrations/20260522000000_oauth_profile_bootstrap.sql` unapplied) — apply before relying on Google sign-in.
+- **`gemini-2.5-pro` still quota=0** (trace: pro 264ms 429-fail → flash fallback). Enable Google billing for pro.
+
+### Deploy is blocked for the agent
+`supabase functions deploy grade-submission --no-verify-jwt` was **denied by the auto-mode classifier** (the `--no-verify-jwt` flag weakens auth; "deploy" didn't cover it). The fn is already live with that flag from a prior session. To ship the two fixes: user runs `supabase functions deploy grade-submission --no-verify-jwt`, or adds a `Bash(supabase functions deploy:*)` permission rule.
+
+## Earlier action
+Added the bulk **"Grade all ungraded"** button to `src/pages/AssignmentDetail.tsx` (calls the deployed `grade-enqueue` fn). Build green, committed (`f34fa16`).
 
 ## State (verified live this session)
 - **Core grading fix WORKS in prod**: off-topic motor-oil submission scores **0/100 + `off_topic`** (was 100/100). HITL annotations render + Accept/Edit/Dismiss work. Agent-pipeline ("AI workflow") card shows the named-agent trace.
