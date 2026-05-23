@@ -51,6 +51,10 @@ export interface GeminiJSONParams {
   jsonSchema: AnyObj; // our JSON schema; converted to Gemini dialect internally
   deterministic?: boolean;
   maxOutputTokens?: number;
+  // Optional thinking budget (gemini-2.5 thinking models). 0 disables thinking so the
+  // full maxOutputTokens is available for the JSON answer — use for structured, low-reasoning
+  // tasks (e.g. rubric synthesis) where default dynamic thinking can truncate the output.
+  thinkingBudget?: number;
 }
 
 async function call(modelId: string, body: AnyObj): Promise<AnyObj> {
@@ -94,6 +98,7 @@ export async function geminiGenerateJSON(
       responseMimeType: "application/json",
       responseSchema: toGeminiSchema(p.jsonSchema),
       maxOutputTokens: p.maxOutputTokens ?? 8192,
+      ...(p.thinkingBudget !== undefined ? { thinkingConfig: { thinkingBudget: p.thinkingBudget } } : {}),
     },
   });
   const { text, finishReason } = extractText(data);
