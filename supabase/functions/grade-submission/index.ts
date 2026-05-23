@@ -6,7 +6,7 @@ import { handlePreflight } from "../_shared/cors.ts";
 import { withErrors, ok, AppError } from "../_shared/http.ts";
 import { getUserFromJWT } from "../_shared/auth.ts";
 import { userClient, adminClient } from "../_shared/db.ts";
-import { gradeSubmission } from "../_shared/grading/engine.ts";
+import { gradeSubmission, type AgentStep } from "../_shared/grading/engine.ts";
 import { synthesizeRubric, toRubricInput } from "../_shared/grading/rubric-synth.ts";
 import type { RubricInput } from "../_shared/grading-schema.ts";
 
@@ -21,6 +21,7 @@ Deno.serve((req) => {
     if (!submissionId) throw new AppError(400, "input", "submissionId is required");
 
     const db = userClient(req); // RLS: only the owner can read this submission
+    const jobId = crypto.randomUUID(); // groups this grading run's agent_events steps (AGENT-02)
 
     const { data: submission, error: subErr } = await db
       .from("submissions")
@@ -63,6 +64,8 @@ Deno.serve((req) => {
       .eq("assignment_id", submission.assignment_id)
       .maybeSingle();
 
+    const rubricStarted = Date.now();
+    let rubricSynthesized = false;
     let rubric: RubricInput | null = null;
     if (rubricRow) {
       const { data: crit } = await db
@@ -85,6 +88,7 @@ Deno.serve((req) => {
 
     if (!rubric) {
       await db.from("submissions").update({ status: "grading" }).eq("id", submissionId);
+      rubricSynthesized = true;
       const synth = await synthesizeRubric(assignmentPrompt, classContext);
       rubric = toRubricInput(synth);
       // Persist so the teacher can review/edit and grading is reproducible.
@@ -112,6 +116,14 @@ Deno.serve((req) => {
 
     if (!rubric) throw new AppError(500, "rubric_missing", "No rubric available to grade against");
 
+    // Rubric agent step (AGENT-01): synthesized or loaded the structured rubric this run grades against.
+    const rubricStep: AgentStep = {
+      agent: "rubric",
+      status: "ok",
+      latencyMs: Date.now() - rubricStarted,
+      detail: { source: rubricSynthesized ? "synthesized" : "existing", criteria: rubric.criteria.length, totalPoints: rubric.totalPoints },
+    };
+
     await db.from("submissions").update({ status: "grading" }).eq("id", submissionId);
 
     let outcome;
@@ -127,6 +139,7 @@ Deno.serve((req) => {
       throw err; // explicit error to the client — never a fabricated grade
     }
     const { result, usage, disposition } = outcome;
+    const trace: AgentStep[] = [rubricStep, ...outcome.trace];
 
     // Persist grade under the owner's RLS context. The grade is the critical write — fail loud (OPS-02).
     const { data: grade, error: gradeErr } = await db
@@ -192,6 +205,24 @@ Deno.serve((req) => {
       resource: `submission:${submissionId}`,
     });
 
-    return ok(req, { gradeId: grade?.id ?? null, result });
+    // Persist the agent-workflow trace (AGENT-02) for the pipeline view + observability. Until
+    // migration 0013 is applied the agent_events table is absent — log, don't fail the grade.
+    const { error: traceErr } = await admin.from("agent_events").insert(
+      trace.map((s) => ({
+        user_id: userId,
+        submission_id: submissionId,
+        job_id: jobId,
+        agent: s.agent,
+        status: s.status,
+        model_id: s.modelId ?? null,
+        latency_ms: s.latencyMs,
+        input_tokens: s.inputTokens ?? null,
+        output_tokens: s.outputTokens ?? null,
+        detail: s.detail,
+      })),
+    );
+    if (traceErr) console.error(`[grade-submission] agent_events insert failed: ${traceErr.message}`);
+
+    return ok(req, { gradeId: grade?.id ?? null, result, jobId, trace });
   });
 });

@@ -10,6 +10,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { analytics } from '@/lib/analytics';
+import AgentPipeline from '@/components/AgentPipeline';
 import { statusBadgeClass, statusLabel, isFinalized } from '@/lib/submissionStatus';
 
 type AnnoType = 'praise' | 'suggestion' | 'error' | 'question';
@@ -293,6 +294,8 @@ const SubmissionDetail = () => {
                 </CardContent>
               </Card>
             )}
+
+            {grade && id && <AgentPipeline submissionId={id} />}
 
             {/* Margin notes — human-in-the-loop */}
             {(placed.length > 0 || unplaced.length > 0) && (
