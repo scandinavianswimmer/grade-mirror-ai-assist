@@ -5,7 +5,7 @@
 See: `.planning/PROJECT.md` (updated 2026-05-22)
 
 **Core value:** The grade must be valid and trustworthy — rubric-aligned, teacher-calibrated, never awarded to off-assignment work.
-**Current focus:** Phase 1 — Data foundation & isolation
+**Current focus:** All 14 phases code-complete on `aita-production-build` (PR #2). Core grading verified live; migrations 0003-0014 applied; key fns deployed. **Read `.planning/continue.md` for the exact pick-up point.** Remaining = user config (Stripe price/webhook, Upstash+Cloud Run, domain, secret rotation).
 
 ## Milestone
 
@@ -37,7 +37,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-22)
 
 ## Next step
 
-`/gsd:plan-phase 1` — or aiTA plans Phase 1 directly (Data foundation & isolation).
+Read `.planning/continue.md`. No agent code work blocked-open; remaining is user config (Stripe/Upstash/domain/secret rotation). One agent-doable thread: investigate why live rubric synthesis fell back to free-text.
 
 ---
 *Last updated: 2026-05-22 after initialization*
