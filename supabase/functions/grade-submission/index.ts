@@ -16,19 +16,36 @@ Deno.serve((req) => {
 
   return withErrors(req, async () => {
     if (req.method !== "POST") throw new AppError(405, "method", "POST only");
-    const { userId } = await getUserFromJWT(req);
-    const { submissionId } = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
+    const submissionId = body.submissionId;
     if (!submissionId) throw new AppError(400, "input", "submissionId is required");
 
-    const db = userClient(req); // RLS: only the owner can read this submission
+    // Auth: normally the teacher's JWT (RLS-scoped). The Cloud Run grading worker (Phase 4) instead
+    // presents x-internal-secret + userId for service-to-service grading on the teacher's behalf;
+    // ownership is then verified explicitly against the loaded submission below.
+    const internalSecret = Deno.env.get("INTERNAL_GRADE_SECRET");
+    const isInternal = Boolean(internalSecret) && req.headers.get("x-internal-secret") === internalSecret;
+    let userId: string;
+    let db;
+    if (isInternal) {
+      if (typeof body.userId !== "string") throw new AppError(400, "input", "userId required for internal call");
+      userId = body.userId;
+      db = adminClient(); // bypasses RLS — ownership verified explicitly below; all writes set user_id
+    } else {
+      ({ userId } = await getUserFromJWT(req));
+      db = userClient(req); // RLS: only the owner can read this submission
+    }
     const jobId = crypto.randomUUID(); // groups this grading run's agent_events steps (AGENT-02)
 
     const { data: submission, error: subErr } = await db
       .from("submissions")
-      .select("id, assignment_id, extracted_text, extraction_confidence, status")
+      .select("id, assignment_id, extracted_text, extraction_confidence, status, user_id")
       .eq("id", submissionId)
       .single();
     if (subErr || !submission) throw new AppError(404, "submission", "Submission not found");
+    if (isInternal && submission.user_id !== userId) {
+      throw new AppError(403, "forbidden", "Submission does not belong to the provided userId");
+    }
 
     if (!submission.extracted_text || (submission.extraction_confidence ?? 0) < 0.2) {
       await db.from("submissions").update({ status: "needs_review" }).eq("id", submissionId);
