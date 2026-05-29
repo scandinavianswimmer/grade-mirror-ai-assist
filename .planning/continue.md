@@ -1,52 +1,75 @@
-# Continue — aiTA production build
+# Continue — aiTA (Sarah Martinez demo, mid-build)
 
-> Note: this project's GSD was driven manually (no `gsd-sdk` CLI installed — `gsd-pi` v2.80.0 is the installed tool but uses a different interface). Planning artifacts live in `.planning/` (PROJECT.md, ROADMAP.md, REQUIREMENTS.md, STATE.md), NOT `.gsd/`. Work is on branch **`aita-production-build`** (PR **#2** → main). Cloud Supabase ref: `yhdobsmmhdvqswjpousc`.
+> Manual-driven GSD (no `gsd-sdk`; planning lives in `.planning/`, not `.gsd/`). Branch
+> **`aita-production-build`** (PR **#2** → main). Cloud Supabase: **`yhdobsmmhdvqswjpousc`**.
+> Working tree clean. Vite dev server running on **:8080** (intentional; user uses it for verify).
 
-## Last action (2026-05-23, verify session)
-Ran a **full E2E live verify** in-browser (chrome-devtools MCP) against cloud. Confirmed working live: off-topic gate (oil-change → **0/100 + off_topic + needs_review**), inline annotations, **HITL Accept persists across reload** (DB `status:accepted` + green UI state — the a11y tree doesn't expose the selected-button style, verify visually), agent-pipeline trace, strong essay → 100/100, Metrics dashboard. Found + **fixed two grading bugs** (committed, NOT yet deployed):
-- `56ee14b` — rubric synthesis truncated: ran on flash w/ 2048 tokens + default thinking → thinking ate the budget → empty JSON → silent free-text fallback. Added `thinkingBudget` to `geminiGenerateJSON`; synth now `thinkingBudget:0` + 4096 tokens.
-- `9023e54` — **duplicate annotations on re-grade**: `grade-submission` inserted a new annotation set without clearing the old one (saw 9 near-dup praise notes on the Stanley essay). Now deletes prior annotations (+ their edits, edits-first for v1-schema safety) before inserting. Best-effort/non-fatal.
+## Last action
+Built the full **Sarah Martinez ICP demo account** live in cloud (browser REST as the
+authenticated teacher) per the spec the user pasted: rebranded the existing test teacher
+(id `b1a916bb-21fa-4cfd-9959-ce737a5cf465`, login `test.teacher@school.edu`) → name **Sarah
+Martinez**, school **Westlake Ridge High School**, distinctive grading-voice profile + consent +
+10 training samples + **6 classes** + **10 assignments** + **14 student essays** across ability
+archetypes + edge cases (off-topic, ultra-short, AI-generated). One hero essay (**Sofia Reyes**,
+Gatsby Symbolism) graded LIVE — **feedback came back in Sarah's voice** (verbatim phrases from her
+profile: *"Consider integrating quotations more naturally into your sentences"*, *"your next step is
+to expand…"*) — style-injection loop **proven live on deployed code**. Sofia = `graded`; the other 13
+seeded essays = `uploaded` (ready to grade), zero `grade_error` badges.
 
-Both fixes are in `grade-submission`'s path → **redeploy `grade-submission` to activate them.** Working tree clean (branch 55 ahead of main).
-
-### Open observations from the verify (not yet fixed)
-- **Stanley essay shows "Grading failed" with a full 100/100 grade visible** — a *failed* re-grade set `status=grade_error` (index.ts:194) but the earlier grade row still displays (read is `created_at.desc limit 1`). Resolves once re-graded successfully on the deployed fixes; deeper fix = don't show a stale grade under `grade_error`.
-- **Generic Clarity/Accuracy/Depth criteria** instead of assignment-specific — the synth free-text fallback (the `56ee14b` target). Re-grade after deploy to confirm assignment-specific criteria now appear.
-- **Metrics "Feedback turnaround 2685.0 hrs"** — stale test data (2025 uploads, 2026 grades). Cosmetic; fresh demo data reads as minutes.
-- **`ensureUserProfile` 403** still firing in browser console (OAuth bootstrap migration `supabase/migrations/20260522000000_oauth_profile_bootstrap.sql` unapplied) — apply before relying on Google sign-in.
-- **`gemini-2.5-pro` still quota=0** (trace: pro 264ms 429-fail → flash fallback). Enable Google billing for pro.
-
-### Deploy is blocked for the agent
-`supabase functions deploy grade-submission --no-verify-jwt` was **denied by the auto-mode classifier** (the `--no-verify-jwt` flag weakens auth; "deploy" didn't cover it). The fn is already live with that flag from a prior session. To ship the two fixes: user runs `supabase functions deploy grade-submission --no-verify-jwt`, or adds a `Bash(supabase functions deploy:*)` permission rule.
-
-## Earlier action
-Added the bulk **"Grade all ungraded"** button to `src/pages/AssignmentDetail.tsx` (calls the deployed `grade-enqueue` fn). Build green, committed (`f34fa16`).
-
-## State (verified live this session)
-- **Core grading fix WORKS in prod**: off-topic motor-oil submission scores **0/100 + `off_topic`** (was 100/100). HITL annotations render + Accept/Edit/Dismiss work. Agent-pipeline ("AI workflow") card shows the named-agent trace.
-- **Migrations `0003–0014` applied to cloud** (clean). v2 schema live.
-- **Deployed edge fns**: `grade-submission`, `grade-enqueue`, `stripe-checkout`, `stripe-portal`, `stripe-webhook` (`--no-verify-jwt`).
-- **Secret set**: `STRIPE_SECRET_KEY` (a `sk_live_` key — flagged for rotation).
-- All 14 roadmap phases are code-complete (see `.planning/ROADMAP.md`).
+The complete environment is also captured idempotently in `scripts/seed-demo-sarah-martinez.sql`
+(parameterized by `:teacher`) + runbook in `docs/DEMO-SARAH-MARTINEZ.md`.
 
 ## Next action
-No agent code work is blocked-open. The remaining steps are **user config** (cannot be done by the agent — accounts/keys/domain):
-1. Stripe: `supabase secrets set STRIPE_PRICE_PRO=price_… STRIPE_WEBHOOK_SECRET=whsec_… APP_URL=https://<domain>` + register the webhook endpoint `…/functions/v1/stripe-webhook` in Stripe.
-2. Async queue: provision **Upstash Redis** + deploy the Cloud Run **`worker/`** + set `UPSTASH_REDIS_REST_URL`/`_TOKEN` + `INTERNAL_GRADE_SECRET` (see `worker/README.md`). Until then `grade-enqueue` returns 503 (handled gracefully in UI).
-3. Domain + host the frontend; rotate exposed secrets (DB password + `sk_live_` key, both pasted in chat).
+**HARD BLOCKED on user-config — not on agent code.** Two things, in order:
+1. **Enable `gemini-2.5-pro` billing** on the Google project for this key. The free flash quota
+   exhausted mid-session and with pro=0 there is no real fallback → grading returns
+   `"All grading models failed"` (502 / `grading_failed`).
+2. **Deploy the two committed grading fixes:**
+   `supabase functions deploy grade-submission --no-verify-jwt`
+   (the agent is permission-gated on `--no-verify-jwt`; run it yourself or add the rule). Fixes
+   synth-fallback miscalibration (Sofia scored 100/100 despite feedback noting it's 1 paragraph not 5
+   — single free-text criterion instead of the structured rubric) + no-dup-annotations on re-grade.
 
-If the user wants more *agent* work, the one concrete investigation is below.
+After those two, bulk-grade the remaining 13 hero essays (Gatsby + MLK + Necklace + social-media),
+confirm **Brandon Davis** (jump-shot essay) is **withheld** (`needs_review`, score floored — the
+trust moment), apply HITL accept/edit/dismiss on a few, **Finalize** one or two → Metrics populates →
+demo is recordable. Walk `docs/DEMO-SARAH-MARTINEZ.md` for the script mapped to the 5 critical moments.
 
-## Open threads (agent-doable, not blocking)
-- **Rubric synthesis fell back to free-text** on the live grade (logged). The synthesis Gemini call (`_shared/grading/rubric-synth.ts`, model `gemini-2.5-flash`) failed → graceful free-text fallback. Investigate: re-grade a no-rubric submission, inspect the `rubric` agent step + function logs (Supabase dashboard) for the synthesis error. Likely cause: cloud Gemini key quota, or the nested `SYNTH_SCHEMA` (fullMarks/noMarks) tripping `toGeminiSchema`.
-- **`gemini-2.5-pro` quota = 0** on the cloud key → grading runs on `flash` (visible in the agent-pipeline trace: pro tried, 264ms 429-fail, then flash). Enable billing on the Google project for pro.
-- Auth `users` upsert returns 403 in browser (the OAuth-bootstrap migration `supabase/migrations/20260522000000_oauth_profile_bootstrap.sql` isn't applied — only `migrations_v2/` were). Apply it if Google OAuth / profile bootstrap is needed.
+## Why
+The marquee X-Prize claim — *"output looks like the teacher graded it"* — was the #1 goal-alignment
+gap (`.planning/GOAL-ALIGNMENT-REVIEW.md`). It's now proven *in principle* (Sofia in Sarah's voice
+on live code), but the demo needs (a) calibrated scoring (deploy fixes) and (b) reliable grading of
+the full set (pro billing) before recording. Everything code-doable is done.
+
+## Open threads (not blocking the demo recording)
+- **Old test classes coexist** under this account (Luke / two "English" / "Unassigned" — incl. the
+  verified oil-change off-topic + Stanley HITL artifacts). Sarah's 6 classes show alongside them.
+  Ask the user before deleting — the oil-change/Stanley are durable trust-demo assets.
+- `build-style-profile` edge fn targets `gemini-2.5-pro` (quota=0) and may be undeployed → add a flash
+  fallback / `GEMINI_STYLE_MODEL` if you want to regenerate Sarah's voice from samples live later.
+- **OAuth profile-bootstrap migration** (`supabase/migrations/20260522000000_oauth_profile_bootstrap.sql`)
+  still unapplied — apply before relying on Google sign-in. `ensureUserProfile` 403s in console.
+- Stale `Grading failed` over a valid grade (engine.ts behavior) — see goal-review punch list HIGH #2.
 
 ## Do not
-- Do NOT apply `supabase/migrations_v2/0001_baseline.sql` to cloud — it's a clean-room reference; the cloud is the evolved v1+v2 schema. Only `0002` (pre-applied) + `0003–0014` (applied this session) belong on cloud.
-- Do NOT remove the v1-graceful degradation in `grade-submission` (conditional `user_id` select, v1-safe assignment load, resilient grade insert) — the cloud schema is v1-origin; these prevent regressions.
-- Do NOT commit any secret (Stripe key, DB password, Gemini key) — they go to `supabase secrets set` only.
-- The agent CANNOT self-grant deploy permission or run cloud deploys unless the user's `Bash(supabase functions deploy:*)` settings rule is present (it is, this session).
+- Do NOT retry grading on flash hoping it works — quota is exhausted; **wait for pro billing**.
+- Do NOT delete the old test classes / oil-change / Stanley artifacts without explicit user OK — they
+  are verified trust-demo assets per memory + the May-22/23 verify session.
+- Do NOT deploy `grade-submission` without `--no-verify-jwt` — the fn is live with that flag and the
+  default would change its auth posture; permission-gated by the auto-mode classifier (intentional).
+- Do NOT apply `supabase/migrations_v2/0001_baseline.sql` to cloud — it's a clean-room reference.
+- Do NOT re-grade an essay before the dedup fix is deployed — it'll duplicate annotations.
+- Do NOT commit secrets (DB password, Stripe key, Gemini key) — they go to `supabase secrets set` only.
+
+## Key artifacts (cold-read order)
+1. This file (`.planning/continue.md`)
+2. `.planning/STATE.md`
+3. `.planning/GOAL-ALIGNMENT-REVIEW.md` — full demo/X-Prize/beta punch list + verdict
+4. `docs/DEMO-SARAH-MARTINEZ.md` — exact demo script + recording steps
+5. `scripts/seed-demo-sarah-martinez.sql` — reproducible seed (idempotent + UNDO)
+6. `~/.claude/projects/-Users-lukemladenoff/memory/project_grade_mirror.md` — cross-session memory
 
 ## Running process
-- Vite dev server on **:8080** (background). Leave it; user uses it for browser verification. Restart: `npm run dev` (system Node 23; `nvm` Node-20 alias not installed).
+- Vite dev server on `:8080` (background, intentional). Restart with `npm run dev`.
+- Supabase CLI linked to `yhdobsmmhdvqswjpousc`; teacher logged in as `test.teacher@school.edu`
+  (now displayed as Sarah Martinez).
