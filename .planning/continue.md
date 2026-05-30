@@ -21,13 +21,18 @@ The complete environment is also captured idempotently in `scripts/seed-demo-sar
 
 ## Next action
 **ONE founder action unblocks the demo — deploy.** (Pro billing is now optional, see below.)
-1. **Deploy the committed grading fixes + key rotation:**
-   `supabase functions deploy grade-submission --no-verify-jwt`
-   (the agent is permission-gated on `--no-verify-jwt`; run it yourself or add the rule). Ships:
-   synth-fallback miscalibration fix (Sofia scored 100/100 despite feedback noting it's 1 paragraph
-   not 5 — single free-text criterion instead of the structured rubric), no-dup-annotations on
-   re-grade, **and Gemini API key rotation** (commit `7e26109`).
-2. **(Optional) Enable `gemini-2.5-pro` billing** on the Google project. No longer a hard blocker:
+1. **Deploy the changed functions.** config.toml now encodes per-function `verify_jwt`, so the
+   `--no-verify-jwt` flag is no longer needed — plain deploy applies the right setting:
+   `supabase functions deploy`  (deploys all; simplest + correct)
+   …or at minimum: grade-submission, grade-enqueue, generate-podcast, privacy-tasks,
+   **delete-data (NEW — first deploy)**, build-style-profile.
+   Ships the demo grading fixes (synth miscalibration, no-dup annotations, key rotation) **plus the
+   full security-hardening pass** (rate limiting, generate-podcast auth, de-identification,
+   right-to-erasure). See `.planning/security/REMEDIATION.md`.
+2. **Apply migrations** `migrations_v2/0015_grading_quota_rpc.sql` + `0016_rls_force_and_comments.sql`
+   with the DB password (same path as 0002–0014). The quota gate fails open until 0015 lands, so the
+   demo bulk-grade is NOT blocked if you deploy before applying.
+3. **(Optional) Enable `gemini-2.5-pro` billing** on the Google project. No longer a hard blocker:
    two fresh free-tier flash keys are now in the rotation pool (`GEMINI_API_KEYS` secret, set
    2026-05-30), so grading works on flash without pro. Pro billing is now a *quality* upgrade
    (stronger rubric reasoning), not a prerequisite to record the demo.

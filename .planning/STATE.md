@@ -33,10 +33,25 @@ See: `.planning/PROJECT.md` (updated 2026-05-22)
 - **Three changes committed but NOT deployed:** `56ee14b` (synth truncation → assignment-specific criteria), `9023e54` (no dup notes on re-grade), `7e26109` (Gemini key rotation). All ship with one `grade-submission --no-verify-jwt` deploy. Deploy gated on `--no-verify-jwt` perm.
 - Old test-data coexists under the Sarah account (Luke class / two "English" classes / Unassigned, incl. the verified oil-change + Stanley artifacts) — not deleted; user decision.
 
+## Security hardening (2026-05-30)
+
+Full-lockdown pass done. Live-DB probes confirmed **v2 migrations are applied in prod** → the
+audit's CRITICAL/HIGH RLS findings (public buckets, log-table leaks) were already fixed live.
+Genuine gaps were code-level and are now fixed on `aita-production-build` (commits a66ff72→0cb3376):
+rate-limit Layers A/B/C/D (kills the API-key-drain DoS), `generate-podcast` auth hole, send-time
+de-identification before Gemini, right-to-erasure (`delete-data`) + retention storage cleanup,
+config drift, constant-time cron compare. Full writeup: `.planning/security/REMEDIATION.md`.
+
 ## Open dependencies on the user
 
-- **Deploy grade-submission with `--no-verify-jwt`** — ships synth + dedup + key-rotation fixes (agent perm-gated on the flag). **This is the one remaining hard blocker to a recordable demo.**
-- _(Optional)_ **Enable `gemini-2.5-pro` billing** (Google Cloud) — quality upgrade now that flash key rotation unblocks grading. The X-Prize gifted-credits key will replace the rotation pool once Luke applies.
+- **Deploy the changed functions** — config.toml now encodes per-function verify_jwt (no
+  `--no-verify-jwt` flag needed): `supabase functions deploy` (all), or at least grade-submission,
+  grade-enqueue, generate-podcast, privacy-tasks, **delete-data (NEW)**, build-style-profile. Ships
+  the demo grading fixes (synth/dedup/key-rotation) AND all security fixes. **One remaining hard blocker to a recordable demo.**
+- **Apply migrations** `0015_grading_quota_rpc.sql` + `0016_rls_force_and_comments.sql` (DB password;
+  same path as 0002–0014). Quota gate fails open until 0015 lands, so grading/demo isn't blocked.
+- _(Optional)_ `GEMINI_GLOBAL_QPM` secret to tune the global ceiling (default 60/min). Confirm Upstash secrets set or Layer B no-ops.
+- _(Optional)_ **Enable `gemini-2.5-pro` billing** — quality upgrade; flash key rotation already unblocks grading.
 - Secret rotation (DB password + exposed `sk_live_` key) before any public hosting.
 - Domain + frontend host (free subdomain agreed as launch path).
 - Optional later: Upstash + Cloud Run worker (bulk grading), Stripe live config, OAuth bootstrap migration apply.
