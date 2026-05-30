@@ -22,6 +22,9 @@ verify_jwt = true
 [functions.generate-podcast]
 verify_jwt = true   # auth also enforced in code (getUserFromJWT); userId derived from the token
 
+[functions.delete-data]
+verify_jwt = true   # right-to-erasure; RLS-scoped deletes of the caller's own data only
+
 [functions.stripe-webhook]
 verify_jwt = false   # Stripe cannot present a Supabase JWT; HMAC-SHA256 signature is the auth boundary
 
