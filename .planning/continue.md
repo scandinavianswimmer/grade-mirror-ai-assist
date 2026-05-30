@@ -20,15 +20,24 @@ The complete environment is also captured idempotently in `scripts/seed-demo-sar
 (parameterized by `:teacher`) + runbook in `docs/DEMO-SARAH-MARTINEZ.md`.
 
 ## Next action
-**HARD BLOCKED on user-config — not on agent code.** Two things, in order:
-1. **Enable `gemini-2.5-pro` billing** on the Google project for this key. The free flash quota
-   exhausted mid-session and with pro=0 there is no real fallback → grading returns
-   `"All grading models failed"` (502 / `grading_failed`).
-2. **Deploy the two committed grading fixes:**
+**ONE founder action unblocks the demo — deploy.** (Pro billing is now optional, see below.)
+1. **Deploy the committed grading fixes + key rotation:**
    `supabase functions deploy grade-submission --no-verify-jwt`
-   (the agent is permission-gated on `--no-verify-jwt`; run it yourself or add the rule). Fixes
-   synth-fallback miscalibration (Sofia scored 100/100 despite feedback noting it's 1 paragraph not 5
-   — single free-text criterion instead of the structured rubric) + no-dup-annotations on re-grade.
+   (the agent is permission-gated on `--no-verify-jwt`; run it yourself or add the rule). Ships:
+   synth-fallback miscalibration fix (Sofia scored 100/100 despite feedback noting it's 1 paragraph
+   not 5 — single free-text criterion instead of the structured rubric), no-dup-annotations on
+   re-grade, **and Gemini API key rotation** (commit `7e26109`).
+2. **(Optional) Enable `gemini-2.5-pro` billing** on the Google project. No longer a hard blocker:
+   two fresh free-tier flash keys are now in the rotation pool (`GEMINI_API_KEYS` secret, set
+   2026-05-30), so grading works on flash without pro. Pro billing is now a *quality* upgrade
+   (stronger rubric reasoning), not a prerequisite to record the demo.
+
+**Key rotation (2026-05-30):** `_shared/ai/gemini.ts call()` rotates through a key pool on
+429/RESOURCE_EXHAUSTED before the model-level pro→flash fallback. Pool = `GEMINI_API_KEY` (primary,
+currently quota-exhausted) + comma-separated `GEMINI_API_KEYS` (two fresh keys, set this session).
+A warm-instance cursor sticks to the last working key. The exhausted primary rejoins when its daily
+quota resets. **Takes effect only after the deploy above.** The marquee billed key with X-Prize
+gifted credits will replace these once Luke applies.
 
 After those two, bulk-grade the remaining 13 hero essays (Gatsby + MLK + Necklace + social-media),
 confirm **Brandon Davis** (jump-shot essay) is **withheld** (`needs_review`, score floored — the
@@ -52,7 +61,8 @@ the full set (pro billing) before recording. Everything code-doable is done.
 - Stale `Grading failed` over a valid grade (engine.ts behavior) — see goal-review punch list HIGH #2.
 
 ## Do not
-- Do NOT retry grading on flash hoping it works — quota is exhausted; **wait for pro billing**.
+- (OBSOLETE as of 2026-05-30) ~~Do NOT retry grading on flash — quota exhausted, wait for pro.~~
+  Two fresh flash keys are now in rotation; flash grading works once the function is redeployed.
 - Do NOT delete the old test classes / oil-change / Stanley artifacts without explicit user OK — they
   are verified trust-demo assets per memory + the May-22/23 verify session.
 - Do NOT deploy `grade-submission` without `--no-verify-jwt` — the fn is live with that flag and the

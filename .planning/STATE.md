@@ -29,14 +29,14 @@ See: `.planning/PROJECT.md` (updated 2026-05-22)
 - Cloud project: `yhdobsmmhdvqswjpousc`. Migrations 0003-0014 applied. `grade-submission` deployed with `--no-verify-jwt`.
 - **Grading mechanics verified live:** off-topic withheld (oil-change → 0/100 + `off_topic`), HITL accept/edit/dismiss persist, agent-pipeline trace renders, strong essay → 100/100, Metrics dashboard renders. Style profile injection works — Sofia Reyes graded in Sarah's voice this session.
 - **Sarah Martinez demo account live in cloud** (rebranded test teacher, login `test.teacher@school.edu`, id `b1a916bb-21fa-4cfd-9959-ce737a5cf465`): 6 classes, 10 assignments, 14 student essays, Sarah's voice profile + consent + 10 training samples. Sofia = `graded`; the other 13 = `uploaded`. Reproducible via `scripts/seed-demo-sarah-martinez.sql`; demo runbook at `docs/DEMO-SARAH-MARTINEZ.md`.
-- Grading is **on `gemini-2.5-flash`** (pro quota = 0 → 429 on every pro attempt). Flash free quota now exhausted → `"All grading models failed"` until pro billing is enabled.
-- **Two grading fixes committed but NOT deployed:** `56ee14b` (synth truncation → assignment-specific criteria), `9023e54` (no dup notes on re-grade). Deploy gated on `--no-verify-jwt` perm.
+- Grading is **on `gemini-2.5-flash`** (pro quota = 0). Flash free quota on the primary key exhausted — **resolved 2026-05-30 via key rotation:** `call()` now rotates through a pool (`GEMINI_API_KEY` + `GEMINI_API_KEYS`) on 429/RESOURCE_EXHAUSTED. Two fresh flash keys added to `GEMINI_API_KEYS`. Pro billing is now optional (quality upgrade), not a blocker.
+- **Three changes committed but NOT deployed:** `56ee14b` (synth truncation → assignment-specific criteria), `9023e54` (no dup notes on re-grade), `7e26109` (Gemini key rotation). All ship with one `grade-submission --no-verify-jwt` deploy. Deploy gated on `--no-verify-jwt` perm.
 - Old test-data coexists under the Sarah account (Luke class / two "English" classes / Unassigned, incl. the verified oil-change + Stanley artifacts) — not deleted; user decision.
 
 ## Open dependencies on the user
 
-- **Enable `gemini-2.5-pro` billing** (Google Cloud) — unblocks grading reliably; the fragility-to-flash story disappears.
-- **Deploy grade-submission with `--no-verify-jwt`** — ships the synth + dedup fixes (agent perm-gated on the flag).
+- **Deploy grade-submission with `--no-verify-jwt`** — ships synth + dedup + key-rotation fixes (agent perm-gated on the flag). **This is the one remaining hard blocker to a recordable demo.**
+- _(Optional)_ **Enable `gemini-2.5-pro` billing** (Google Cloud) — quality upgrade now that flash key rotation unblocks grading. The X-Prize gifted-credits key will replace the rotation pool once Luke applies.
 - Secret rotation (DB password + exposed `sk_live_` key) before any public hosting.
 - Domain + frontend host (free subdomain agreed as launch path).
 - Optional later: Upstash + Cloud Run worker (bulk grading), Stripe live config, OAuth bootstrap migration apply.
