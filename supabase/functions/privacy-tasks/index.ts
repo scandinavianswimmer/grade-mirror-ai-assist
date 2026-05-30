@@ -6,18 +6,7 @@ import { handlePreflight } from "../_shared/cors.ts";
 import { withErrors, ok, AppError } from "../_shared/http.ts";
 import { requireCronSecret } from "../_shared/auth.ts";
 import { adminClient } from "../_shared/db.ts";
-
-// Replace each known student name with an opaque token everywhere it appears in free text.
-function scrub(text: string | null, names: string[]): string | null {
-  if (!text) return text;
-  let out = text;
-  names.forEach((name, i) => {
-    if (!name || name.trim().length < 2) return;
-    const re = new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
-    out = out.replace(re, `Student_${i + 1}`);
-  });
-  return out;
-}
+import { scrubNames as scrub } from "../_shared/deid.ts";
 
 Deno.serve((req) => {
   const pre = handlePreflight(req);

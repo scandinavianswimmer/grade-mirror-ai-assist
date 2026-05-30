@@ -8,6 +8,7 @@ import { getUserFromJWT } from "../_shared/auth.ts";
 import { userClient, adminClient } from "../_shared/db.ts";
 import { gradeSubmission, type AgentStep } from "../_shared/grading/engine.ts";
 import { synthesizeRubric, toRubricInput } from "../_shared/grading/rubric-synth.ts";
+import { maskNamesPreservingOffsets } from "../_shared/deid.ts";
 import type { RubricInput } from "../_shared/grading-schema.ts";
 
 Deno.serve((req) => {
@@ -39,7 +40,7 @@ Deno.serve((req) => {
 
     // Select user_id only for the internal worker path (the v1 schema may lack it); the normal JWT
     // path relies on RLS for ownership, so it stays on the original v1-safe column set.
-    const submissionCols = "id, assignment_id, extracted_text, extraction_confidence, status" + (isInternal ? ", user_id" : "");
+    const submissionCols = "id, assignment_id, extracted_text, extraction_confidence, status, student_name" + (isInternal ? ", user_id" : "");
     const { data: submission, error: subErr } = await db
       .from("submissions")
       .select(submissionCols)
@@ -181,10 +182,30 @@ Deno.serve((req) => {
 
     await db.from("submissions").update({ status: "grading" }).eq("id", submissionId);
 
+    // FERPA de-identification (H1): strip the student's own name from the essay BEFORE it is sent to
+    // the third-party LLM, when the teacher has anonymization enabled (default ON). Length-preserving
+    // so annotation offsets still anchor onto the original text shown in the UI. The teacher still
+    // sees the real name locally; only the text leaving for Gemini is redacted.
+    let essayForGrading = submission.extracted_text as string;
+    {
+      const studentName = ((submission as { student_name?: string }).student_name ?? "").trim();
+      if (studentName.length >= 2) {
+        const { data: ps } = await db
+          .from("privacy_settings")
+          .select("anonymize_student_names")
+          .eq("user_id", userId)
+          .maybeSingle();
+        const anonymize = ps?.anonymize_student_names ?? true; // default-on if no row
+        if (anonymize) {
+          essayForGrading = maskNamesPreservingOffsets(submission.extracted_text, [studentName]) ?? submission.extracted_text;
+        }
+      }
+    }
+
     let outcome;
     try {
       outcome = await gradeSubmission({
-        essay: submission.extracted_text,
+        essay: essayForGrading,
         rubric,
         assignmentPrompt,
         classContext,
