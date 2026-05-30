@@ -4,6 +4,7 @@
 // Gemini 2.5+ does implicit prompt caching automatically, so keeping the stable system+rubric
 // prefix first (and the volatile essay last) earns cache hits with no explicit cache management.
 import { ENV } from "../env.ts";
+import { withinGlobalGeminiBudget } from "../ratelimit.ts";
 
 const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
@@ -75,6 +76,15 @@ async function call(modelId: string, body: AnyObj): Promise<AnyObj> {
   let lastQuotaErr = "";
   for (let attempt = 0; attempt < keys.length; attempt++) {
     const idx = (keyCursor + attempt) % keys.length;
+    // Layer B: global cross-tenant ceiling. Counted per upstream call so key rotation can't
+    // bypass it (rotation amplifies abuse exactly when we most need to stop). Over the ceiling we
+    // throw immediately — no rotation — and let the model-fallback above surface the back-off.
+    const budget = await withinGlobalGeminiBudget();
+    if (!budget.ok) {
+      throw new Error(
+        `Gemini global rate ceiling reached (${budget.count}/${budget.ceiling} per min) — backing off to protect the key pool`,
+      );
+    }
     const res = await fetch(`${BASE}/${modelId}:generateContent?key=${keys[idx]}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
