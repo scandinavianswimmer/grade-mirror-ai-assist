@@ -9,6 +9,7 @@ import { userClient, adminClient } from "../_shared/db.ts";
 import { gradeSubmission, type AgentStep } from "../_shared/grading/engine.ts";
 import { synthesizeRubric, toRubricInput } from "../_shared/grading/rubric-synth.ts";
 import { maskNamesPreservingOffsets } from "../_shared/deid.ts";
+import { enforceGradingQuota } from "../_shared/quota.ts";
 import type { RubricInput } from "../_shared/grading-schema.ts";
 
 Deno.serve((req) => {
@@ -54,6 +55,12 @@ Deno.serve((req) => {
     if (!submission.extracted_text || (submission.extraction_confidence ?? 0) < 0.2) {
       await db.from("submissions").update({ status: "needs_review" }).eq("id", submissionId);
       throw new AppError(422, "needs_review", "Submission text missing/low-confidence; needs manual review");
+    }
+
+    // Rate-limit Layer A: per-teacher quota, atomic + race-safe, BEFORE any paid model call.
+    // Skipped for the internal worker path (auth.uid() is null there; quota was reserved at enqueue).
+    if (!isInternal) {
+      await enforceGradingQuota(db, 1);
     }
 
     // Assignment + class context: the relevance gate needs the task; calibration needs the level.
