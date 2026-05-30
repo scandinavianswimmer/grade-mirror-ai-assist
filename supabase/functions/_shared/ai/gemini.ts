@@ -5,6 +5,7 @@
 // prefix first (and the volatile essay last) earns cache hits with no explicit cache management.
 import { ENV } from "../env.ts";
 import { withinGlobalGeminiBudget } from "../ratelimit.ts";
+import { AppError } from "../http.ts";
 
 const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
@@ -81,7 +82,11 @@ async function call(modelId: string, body: AnyObj): Promise<AnyObj> {
     // throw immediately — no rotation — and let the model-fallback above surface the back-off.
     const budget = await withinGlobalGeminiBudget();
     if (!budget.ok) {
-      throw new Error(
+      // Typed so the engine recognizes this as a cross-tenant rate limit — NOT a model fault — and
+      // backs off instead of demoting the model's health or rotating to the next key.
+      throw new AppError(
+        429,
+        "global_ceiling",
         `Gemini global rate ceiling reached (${budget.count}/${budget.ceiling} per min) — backing off to protect the key pool`,
       );
     }
@@ -95,10 +100,12 @@ async function call(modelId: string, body: AnyObj): Promise<AnyObj> {
       return (await res.json()) as AnyObj;
     }
     const txt = await res.text();
-    // Rotate only on quota/rate limits, and only if another key is left to try.
-    if (isQuotaError(res.status, txt) && attempt < keys.length - 1) {
+    // Rotate on quota/rate limits; on the LAST key, fall through to the all-keys-exhausted throw
+    // below (a clearer message) rather than the generic per-status throw.
+    if (isQuotaError(res.status, txt)) {
       lastQuotaErr = `HTTP ${res.status}: ${txt.slice(0, 200)}`;
-      continue;
+      if (attempt < keys.length - 1) continue;
+      break;
     }
     throw new Error(`Gemini ${modelId} HTTP ${res.status}: ${txt.slice(0, 400)}`);
   }

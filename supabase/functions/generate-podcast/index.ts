@@ -31,8 +31,11 @@ Deno.serve((req) => {
     const { userId } = await getUserFromJWT(req);
 
     const body = await req.json().catch(() => ({}));
-    const title = typeof body.title === "string" ? body.title.trim() : "";
-    const inputNotes = typeof body.inputNotes === "string" ? body.inputNotes.trim() : "";
+    // Strip characters that could break out of the prompt's quoted/delimited context (mild
+    // prompt-injection hardening; the fields are interpolated into the model prompt below).
+    const sanitize = (s: string) => s.replace(/["`\\]/g, " ").trim();
+    const title = sanitize(typeof body.title === "string" ? body.title : "");
+    const inputNotes = sanitize(typeof body.inputNotes === "string" ? body.inputNotes : "");
     if (!title) throw new AppError(400, "input", "title is required");
     if (title.length > MAX_TITLE_CHARS) throw new AppError(400, "input", `title too long (max ${MAX_TITLE_CHARS})`);
     if (inputNotes.length > MAX_NOTES_CHARS) throw new AppError(400, "input", `inputNotes too long (max ${MAX_NOTES_CHARS})`);

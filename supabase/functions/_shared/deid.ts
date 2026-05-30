@@ -23,7 +23,10 @@ export function scrubNames(text: string | null, names: string[]): string | null 
 // graded, and the UI overlays those offsets on the ORIGINAL essay — so de-identifying the text
 // sent to the LLM must not shift any offsets. Replacing "Jane Doe" (8) with 8 redaction chars
 // keeps every downstream index valid while ensuring the real name never leaves for the LLM.
-const REDACTION_CHAR = "▮"; // ▮
+// ASCII so 1 char == 1 byte == 1 UTF-16 code unit — offsets stay valid no matter how any consumer
+// (JS string index, byte offset, the model) counts. A multi-byte glyph would only be safe under
+// code-unit indexing; "#" is unambiguous.
+const REDACTION_CHAR = "#";
 export function maskNamesPreservingOffsets(text: string | null, names: string[]): string | null {
   if (!text) return text;
   let out = text;

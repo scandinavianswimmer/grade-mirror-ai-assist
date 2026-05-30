@@ -4,7 +4,7 @@
 // grade + annotations, logs the LLM session. Returns the GradingResult or an explicit error.
 import { handlePreflight } from "../_shared/cors.ts";
 import { withErrors, ok, AppError } from "../_shared/http.ts";
-import { getUserFromJWT } from "../_shared/auth.ts";
+import { getUserFromJWT, timingSafeEqual } from "../_shared/auth.ts";
 import { userClient, adminClient } from "../_shared/db.ts";
 import { gradeSubmission, type AgentStep } from "../_shared/grading/engine.ts";
 import { synthesizeRubric, toRubricInput } from "../_shared/grading/rubric-synth.ts";
@@ -26,7 +26,8 @@ Deno.serve((req) => {
     // presents x-internal-secret + userId for service-to-service grading on the teacher's behalf;
     // ownership is then verified explicitly against the loaded submission below.
     const internalSecret = Deno.env.get("INTERNAL_GRADE_SECRET");
-    const isInternal = Boolean(internalSecret) && req.headers.get("x-internal-secret") === internalSecret;
+    const providedInternal = req.headers.get("x-internal-secret") ?? "";
+    const isInternal = Boolean(internalSecret) && timingSafeEqual(providedInternal, internalSecret);
     let userId: string;
     let db;
     if (isInternal) {

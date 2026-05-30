@@ -19,7 +19,7 @@ export async function getUserFromJWT(req: Request): Promise<AuthedUser> {
 }
 
 // Constant-time string compare so secret verification can't leak bytes via timing side-channels.
-function timingSafeEqual(a: string, b: string): boolean {
+export function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let diff = 0;
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);

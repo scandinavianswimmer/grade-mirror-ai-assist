@@ -44,7 +44,7 @@ Deno.serve((req) => {
       submissionFilter = { col: "id", ids: [id] };
     } else if (scope === "class") {
       if (!id) throw new AppError(400, "input", "id (classId) is required");
-      const { data: asgs } = await db.from("assignments").select("id").eq("class_id", id);
+      const { data: asgs } = await db.from("assignments").select("id").eq("class_id", id).eq("user_id", userId);
       const asgIds = (asgs ?? []).map((a) => a.id as string);
       submissionFilter = { col: "assignment_id", ids: asgIds };
     } else if (scope === "account") {
@@ -54,27 +54,31 @@ Deno.serve((req) => {
     }
 
     // 1) Collect the Storage paths for the submissions being erased, then remove the files.
-    let q = db.from("submissions").select("id, file_path");
+    // Explicit user_id filter (defense-in-depth — never rely on RLS alone for a destructive op).
+    let q = db.from("submissions").select("id, file_path").eq("user_id", userId);
     if (submissionFilter) {
       if (submissionFilter.ids.length === 0) q = q.eq("id", "00000000-0000-0000-0000-000000000000"); // matches nothing
       else q = q.in(submissionFilter.col, submissionFilter.ids);
     }
     const { data: subs } = await q;
-    const filePaths = (subs ?? []).map((s) => s.file_path as string);
+    // Only ever remove objects under the caller's own prefix.
+    const filePaths = (subs ?? [])
+      .map((s) => s.file_path as string)
+      .filter((p) => typeof p === "string" && p.startsWith(`${userId}/`));
     const filesRemoved = await removeFiles(db, filePaths);
 
     // 2) Delete DB rows. Cascades handle submission_grades / annotations / annotation_edits.
     let deletedSubmissions = 0;
     const subIds = (subs ?? []).map((s) => s.id as string);
     if (subIds.length > 0) {
-      const { data: del } = await db.from("submissions").delete().in("id", subIds).select("id");
+      const { data: del } = await db.from("submissions").delete().in("id", subIds).eq("user_id", userId).select("id");
       deletedSubmissions = del?.length ?? 0;
     }
 
     if (scope === "class" && id) {
-      // Remove the class's assignments then the class itself (RLS-scoped to the owner).
-      await db.from("assignments").delete().eq("class_id", id);
-      await db.from("classes").delete().eq("id", id);
+      // Remove the class's assignments then the class itself (owner-filtered + RLS-scoped).
+      await db.from("assignments").delete().eq("class_id", id).eq("user_id", userId);
+      await db.from("classes").delete().eq("id", id).eq("user_id", userId);
     } else if (scope === "account") {
       // Erase the caller's remaining owned content. Auth-user (auth.users) deletion is a separate
       // privileged step (admin API) and is intentionally NOT done here.

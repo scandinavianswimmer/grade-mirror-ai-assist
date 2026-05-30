@@ -432,14 +432,19 @@ export async function gradeSubmission(input: GradeInput): Promise<GradeOutcome> 
       };
     } catch (err) {
       lastErr = err;
-      await recordModelResult(
-        model.id,
-        false,
-        Date.now() - started,
-        err instanceof AppError ? err.stage : "exception",
-      );
-      trace.push({ agent: "grading", status: "error", modelId: model.id, latencyMs: Date.now() - started, detail: { error: err instanceof AppError ? err.stage : "exception" } });
-      // try next healthy model
+      const stage = err instanceof AppError ? err.stage : "exception";
+      // A per-request call-budget or global rate-ceiling hit is NOT the model's fault — don't demote
+      // its health, and stop here rather than burning another budget slot on the next model.
+      const isRateLimit = stage === "grade_call_budget" || stage === "global_ceiling";
+      if (!isRateLimit) {
+        await recordModelResult(model.id, false, Date.now() - started, stage);
+      }
+      trace.push({
+        agent: "grading", status: "error", modelId: model.id, latencyMs: Date.now() - started,
+        detail: isRateLimit ? { error: stage, note: "rate/budget limit — not a model fault" } : { error: stage },
+      });
+      if (isRateLimit) break;
+      // else: try next healthy model
     }
   }
 

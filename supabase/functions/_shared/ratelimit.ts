@@ -8,7 +8,10 @@
 // budget (Layer C) are the other, independent layers; this one is purely the cross-tenant valve.
 
 const WINDOW_SECONDS = 60;
-const DEFAULT_CEILING = 60; // upstream Gemini calls per minute, summed across all tenants + rotations
+// Upstream Gemini calls per minute, summed across all tenants + key rotations. Set with headroom
+// for legitimate sequential bulk grading (a whole class) while still stopping a scripted drain
+// (which does thousands/min). Tune via GEMINI_GLOBAL_QPM.
+const DEFAULT_CEILING = 120;
 
 function ceiling(): number {
   const n = Number(Deno.env.get("GEMINI_GLOBAL_QPM") ?? String(DEFAULT_CEILING));
