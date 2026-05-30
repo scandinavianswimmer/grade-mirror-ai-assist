@@ -38,8 +38,17 @@ code-level (rate limiting, an unauthenticated function, send-time de-identificat
 2. **Apply migrations** `0015_grading_quota_rpc.sql` + `0016_rls_force_and_comments.sql` with the DB
    password (same path that applied 0002–0014). Until 0015 is applied, the quota gate fails open
    (grading still works — good for the demo).
-3. **(Optional) `GEMINI_GLOBAL_QPM`** secret to tune the global ceiling (default 60/min). Confirm
-   `UPSTASH_REDIS_REST_URL`/`TOKEN` are set or Layer B no-ops (fails open).
+3. **(Optional) `GEMINI_GLOBAL_QPM`** secret to tune the global ceiling (default 120/min, sized for
+   bulk-grade headroom). Confirm `UPSTASH_REDIS_REST_URL`/`TOKEN` are set or Layer B no-ops (fails open).
+
+## Code review (2026-05-30)
+Two code-reviewer passes (auth/erasure + rate-limit/quota). Fixed: ceiling/budget errors no longer
+demote model health or waste fallback slots (typed AppError + engine break); constant-time compare
+for INTERNAL_GRADE_SECRET; delete-data explicit user_id filters + own-prefix storage filter; ASCII
+redaction char (offset-unambiguous); ceiling 60→120; generate-podcast input sanitized. Commit 33fbcb9.
+Accepted-as-is (not bugs): timingSafeEqual length early-return (high-entropy secret), enqueue quota
+not refunded on partial failure (documented tradeoff), tumbling-window burst (ceiling has headroom),
+shared weekly ledger (intentional per audit).
 
 ## Not addressed (deferred / lower priority)
 - LOW items: hardcoded anon-key fallback in `src/lib/supabase.ts`, JWT placeholder in v1 `001`,
