@@ -57,17 +57,44 @@ export interface GeminiJSONParams {
   thinkingBudget?: number;
 }
 
+// Module-level cursor into the key pool. Persists across calls within a warm function instance,
+// so once a key's free-tier quota is exhausted we start from the next one instead of re-hitting
+// the dead key on every request. Reset implicitly when the instance is recycled.
+let keyCursor = 0;
+
+// A 429, or any body mentioning RESOURCE_EXHAUSTED / quota, means "this key is rate/quota limited" —
+// rotate to the next key. Other non-200s (4xx schema errors, 5xx) are not key-specific: throw so the
+// model-level fallback (pro -> flash) in the engine handles them.
+function isQuotaError(status: number, body: string): boolean {
+  return status === 429 || /RESOURCE_EXHAUSTED|quota/i.test(body);
+}
+
 async function call(modelId: string, body: AnyObj): Promise<AnyObj> {
-  const res = await fetch(`${BASE}/${modelId}:generateContent?key=${ENV.geminiKey()}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
+  const keys = ENV.geminiKeys();
+  const payload = JSON.stringify(body);
+  let lastQuotaErr = "";
+  for (let attempt = 0; attempt < keys.length; attempt++) {
+    const idx = (keyCursor + attempt) % keys.length;
+    const res = await fetch(`${BASE}/${modelId}:generateContent?key=${keys[idx]}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: payload,
+    });
+    if (res.ok) {
+      keyCursor = idx; // stick with the working key for subsequent calls in this instance
+      return (await res.json()) as AnyObj;
+    }
     const txt = await res.text();
+    // Rotate only on quota/rate limits, and only if another key is left to try.
+    if (isQuotaError(res.status, txt) && attempt < keys.length - 1) {
+      lastQuotaErr = `HTTP ${res.status}: ${txt.slice(0, 200)}`;
+      continue;
+    }
     throw new Error(`Gemini ${modelId} HTTP ${res.status}: ${txt.slice(0, 400)}`);
   }
-  return (await res.json()) as AnyObj;
+  throw new Error(
+    `Gemini ${modelId}: all ${keys.length} API key(s) quota-exhausted. Last: ${lastQuotaErr}`,
+  );
 }
 
 function extractText(data: AnyObj): { text: string; finishReason?: string } {
