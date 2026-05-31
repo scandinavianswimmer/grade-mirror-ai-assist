@@ -54,10 +54,15 @@ gifted credits will replace these once Luke applies.
   rubric** for the Gatsby assignment (5 criteria: Thesis20/Symbol20/Evidence30/Structure20/Conv10).
 - **Gatsby (a5519001) re-graded onto the canonical rubric: 4/6** — Marcus 23, Brandon 10(off-topic),
   Logan 43, Diego 29. **Pending: Tyler + Sofia** (re-grade onto canonical rubric).
-- **BLOCKER: free-tier key rate limits.** The 2 fresh flash keys throttle (502 "All grading models
-  failed") under burst grading — keys work for small calls but the large grading payloads hit
-  per-minute RPM/TPM limits. Grading must be PACED (~1 per 30–60s) on free tier. This is exactly
-  what the X-Prize gifted-credits key / pro billing resolves — reserve it for the final bulk pass.
+- **Free-tier key rate limits** — the 2 fresh flash keys throttle (502 "All grading models failed")
+  under burst grading. **Mitigated structurally (2026-05-30, commit b880894):** added an in-process
+  dev-mode pacer in `_shared/ratelimit.ts` (`paceUpstreamCall`) wired into `gemini.ts` — serializes
+  upstream calls to `GEMINI_MIN_CALL_INTERVAL_MS` (set to **4000ms** ≈ 15/min, under free RPM).
+  DELAYS not rejects, so grading self-throttles and succeeds; no-op in prod (interval 0). The Upstash
+  global ceiling (Layer B) still no-ops until Upstash is configured. The X-Prize gifted/pro key
+  removes the limit entirely — then the pacer can be turned off (set interval 0) for full-speed bulk.
+- **Dev-mode posture: do NOT burst-grade.** With pacing on, grading is slower but safe. Reserve heavy
+  grading for when the billed key is in place.
 
 ## Remaining to recordable demo
 Finish re-grading Tyler + Sofia (Gatsby), then grade the other hero assignments (MLK a5519005:4,
