@@ -109,11 +109,15 @@ Deno.serve((req) => {
 
     // Load the structured rubric. If none exists, synthesize a strict one from the assignment +
     // class level and persist it (GRADE-02) — never grade against model-invented generic criteria.
-    const { data: rubricRow } = await db
+    // Load the canonical rubric for this assignment. Tolerate duplicates (don't use maybeSingle,
+    // which throws on >1 row): pick the earliest so every submission grades against the same one.
+    const { data: rubricRows } = await db
       .from("rubrics")
       .select("id, total_points")
       .eq("assignment_id", submission.assignment_id)
-      .maybeSingle();
+      .order("created_at", { ascending: true })
+      .limit(1);
+    const rubricRow = rubricRows?.[0] ?? null;
 
     const rubricStarted = Date.now();
     let rubricSynthesized = false;
@@ -144,11 +148,25 @@ Deno.serve((req) => {
         rubric = toRubricInput(synth);
         rubricSynthesized = true;
         // Persist so the teacher can review/edit and grading is reproducible (best-effort).
-        const { data: newRubric, error: rubErr } = await db
-          .from("rubrics")
-          .insert({ user_id: userId, assignment_id: submission.assignment_id, total_points: synth.totalPoints })
-          .select("id")
-          .single();
+        // The live (v1-derived) rubrics table requires NOT NULL title + rubric_json; the v2 schema
+        // has neither. Insert with them and fall back to the minimal payload if the columns are
+        // absent — mirrors the rubric_snapshot fallback below. (Without this the insert silently
+        // failed every grade, so each submission re-synthesized a slightly different rubric.)
+        const rubricInsert: Record<string, unknown> = {
+          user_id: userId,
+          assignment_id: submission.assignment_id,
+          total_points: synth.totalPoints,
+          title: "aiTA synthesized rubric",
+          rubric_json: synth,
+        };
+        let { data: newRubric, error: rubErr } = await db
+          .from("rubrics").insert(rubricInsert).select("id").single();
+        if (rubErr && /rubric_json|title|column|schema cache/i.test(rubErr.message)) {
+          delete rubricInsert.title;
+          delete rubricInsert.rubric_json;
+          ({ data: newRubric, error: rubErr } = await db
+            .from("rubrics").insert(rubricInsert).select("id").single());
+        }
         if (rubErr) {
           console.error(`[grade-submission] rubric persist failed (grading with synthesized rubric anyway): ${rubErr.message}`);
         } else if (newRubric) {
