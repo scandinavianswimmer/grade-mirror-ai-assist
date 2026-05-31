@@ -44,12 +44,13 @@ config drift, constant-time cron compare. Full writeup: `.planning/security/REME
 
 ## Open dependencies on the user
 
-- **Deploy the changed functions** — config.toml now encodes per-function verify_jwt (no
-  `--no-verify-jwt` flag needed): `supabase functions deploy` (all), or at least grade-submission,
-  grade-enqueue, generate-podcast, privacy-tasks, **delete-data (NEW)**, build-style-profile. Ships
-  the demo grading fixes (synth/dedup/key-rotation) AND all security fixes. **One remaining hard blocker to a recordable demo.**
+- ✅ **DONE 2026-05-30: deployed** all changed functions to prod (grade-submission, grade-enqueue,
+  generate-podcast, privacy-tasks, build-style-profile, delete-data + others). Ships the demo grading
+  fixes (synth/dedup/key-rotation) AND the full security pass. (esm.sh 522s during deploy were
+  transient CDN errors, cleared by retry.)
 - **Apply migrations** `0015_grading_quota_rpc.sql` + `0016_rls_force_and_comments.sql` (DB password;
-  same path as 0002–0014). Quota gate fails open until 0015 lands, so grading/demo isn't blocked.
+  same path as 0002–0014). Quota gate fails open until 0015 lands, so grading/demo isn't blocked. Not urgent.
+- _(Optional)_ deploy stripe-* to pick up the new config.toml verify_jwt declarations (not demo-relevant).
 - _(Optional)_ `GEMINI_GLOBAL_QPM` secret to tune the global ceiling (default 60/min). Confirm Upstash secrets set or Layer B no-ops.
 - _(Optional)_ **Enable `gemini-2.5-pro` billing** — quality upgrade; flash key rotation already unblocks grading.
 - Secret rotation (DB password + exposed `sk_live_` key) before any public hosting.
