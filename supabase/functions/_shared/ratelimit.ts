@@ -30,6 +30,28 @@ export interface BudgetVerdict {
   ceiling: number;
 }
 
+// ── Dev-mode pacer ────────────────────────────────────────────────────────────
+// In-process minimum-interval throttle for upstream Gemini calls. Unlike the Upstash ceiling
+// (which no-ops when Upstash isn't configured), this needs NO external infra — it serializes calls
+// within a warm isolate to stay under free-tier RPM during development. It DELAYS rather than
+// rejects, so grading still succeeds, just paced. 0 (the default) disables it entirely → zero
+// overhead in production. Enable in dev by setting GEMINI_MIN_CALL_INTERVAL_MS (e.g. 4000 ≈ 15
+// calls/min, comfortably under the free flash tier's per-key RPM with two rotating keys).
+let _pacerChain: Promise<void> = Promise.resolve();
+let _lastCallAt = 0;
+
+export function paceUpstreamCall(): Promise<void> {
+  const interval = Number(Deno.env.get("GEMINI_MIN_CALL_INTERVAL_MS") ?? "0");
+  if (!Number.isFinite(interval) || interval <= 0) return Promise.resolve();
+  // Chain so that concurrent calls queue and each waits its turn behind the last.
+  _pacerChain = _pacerChain.then(async () => {
+    const wait = _lastCallAt + interval - Date.now();
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    _lastCallAt = Date.now();
+  });
+  return _pacerChain;
+}
+
 // INCR a per-minute counter and report whether we're still under the global ceiling.
 // Returns ok=true (fail-open) whenever the limiter can't be consulted.
 export async function withinGlobalGeminiBudget(): Promise<BudgetVerdict> {

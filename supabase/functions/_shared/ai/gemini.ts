@@ -4,7 +4,7 @@
 // Gemini 2.5+ does implicit prompt caching automatically, so keeping the stable system+rubric
 // prefix first (and the volatile essay last) earns cache hits with no explicit cache management.
 import { ENV } from "../env.ts";
-import { withinGlobalGeminiBudget } from "../ratelimit.ts";
+import { withinGlobalGeminiBudget, paceUpstreamCall } from "../ratelimit.ts";
 import { AppError } from "../http.ts";
 
 const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -80,6 +80,8 @@ async function call(modelId: string, body: AnyObj): Promise<AnyObj> {
     // Layer B: global cross-tenant ceiling. Counted per upstream call so key rotation can't
     // bypass it (rotation amplifies abuse exactly when we most need to stop). Over the ceiling we
     // throw immediately — no rotation — and let the model-fallback above surface the back-off.
+    // Dev-mode pacing: space calls so free-tier RPM isn't exceeded (no-op in prod). Delays, not rejects.
+    await paceUpstreamCall();
     const budget = await withinGlobalGeminiBudget();
     if (!budget.ok) {
       // Typed so the engine recognizes this as a cross-tenant rate limit — NOT a model fault — and
