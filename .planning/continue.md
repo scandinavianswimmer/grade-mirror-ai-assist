@@ -44,7 +44,24 @@ A warm-instance cursor sticks to the last working key. The exhausted primary rej
 quota resets. **Takes effect only after the deploy above.** The marquee billed key with X-Prize
 gifted credits will replace these once Luke applies.
 
-After those two, bulk-grade the remaining 13 hero essays (Gatsby + MLK + Necklace + social-media),
+## Grading status (2026-05-30, post-deploy)
+- **Deploy DONE.** All functions live (security pass + grading fixes). grade-submission validated
+  end-to-end in-browser: calibration fixed (Marcus 28→23, not 100), off-topic withheld (Brandon
+  10/100 + off_topic flag), key rotation working (runs on flash via fresh keys).
+- **Rubric consistency bug FOUND + FIXED + DEPLOYED** (commit 6ef5eb6): live rubrics table is v1
+  (title + rubric_json NOT NULL); grade-submission's insert omitted them → every persist failed →
+  each grade re-synthesized a different rubric. Now persists correctly; verified **1 canonical
+  rubric** for the Gatsby assignment (5 criteria: Thesis20/Symbol20/Evidence30/Structure20/Conv10).
+- **Gatsby (a5519001) re-graded onto the canonical rubric: 4/6** — Marcus 23, Brandon 10(off-topic),
+  Logan 43, Diego 29. **Pending: Tyler + Sofia** (re-grade onto canonical rubric).
+- **BLOCKER: free-tier key rate limits.** The 2 fresh flash keys throttle (502 "All grading models
+  failed") under burst grading — keys work for small calls but the large grading payloads hit
+  per-minute RPM/TPM limits. Grading must be PACED (~1 per 30–60s) on free tier. This is exactly
+  what the X-Prize gifted-credits key / pro billing resolves — reserve it for the final bulk pass.
+
+## Remaining to recordable demo
+Finish re-grading Tyler + Sofia (Gatsby), then grade the other hero assignments (MLK a5519005:4,
+Necklace a5519003:2, social-media a5519002:2) — PACED or with the billed key. Then:
 confirm **Brandon Davis** (jump-shot essay) is **withheld** (`needs_review`, score floored — the
 trust moment), apply HITL accept/edit/dismiss on a few, **Finalize** one or two → Metrics populates →
 demo is recordable. Walk `docs/DEMO-SARAH-MARTINEZ.md` for the script mapped to the 5 critical moments.
