@@ -156,9 +156,22 @@ export const generateAIFeedback = async (essay: string, rubric: string, userId: 
     }
   });
 
-  if (error) throw error;
+  if (error) {
+    // supabase-js wraps a non-2xx edge response in a FunctionsHttpError whose `.context`
+    // is the raw Response. The function returns a structured { error, stage } body, so
+    // surface that specific message instead of an opaque "Edge Function returned a
+    // non-2xx status code" — the teacher needs to know if it's rate-limited vs. down.
+    let message = 'AI grading is temporarily unavailable. Please try again.';
+    try {
+      const body = await (error as { context?: Response }).context?.json?.();
+      if (body && typeof body.error === 'string' && body.error.trim()) message = body.error;
+    } catch {
+      // Non-JSON / network error — keep the default message.
+    }
+    throw new Error(message);
+  }
 
-  // Increment feedback count
+  // Increment feedback count only after a successful grade.
   await incrementFeedbackCount(userId);
 
   return data;
