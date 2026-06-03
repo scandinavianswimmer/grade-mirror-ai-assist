@@ -21,6 +21,7 @@ const SubmitAssignment = () => {
   const [rubric, setRubric] = useState('');
   const [feedback, setFeedback] = useState<any>(null);
   const [step, setStep] = useState<'input' | 'processing' | 'results'>('input');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleFileUpload = (file: File, content: string) => {
     setEssay(content);
@@ -44,6 +45,7 @@ const SubmitAssignment = () => {
     }
 
     setLoading(true);
+    setErrorMessage(null);
     setStep('processing');
 
     try {
@@ -80,11 +82,18 @@ const SubmitAssignment = () => {
         description: "Review the suggestions below and adjust as needed."
       });
     } catch (error) {
-      console.error('Feedback generation error:', error);
+      // Surface the SPECIFIC, persistent reason (not an auto-dismissing generic toast), and
+      // keep the teacher's essay + rubric intact in the form so they can retry without re-pasting.
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : 'AI grading is temporarily unavailable. Please try again.';
+      console.error('Feedback generation error:', message);
+      setErrorMessage(message);
       toast({
-        title: "Failed to generate feedback",
-        description: "Please try again.",
-        variant: "destructive"
+        title: 'Could not grade this essay',
+        description: message,
+        variant: 'destructive'
       });
       setStep('input');
     } finally {
@@ -96,6 +105,7 @@ const SubmitAssignment = () => {
     setEssay('');
     setRubric('');
     setFeedback(null);
+    setErrorMessage(null);
     setStep('input');
   };
 
@@ -111,6 +121,19 @@ const SubmitAssignment = () => {
               Upload a student essay and rubric to get AI-powered feedback suggestions.
             </p>
           </div>
+
+          {step === 'input' && errorMessage && (
+            <Card className="mb-6 p-4 bg-red-50 border-red-200" role="alert">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-red-800">Grading didn't complete</p>
+                  <p className="text-sm text-red-700 mt-1">{errorMessage}</p>
+                  <p className="text-xs text-red-600 mt-2">Your essay and rubric are still here — press <strong>Generate AI Feedback</strong> to retry.</p>
+                </div>
+              </div>
+            </Card>
+          )}
 
           {step === 'input' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
