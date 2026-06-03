@@ -104,3 +104,22 @@ Expanded from grading-only to an operationally-real, agentic AI platform: valid 
 - **Demo-impact ordering:** Phases 2–5 + 9–11 carry the judge-facing story (valid grading, agent workforce, reliability, auditability, measurable improvement). Phase 14 makes it live on a domain.
 
 *Last updated: 2026-05-22 after scope expansion (auth/storage/infra/agents/analytics/billing/deploy).*
+
+---
+
+## Milestone 2 — prove-the-wedge (active focus, 2026-06-03)
+
+> Pivot from production-1 breadth to the ONE defensible wedge from the competitive research
+> (`~/research/notes/final_report_ai-grading-competitor-whitespace-fc4570.md`): voice-convergence.
+> "Spend 30 days proving aiTA can learn a teacher's feedback style well enough that they say
+> 'I barely had to edit this.' If you can't, you're in a commodity market."
+
+| # | Phase | Goal | Requirements |
+|---|-------|------|--------------|
+| 15 | Voice-Convergence Proof | Falsifiable evidence the AI learns a teacher's voice ("barely had to edit this") — measure edit-rate decline over batches, binary-signal few-shot reinforce loop, honest go/no-go verdict | LEARN-04, LEARN-05, EVAL-02, EVAL-03, PROOF-01..03 |
+
+### Phase 15: Voice-Convergence Proof
+**Goal:** prove voice-convergence with a falsifiable curve + teacher testimonial (or honestly disprove it).
+**Mode:** standard · **Planned:** `.planning/phase-15-voice-convergence-proof/` (CONTEXT + PLAN).
+**Success bar:** ≥40% edit-rate decline across ≥4 batches + a "barely edited" rating + with/without margin.
+**Kill criterion:** flat edit-rate (<15% decline) → wedge disproven → escalate to KTO or pivot (no ego-boost).

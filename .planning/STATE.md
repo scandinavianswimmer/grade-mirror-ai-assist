@@ -63,6 +63,10 @@ config drift, constant-time cron compare. Full writeup: `.planning/security/REME
 - Domain + frontend host (free subdomain agreed as launch path).
 - Optional later: Upstash + Cloud Run worker (bulk grading), Stripe live config, OAuth bootstrap migration apply.
 
+## Active focus (2026-06-03): Milestone 2 — prove-the-wedge
+
+Pivoted from production-1 breadth to the ONE defensible wedge from the competitive research: **voice-convergence**. **Phase 15 (Voice-Convergence Proof) is PLANNED** at `.planning/phase-15-voice-convergence-proof/` (CONTEXT + PLAN, manual GSD). 30-day goal: falsifiable proof aiTA learns a teacher's feedback voice ("I barely had to edit this") — instrument edit-rate/edit-distance per batch, upgrade the Phase-9 prose-blurb reinforce to a binary-signal few-shot loop, run a ≥4-batch real-teacher experiment, write an honest go/no-go verdict (kill criterion: <15% edit-rate decline → wedge disproven). Next: execute Phase 15 Wave 1 (instrumentation). Founder actions: apply migration 0017, deploy changed fns, recruit the test teacher.
+
 ## Next step
 
 Code-doable punch-list items are largely exhausted (HIGH #2/#4 done; #3 style-loop proven live for Sofia; #5 live eval run needs `GEMINI_API_KEY` locally). The next production-launch increments are **founder-config gated** — pick from: apply migrations `0015`/`0016` (DB password), enable `gemini-2.5-pro` billing, apply the OAuth bootstrap migration, rotate exposed secrets, host the frontend on a free subdomain. Each unblocks a corresponding agent task. Otherwise: deepen test coverage (no test runner yet — Phase 10 eval harness is the grading-quality story), or a FERPA-aware copy audit (punch-list MEDIUM #11).
