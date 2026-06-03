@@ -5,7 +5,7 @@
 See: `.planning/PROJECT.md` (updated 2026-05-22)
 
 **Core value:** The grade must be valid and trustworthy — rubric-aligned, teacher-calibrated, never awarded to off-assignment work.
-**Current focus (2026-05-29):** Sarah Martinez demo account fully **built + live in cloud** (rebranded existing test teacher; 6 classes, 10 assignments, 14 essays, Sarah's grading voice). **Style-loop proven live** — Sofia Reyes graded in Sarah's voice on deployed code. **Recording is blocked on TWO founder actions:** (1) enable `gemini-2.5-pro` billing (flash quota exhausted, no real fallback), (2) deploy committed grade-submission fixes (`--no-verify-jwt` perm-gated). Then bulk-grade the 13 remaining → record. **Read `.planning/continue.md` for the exact pick-up point.**
+**Current focus (2026-06-03):** X-Prize deadline has passed — pivoted from "polish the demo for recording" to **"continue building toward production launch."** The **complete production build is now on `main`** (PR #2 merged the production branch; PR #3 folded in 31 stranded commits — the full security-hardening pass + grading fixes + demo seed that had never been pushed; PR #4 landed two reliability-optics fixes). Remaining high-value work is mostly **founder-config gated** (DB password for migrations 0015/0016, `gemini-2.5-pro` billing, OAuth bootstrap migration, secret rotation, a frontend host). **Read `.planning/continue.md` for the exact pick-up point.**
 
 ## Milestone
 
@@ -33,6 +33,12 @@ See: `.planning/PROJECT.md` (updated 2026-05-22)
 - **Three changes committed but NOT deployed:** `56ee14b` (synth truncation → assignment-specific criteria), `9023e54` (no dup notes on re-grade), `7e26109` (Gemini key rotation). All ship with one `grade-submission --no-verify-jwt` deploy. Deploy gated on `--no-verify-jwt` perm.
 - Old test-data coexists under the Sarah account (Luke class / two "English" classes / Unassigned, incl. the verified oil-change + Stanley artifacts) — not deleted; user decision.
 
+## Merge to main + reliability fixes (2026-06-03)
+
+- **Full production build merged to `main`.** PR #2 merged an earlier remote snapshot; **31 commits were stranded on the local-only `aita-production-build` branch and never pushed** (the entire security-hardening pass, grading fixes — rubric persistence / annotation dedup / Gemini key rotation / synth calibration — AgentPipeline refetch, bulk-grade button, Sarah demo seed). Pushed the branch and folded them in via **PR #3**. `main` now = the complete build.
+- **Reliability-optics fixes (PR #4, punch-list HIGH #2 + #4):** (a) stale `grade_error` no longer shows "Grading failed" over a valid grade — `effectiveStatus()`/`hasStaleGradingError()` added to `submissionStatus.ts`, reconcile when a grade exists, **`needs_review` withholding preserved**; SubmissionDetail shows a calm "last attempt didn't finish" note; AssignmentDetail rows learn `hasGrade`. (b) turnaround metric is now **median with >168h outlier exclusion** (kills "2685 hrs"; "—" when all data stale). Frontend-only; takes effect on next `npm run dev`/build — no edge deploy.
+- **Gotcha:** RTK proxy caches git read output — `git log`/`rev-parse`/`status` can return stale results mid-session. Use `rtk proxy git <cmd>` to bypass the cache when verifying git state. Direct `git push origin main` is **denied** by the auto-mode classifier (PR-merge authorized, not direct pushes) — push a branch + `gh pr merge`.
+
 ## Security hardening (2026-05-30)
 
 Full-lockdown pass done. Live-DB probes confirmed **v2 migrations are applied in prod** → the
@@ -59,7 +65,7 @@ config drift, constant-time cron compare. Full writeup: `.planning/security/REME
 
 ## Next step
 
-Read `.planning/continue.md`. After the two founder unblocks above, bulk-grade the 13 remaining hero essays in-browser, confirm Brandon Davis withholds, apply HITL, finalize → demo recordable. Walk `docs/DEMO-SARAH-MARTINEZ.md` script.
+Code-doable punch-list items are largely exhausted (HIGH #2/#4 done; #3 style-loop proven live for Sofia; #5 live eval run needs `GEMINI_API_KEY` locally). The next production-launch increments are **founder-config gated** — pick from: apply migrations `0015`/`0016` (DB password), enable `gemini-2.5-pro` billing, apply the OAuth bootstrap migration, rotate exposed secrets, host the frontend on a free subdomain. Each unblocks a corresponding agent task. Otherwise: deepen test coverage (no test runner yet — Phase 10 eval harness is the grading-quality story), or a FERPA-aware copy audit (punch-list MEDIUM #11).
 
 ---
-*Last updated: 2026-05-29 after Sarah demo build*
+*Last updated: 2026-06-03 — merged full build to main + reliability fixes; X-Prize behind us, building toward launch*
