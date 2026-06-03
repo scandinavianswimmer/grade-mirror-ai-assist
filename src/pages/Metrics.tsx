@@ -64,9 +64,9 @@ const Metrics = () => {
     },
     {
       label: 'Feedback turnaround',
-      value: summary.avgTurnaroundHours != null ? `${summary.avgTurnaroundHours.toFixed(1)} hrs` : '—',
+      value: summary.medianTurnaroundHours != null ? formatMinutes(summary.medianTurnaroundHours * 60) : '—',
       icon: Timer,
-      hint: 'Upload → graded',
+      hint: 'Upload → graded (median)',
     },
   ] : [];
 

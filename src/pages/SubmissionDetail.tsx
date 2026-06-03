@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { analytics } from '@/lib/analytics';
 import AgentPipeline from '@/components/AgentPipeline';
-import { statusBadgeClass, statusLabel, isFinalized } from '@/lib/submissionStatus';
+import { statusBadgeClass, statusLabel, isFinalized, effectiveStatus, hasStaleGradingError } from '@/lib/submissionStatus';
 
 type AnnoType = 'praise' | 'suggestion' | 'error' | 'question';
 const PEN: Record<AnnoType, string> = { praise: 'praise', suggestion: 'suggestion', error: 'critique', question: 'question' };
@@ -240,7 +240,7 @@ const SubmissionDetail = () => {
             </Link>
             <div className="flex items-center gap-2">
               <h1 className="font-display text-3xl font-semibold tracking-tight">{submission.student_name || 'Student submission'}</h1>
-              <span className={`rounded-full px-2 py-0.5 text-xs ${statusBadgeClass(submission.status)}`}>{statusLabel(submission.status)}</span>
+              <span className={`rounded-full px-2 py-0.5 text-xs ${statusBadgeClass(effectiveStatus(submission.status, !!grade))}`}>{statusLabel(effectiveStatus(submission.status, !!grade))}</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -276,6 +276,14 @@ const SubmissionDetail = () => {
 
           {/* Review rail */}
           <div className="space-y-4">
+            {hasStaleGradingError(submission.status, !!grade) && (
+              <Card className="border-suggestion/40 bg-suggestion-soft/40 p-3 text-sm">
+                <span className="flex items-start gap-2 text-foreground/80">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-suggestion" />
+                  Your last re-grade attempt didn’t finish — this is your previous grade, still intact. You can try grading again.
+                </span>
+              </Card>
+            )}
             {grade && (
               <Card>
                 <CardHeader className="rule pb-3">

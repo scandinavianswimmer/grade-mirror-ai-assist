@@ -12,7 +12,7 @@ import { analytics } from '@/lib/analytics';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import FileUpload from '@/components/FileUpload';
-import { statusBadgeClass, statusLabel } from '@/lib/submissionStatus';
+import { statusBadgeClass, statusLabel, effectiveStatus } from '@/lib/submissionStatus';
 
 interface Assignment {
   id: string;
@@ -28,6 +28,7 @@ interface Submission {
   file_url: string;
   status: string;
   created_at: string;
+  hasGrade?: boolean;
 }
 
 const AssignmentDetail = () => {
@@ -107,7 +108,20 @@ const AssignmentDetail = () => {
         .order('created_at', { ascending: false });
 
       if (submissionsError) throw submissionsError;
-      setSubmissions(submissionsData || []);
+
+      // Mark which submissions actually have a grade so the status badge can reconcile a stale
+      // value (e.g. a failed re-grade left `grade_error` while a valid grade still stands).
+      const subs = (submissionsData || []) as Submission[];
+      const subIds = subs.map((s) => s.id);
+      const gradedIds = new Set<string>();
+      if (subIds.length) {
+        const { data: gradeRows } = await supabase
+          .from('submission_grades')
+          .select('submission_id')
+          .in('submission_id', subIds);
+        for (const g of (gradeRows ?? []) as { submission_id: string }[]) gradedIds.add(g.submission_id);
+      }
+      setSubmissions(subs.map((s) => ({ ...s, hasGrade: gradedIds.has(s.id) })));
     } catch (error) {
       console.error('Error fetching assignment data:', error);
       toast({
@@ -334,8 +348,8 @@ const AssignmentDetail = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 rounded-full text-xs ${statusBadgeClass(submission.status)}`}>
-                          {statusLabel(submission.status)}
+                        <span className={`px-2 py-1 rounded-full text-xs ${statusBadgeClass(effectiveStatus(submission.status, !!submission.hasGrade))}`}>
+                          {statusLabel(effectiveStatus(submission.status, !!submission.hasGrade))}
                         </span>
                         <Link to={`/submission/${submission.id}`}>
                           <Button variant="outline" size="sm">

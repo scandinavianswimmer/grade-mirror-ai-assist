@@ -15,13 +15,28 @@ export const BASELINE_MINUTES_PER_SUBMISSION = 10;
 // teacher the baseline minus a small review overhead per submission (review is still work).
 export const AI_REVIEW_MINUTES_PER_SUBMISSION = 3;
 
+// "Feedback turnaround" = graded_at − uploaded_at. Submissions that sat unsubmitted-to-grading
+// for a long time (notably restored/seeded test data uploaded weeks before being graded) are
+// stale-data artifacts, not real grading latency, and otherwise skew the metric to nonsense like
+// "2685 hrs". We exclude any delta beyond this ceiling and report the MEDIAN of what remains, so
+// one outlier can't dominate. If every graded submission is stale, the metric is null → "—".
+export const TURNAROUND_OUTLIER_HOURS = 168; // 7 days
+
 export interface MetricsSummary {
   gradedCount: number;
   totalEdits: number;
   avgEditsPerSubmission: number;
   avgConfidencePct: number | null;       // METRIC-01 rubric-alignment confidence (0–100)
-  avgTurnaroundHours: number | null;     // METRIC-01 feedback turnaround (graded_at - uploaded_at)
+  medianTurnaroundHours: number | null;  // METRIC-01 feedback turnaround (median, outliers excluded)
   estimatedMinutesSaved: number;         // METRIC-01 time saved
+}
+
+// Median of a numeric list (returns null for an empty list).
+function median(xs: number[]): number | null {
+  if (!xs.length) return null;
+  const sorted = [...xs].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
 export interface EditRatePoint {
@@ -78,7 +93,9 @@ export async function fetchMetricsSummary(): Promise<MetricsSummary> {
     : null;
 
   // Turnaround: graded_at (submission_grades.created_at) - uploaded_at (submissions.created_at).
-  let avgTurnaroundHours: number | null = null;
+  // Median, with stale-data outliers (> TURNAROUND_OUTLIER_HOURS) excluded so one essay that sat
+  // for weeks before grading can't blow the metric up.
+  let medianTurnaroundHours: number | null = null;
   if (gradedSubmissionIds.length) {
     const { data: subsData } = await supabase
       .from('submissions')
@@ -91,10 +108,10 @@ export async function fetchMetricsSummary(): Promise<MetricsSummary> {
       const up = uploadedAt.get(subId);
       if (up) {
         const hrs = (new Date(g.created_at).getTime() - new Date(up).getTime()) / 36e5;
-        if (hrs >= 0) deltas.push(hrs);
+        if (hrs >= 0 && hrs <= TURNAROUND_OUTLIER_HOURS) deltas.push(hrs);
       }
     }
-    if (deltas.length) avgTurnaroundHours = deltas.reduce((a, b) => a + b, 0) / deltas.length;
+    medianTurnaroundHours = median(deltas);
   }
 
   const estimatedMinutesSaved =
@@ -105,7 +122,7 @@ export async function fetchMetricsSummary(): Promise<MetricsSummary> {
     totalEdits,
     avgEditsPerSubmission: gradedCount ? totalEdits / gradedCount : 0,
     avgConfidencePct,
-    avgTurnaroundHours,
+    medianTurnaroundHours,
     estimatedMinutesSaved,
   };
 }
