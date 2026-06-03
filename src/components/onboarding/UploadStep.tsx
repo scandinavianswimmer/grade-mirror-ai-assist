@@ -173,8 +173,8 @@ const UploadStep = ({ onComplete, onBack, styleData, userId }: UploadStepProps) 
               Privacy & Security
             </h4>
             <div className="space-y-2 text-sm text-green-800">
-              <p>All student information will be handled with the strictest confidentiality and used solely for creating your personalized grading profile.</p>
-              <p>Your data is encrypted and never shared with other teachers or third parties.</p>
+              <p>Your uploads are used solely to build your personalized grading profile and are never shared with other teachers.</p>
+              <p>Data is encrypted in transit and at rest. Grading is performed by a third-party AI provider; you can control AI personalization in your privacy settings.</p>
             </div>
           </Card>
 

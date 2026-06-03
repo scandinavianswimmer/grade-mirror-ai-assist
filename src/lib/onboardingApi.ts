@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getSignedUrl } from './fileUpload';
 
 interface OnboardingProfile {
   basicInfo: {
@@ -71,22 +72,17 @@ export const uploadGradingExample = async (userId: string, file: File, title: st
     .upload(fileName, file);
 
   if (uploadError) {
-    console.error('Error uploading file:', uploadError);
+    console.error('Error uploading file');
     throw uploadError;
   }
 
-  // Get the public URL
-  const { data: { publicUrl } } = supabase.storage
-    .from('grading-examples')
-    .getPublicUrl(fileName);
-
-  // Save metadata to database
+  // Store the storage PATH (not a public URL). The bucket is private; we sign on read (C6).
   const { data, error } = await supabase
     .from('grading_examples')
     .insert({
       user_id: userId,
       title,
-      file_url: publicUrl,
+      file_url: fileName,
       file_type: file.type
     })
     .select()
@@ -112,10 +108,17 @@ export const getGradingExamples = async (userId: string): Promise<GradingExample
     throw error;
   }
 
-  return data?.map(item => ({
-    ...item,
-    teacher_comments: typeof item.teacher_comments === 'string' ? item.teacher_comments : ''
-  })) || [];
+  // file_url holds a storage PATH for private-bucket objects — sign it on read (C6).
+  // Legacy rows may hold an http(s) URL; pass those through unchanged.
+  return await Promise.all(
+    (data || []).map(async (item) => ({
+      ...item,
+      file_url: item.file_url && !/^https?:\/\//i.test(item.file_url)
+        ? (await getSignedUrl('grading-examples', item.file_url)) ?? item.file_url
+        : item.file_url,
+      teacher_comments: typeof item.teacher_comments === 'string' ? item.teacher_comments : ''
+    }))
+  );
 };
 
 export const updateGradingExampleComments = async (exampleId: string, comments: string): Promise<void> => {

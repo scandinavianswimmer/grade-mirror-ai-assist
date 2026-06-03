@@ -1,6 +1,6 @@
 
 import { supabase } from './supabase';
-import { uploadFile, extractTextFromFile } from './fileUpload';
+import { extractTextFromFile, getSignedUrl } from './fileUpload';
 
 export interface ProcessedSubmission {
   success: boolean;
@@ -47,24 +47,20 @@ export const processSubmissionFile = async (
       return { success: false, error: uploadError.message };
     }
 
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from('submissions')
-      .getPublicUrl(storagePath);
+    // Private bucket — short-lived signed URL only, never public (C6).
+    const signedUrl = await getSignedUrl('submissions', storagePath);
 
     // Extract text content from file
     let extractedText = '';
     try {
       extractedText = await extractTextFromFile(file);
-      console.log('Text extraction successful, length:', extractedText.length);
-    } catch (textError) {
-      console.warn('Text extraction failed:', textError);
-      // Continue without text extraction - this is not critical
+    } catch {
+      // Continue without text extraction - this is not critical; server-side ingest is authoritative.
     }
 
     return {
       success: true,
-      url: urlData.publicUrl,
+      url: signedUrl ?? undefined,
       storagePath,
       extractedText
     };

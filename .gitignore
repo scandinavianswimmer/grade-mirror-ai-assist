@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Secrets — never commit. Run `git rm --cached .env` to untrack the existing one.
+.env
+.env.*
+!.env.example
+
+# Supabase CLI cache (project ref, pooler url, linked-project) — not source.
+supabase/.temp/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

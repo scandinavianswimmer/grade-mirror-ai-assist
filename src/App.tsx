@@ -4,33 +4,38 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/components/AuthProvider";
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 import AuthGuard from "@/components/AuthGuard";
 import LoginOverlay from "@/components/LoginOverlay";
 import TeacherOnboarding from "@/components/onboarding/TeacherOnboarding";
-import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
-import CreateAssignment from "./pages/CreateAssignment";
-import AssignmentDetail from "./pages/AssignmentDetail";
-import SubmissionDetail from "./pages/SubmissionDetail";
-import Upload from "./pages/Upload";
-import GradingPreview from "./pages/GradingPreview";
-import Training from "./pages/Training";
-import LMSIntegration from "./pages/LMSIntegration";
-import LMSCallback from "./pages/LMSCallback";
-import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
-import FreemiumDashboard from "./pages/FreemiumDashboard";
-import UploadTraining from "./pages/UploadTraining";
-import SubmitAssignment from "./pages/SubmitAssignment";
-import Onboarding from "./pages/Onboarding";
-import OnboardingFlow from "./pages/OnboardingFlow";
-import PodcastGenerator from "./pages/PodcastGenerator";
-import PodcastDetail from "./pages/PodcastDetail";
-import { PdfSubmission } from "./pages/PdfSubmission";
-import Pitch from "./pages/Pitch";
+// Route-level code splitting — keep the initial bundle small (M39). Heavy pages load on demand.
+const Index = lazy(() => import("./pages/Index"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const CreateAssignment = lazy(() => import("./pages/CreateAssignment"));
+const AssignmentDetail = lazy(() => import("./pages/AssignmentDetail"));
+const SubmissionDetail = lazy(() => import("./pages/SubmissionDetail"));
+const Upload = lazy(() => import("./pages/Upload"));
+const GradingPreview = lazy(() => import("./pages/GradingPreview"));
+const Training = lazy(() => import("./pages/Training"));
+const LMSIntegration = lazy(() => import("./pages/LMSIntegration"));
+const LMSCallback = lazy(() => import("./pages/LMSCallback"));
+const Profile = lazy(() => import("./pages/Profile"));
+const FreemiumDashboard = lazy(() => import("./pages/FreemiumDashboard"));
+const UploadTraining = lazy(() => import("./pages/UploadTraining"));
+const SubmitAssignment = lazy(() => import("./pages/SubmitAssignment"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const OnboardingFlow = lazy(() => import("./pages/OnboardingFlow"));
+const PodcastGenerator = lazy(() => import("./pages/PodcastGenerator"));
+const PodcastDetail = lazy(() => import("./pages/PodcastDetail"));
+const PdfSubmission = lazy(() => import("./pages/PdfSubmission").then((m) => ({ default: m.PdfSubmission })));
+const Pitch = lazy(() => import("./pages/Pitch"));
+const Billing = lazy(() => import("./pages/Billing"));
+const Metrics = lazy(() => import("./pages/Metrics"));
+const History = lazy(() => import("./pages/History"));
 
 const queryClient = new QueryClient();
 
@@ -131,6 +136,16 @@ const AppContent = () => {
       <Routes>
         <Route path="/pitch" element={<Pitch />} />
         <Route path="*" element={<NotFound />} />
+      </Routes>
+    );
+  }
+
+  // OAuth return (AUTH-02): render the callback handler directly so the login
+  // overlay never flashes while Supabase establishes the session from the URL.
+  if (location.pathname === '/auth/callback') {
+    return (
+      <Routes>
+        <Route path="/auth/callback" element={<AuthCallback />} />
       </Routes>
     );
   }
@@ -247,6 +262,24 @@ const AppContent = () => {
           <Profile />
         </AuthGuard>
       } />
+
+      <Route path="/billing" element={
+        <AuthGuard>
+          <Billing />
+        </AuthGuard>
+      } />
+
+      <Route path="/metrics" element={
+        <AuthGuard>
+          <Metrics />
+        </AuthGuard>
+      } />
+
+      <Route path="/history" element={
+        <AuthGuard>
+          <History />
+        </AuthGuard>
+      } />
       
       <Route path="/podcast-generator" element={
         <AuthGuard>
@@ -263,6 +296,7 @@ const AppContent = () => {
       <Route path="/pdf/submission/:id" element={<PdfSubmission />} />
       <Route path="/pitch" element={<Pitch />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -278,7 +312,13 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <AppContent />
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+                Loading…
+              </div>
+            }>
+              <AppContent />
+            </Suspense>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

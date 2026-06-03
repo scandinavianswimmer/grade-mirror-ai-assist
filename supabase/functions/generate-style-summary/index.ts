@@ -1,120 +1,90 @@
+// POST /generate-style-summary
+// Auth: JWT. Identity from the token (C2). Exemplars are fetched server-side, scoped to the
+// teacher (C3/C23) — the client never supplies examples. Model name is env-configured (M54).
+import { handlePreflight } from "../_shared/cors.ts";
+import { withErrors, ok, AppError } from "../_shared/http.ts";
+import { getUserFromJWT } from "../_shared/auth.ts";
+import { userClient } from "../_shared/db.ts";
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const MODEL = Deno.env.get("GEMINI_STYLE_MODEL") || "gemini-2.5-flash";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+Deno.serve((req) => {
+  const pre = handlePreflight(req);
+  if (pre) return pre;
 
-interface StyleSummaryRequest {
-  userId: string;
-  examples: any[];
-}
+  return withErrors(req, async () => {
+    if (req.method !== "POST") throw new AppError(405, "method", "POST only");
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+    const { userId } = await getUserFromJWT(req);
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+    if (!geminiApiKey) throw new AppError(503, "config", "AI provider is not configured");
 
-  try {
-    const { userId, examples }: StyleSummaryRequest = await req.json();
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    const db = userClient(req);
 
-    if (!geminiApiKey) {
-      throw new Error('Gemini API key not configured');
+    // Building a style profile IS training on teacher content — require explicit consent (C10).
+    const { data: privacy } = await db
+      .from("privacy_settings")
+      .select("allow_training_on_content")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (privacy?.allow_training_on_content !== true) {
+      throw new AppError(403, "consent", "Enable 'Allow AI training with your content' to build a style profile");
     }
 
-    // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    // Fetch the teacher's own exemplars server-side (RLS-scoped). Never trust client input.
+    const { data: examples } = await db
+      .from("training_examples")
+      .select("essay, rubric, feedback, grade")
+      .eq("user_id", userId)
+      .eq("is_exemplar", true) // only genuine style exemplars (H21)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (!examples?.length) {
+      throw new AppError(400, "input", "No grading exemplars found to build a style profile");
+    }
+
+    const examplesText = examples
+      .map((e, i) =>
+        `Example ${i + 1}:\n` +
+        `Essay excerpt: ${String(e.essay ?? "").slice(0, 300)}\n` +
+        `Rubric: ${String(e.rubric ?? "")}\n` +
+        `Teacher feedback: ${String(e.feedback ?? "")}\n` +
+        `Teacher grade: ${String(e.grade ?? "")}`,
+      )
+      .join("\n\n");
+
+    const prompt =
+      "Analyze and summarize this teacher's grading style from their own past grading examples. " +
+      "Focus on: feedback approach and tone, grading criteria emphasis, communication style, " +
+      "assessment patterns, and areas of focus. Provide a specific, actionable summary that can " +
+      "guide an AI to grade in a similar manner.\n\nGrading Examples:\n" + examplesText;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${geminiApiKey}`,
       {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 1024 },
+        }),
+      },
     );
 
-    // Build prompt from examples
-    const examplesText = examples.map((example, index) => 
-      `Example ${index + 1}:
-      Essay: ${example.essay?.substring(0, 300)}...
-      Rubric: ${example.rubric}
-      Your Feedback: ${example.feedback}
-      Your Grade: ${example.grade}`
-    ).join('\n\n');
-
-    const prompt = `Based on the following grading examples, analyze and summarize this teacher's grading style. Focus on:
-1. Feedback approach and tone
-2. Grading criteria emphasis
-3. Communication style
-4. Assessment patterns
-5. Areas of focus
-
-Grading Examples:
-${examplesText}
-
-Provide a comprehensive summary of the teacher's grading style that can be used to train an AI to grade in a similar manner. Be specific about patterns you observe.`;
-
-    // Call Gemini API
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1024,
-        }
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status}`);
-    }
+    if (!response.ok) throw new AppError(502, "ai_upstream", `AI provider error ${response.status}`);
 
     const data = await response.json();
-    const summary = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const summary = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!summary) throw new AppError(502, "ai_empty", "AI returned no content");
 
-    if (!summary) {
-      throw new Error('No response from Gemini API');
-    }
+    await db.from("ai_profiles").upsert({
+      user_id: userId,
+      grading_style_summary: summary,
+      last_trained: new Date().toISOString(),
+      ai_model_id: `teacher_${userId}`,
+    });
 
-    // Save the AI profile
-    await supabaseClient
-      .from('ai_profiles')
-      .upsert({
-        user_id: userId,
-        grading_style_summary: summary,
-        last_trained: new Date().toISOString(),
-        ai_model_id: `teacher_${userId}_${Date.now()}`
-      });
-
-    return new Response(
-      JSON.stringify({ summary }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-
-  } catch (error) {
-    console.error('Error in generate-style-summary:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
-  }
+    return ok(req, { summary });
+  });
 });

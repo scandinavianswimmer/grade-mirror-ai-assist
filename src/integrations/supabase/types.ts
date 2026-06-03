@@ -10,10 +10,59 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "14.5"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
+      access_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          resource: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          resource: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          resource?: string
+        }
+        Relationships: []
+      }
       ai_model_health: {
         Row: {
           average_response_time_ms: number | null
@@ -136,6 +185,100 @@ export type Database = {
         }
         Relationships: []
       }
+      annotation_edits: {
+        Row: {
+          action: string
+          annotation_id: string
+          created_at: string
+          id: string
+          original: Json | null
+          revised: Json | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          annotation_id: string
+          created_at?: string
+          id?: string
+          original?: Json | null
+          revised?: Json | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          annotation_id?: string
+          created_at?: string
+          id?: string
+          original?: Json | null
+          revised?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "annotation_edits_annotation_id_fkey"
+            columns: ["annotation_id"]
+            isOneToOne: false
+            referencedRelation: "annotations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      annotations: {
+        Row: {
+          ai_comment: string | null
+          comment: string
+          created_at: string
+          end_index: number | null
+          id: string
+          matched: boolean
+          quote: string
+          start_index: number | null
+          status: string
+          submission_id: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_comment?: string | null
+          comment: string
+          created_at?: string
+          end_index?: number | null
+          id?: string
+          matched?: boolean
+          quote: string
+          start_index?: number | null
+          status?: string
+          submission_id: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_comment?: string | null
+          comment?: string
+          created_at?: string
+          end_index?: number | null
+          id?: string
+          matched?: boolean
+          quote?: string
+          start_index?: number | null
+          status?: string
+          submission_id?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "annotations_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignments: {
         Row: {
           canvas_course_id: string | null
@@ -146,6 +289,7 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          instructions: string | null
           prompt_instructions: string | null
           rubric_json: Json | null
           rubric_text: string | null
@@ -163,6 +307,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          instructions?: string | null
           prompt_instructions?: string | null
           rubric_json?: Json | null
           rubric_text?: string | null
@@ -180,6 +325,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          instructions?: string | null
           prompt_instructions?: string | null
           rubric_json?: Json | null
           rubric_text?: string | null
@@ -225,6 +371,33 @@ export type Database = {
           created_at?: string
           details_jsonb?: Json
           id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      consent_records: {
+        Row: {
+          created_at: string
+          granted: boolean
+          id: string
+          note: string | null
+          scope: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted: boolean
+          id?: string
+          note?: string | null
+          scope: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted?: boolean
+          id?: string
+          note?: string | null
+          scope?: string
           user_id?: string
         }
         Relationships: []
@@ -332,6 +505,45 @@ export type Database = {
           },
         ]
       }
+      lms_credentials: {
+        Row: {
+          access_token_enc: string | null
+          canvas_url: string | null
+          created_at: string
+          id: string
+          platform: string
+          refresh_token_enc: string | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+          vault_secret_id: string | null
+        }
+        Insert: {
+          access_token_enc?: string | null
+          canvas_url?: string | null
+          created_at?: string
+          id?: string
+          platform?: string
+          refresh_token_enc?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+          vault_secret_id?: string | null
+        }
+        Update: {
+          access_token_enc?: string | null
+          canvas_url?: string | null
+          created_at?: string
+          id?: string
+          platform?: string
+          refresh_token_enc?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+          vault_secret_id?: string | null
+        }
+        Relationships: []
+      }
       lms_integrations: {
         Row: {
           access_token: string
@@ -434,6 +646,7 @@ export type Database = {
           auto_delete_training_data: boolean | null
           created_at: string | null
           id: string
+          retention_days: number | null
           user_id: string
         }
         Insert: {
@@ -442,6 +655,7 @@ export type Database = {
           auto_delete_training_data?: boolean | null
           created_at?: string | null
           id?: string
+          retention_days?: number | null
           user_id: string
         }
         Update: {
@@ -450,6 +664,7 @@ export type Database = {
           auto_delete_training_data?: boolean | null
           created_at?: string | null
           id?: string
+          retention_days?: number | null
           user_id?: string
         }
         Relationships: [
@@ -462,34 +677,150 @@ export type Database = {
           },
         ]
       }
+      rubric_criteria: {
+        Row: {
+          created_at: string
+          id: string
+          level_descriptors: Json
+          max_score: number
+          name: string
+          rubric_id: string
+          sort_order: number
+          user_id: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level_descriptors?: Json
+          max_score?: number
+          name: string
+          rubric_id: string
+          sort_order?: number
+          user_id: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level_descriptors?: Json
+          max_score?: number
+          name?: string
+          rubric_id?: string
+          sort_order?: number
+          user_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rubric_criteria_rubric_id_fkey"
+            columns: ["rubric_id"]
+            isOneToOne: false
+            referencedRelation: "rubrics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rubrics: {
         Row: {
+          assignment_id: string | null
           created_at: string | null
           id: string
           rubric_json: Json
           title: string
+          total_points: number | null
           user_id: string
         }
         Insert: {
+          assignment_id?: string | null
           created_at?: string | null
           id?: string
           rubric_json: Json
           title: string
+          total_points?: number | null
           user_id: string
         }
         Update: {
+          assignment_id?: string | null
           created_at?: string | null
           id?: string
           rubric_json?: Json
           title?: string
+          total_points?: number | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "rubrics_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rubrics_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      submission_grades: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          criteria: Json
+          flags: Json
+          id: string
+          letter: string | null
+          model_id: string | null
+          overall_max: number | null
+          overall_score: number | null
+          rubric_snapshot: Json | null
+          schema_version: string
+          submission_id: string
+          summary_feedback: string | null
+          user_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          criteria?: Json
+          flags?: Json
+          id?: string
+          letter?: string | null
+          model_id?: string | null
+          overall_max?: number | null
+          overall_score?: number | null
+          rubric_snapshot?: Json | null
+          schema_version: string
+          submission_id: string
+          summary_feedback?: string | null
+          user_id: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          criteria?: Json
+          flags?: Json
+          id?: string
+          letter?: string | null
+          model_id?: string | null
+          overall_max?: number | null
+          overall_score?: number | null
+          rubric_snapshot?: Json | null
+          schema_version?: string
+          submission_id?: string
+          summary_feedback?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submission_grades_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
             referencedColumns: ["id"]
           },
         ]
@@ -503,8 +834,11 @@ export type Database = {
           canvas_submission_id: string | null
           created_at: string | null
           essay: string | null
+          extracted_text: string | null
+          extraction_confidence: number | null
           feedback: string | null
           feedback_json: Json | null
+          file_path: string | null
           file_url: string | null
           final_score: number | null
           id: string
@@ -525,8 +859,11 @@ export type Database = {
           canvas_submission_id?: string | null
           created_at?: string | null
           essay?: string | null
+          extracted_text?: string | null
+          extraction_confidence?: number | null
           feedback?: string | null
           feedback_json?: Json | null
+          file_path?: string | null
           file_url?: string | null
           final_score?: number | null
           id?: string
@@ -547,8 +884,11 @@ export type Database = {
           canvas_submission_id?: string | null
           created_at?: string | null
           essay?: string | null
+          extracted_text?: string | null
+          extraction_confidence?: number | null
           feedback?: string | null
           feedback_json?: Json | null
+          file_path?: string | null
           file_url?: string | null
           final_score?: number | null
           id?: string
@@ -734,6 +1074,27 @@ export type Database = {
           },
         ]
       }
+      teacher_style_profiles: {
+        Row: {
+          style_json: Json
+          style_summary: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          style_json?: Json
+          style_summary?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          style_json?: Json
+          style_summary?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       training_data: {
         Row: {
           created_at: string | null
@@ -741,6 +1102,7 @@ export type Database = {
           file_url: string
           id: string
           processed: boolean | null
+          title: string | null
           user_id: string
         }
         Insert: {
@@ -749,6 +1111,7 @@ export type Database = {
           file_url: string
           id?: string
           processed?: boolean | null
+          title?: string | null
           user_id: string
         }
         Update: {
@@ -757,6 +1120,7 @@ export type Database = {
           file_url?: string
           id?: string
           processed?: boolean | null
+          title?: string | null
           user_id?: string
         }
         Relationships: [
@@ -776,6 +1140,7 @@ export type Database = {
           feedback: string | null
           grade: string | null
           id: string
+          is_exemplar: boolean | null
           rubric: string
           user_id: string
         }
@@ -785,6 +1150,7 @@ export type Database = {
           feedback?: string | null
           grade?: string | null
           id?: string
+          is_exemplar?: boolean | null
           rubric: string
           user_id: string
         }
@@ -794,6 +1160,7 @@ export type Database = {
           feedback?: string | null
           grade?: string | null
           id?: string
+          is_exemplar?: boolean | null
           rubric?: string
           user_id?: string
         }
@@ -995,6 +1362,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

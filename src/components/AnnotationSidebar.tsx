@@ -20,40 +20,40 @@ export default function AnnotationSidebar({ anchors }: { anchors: AnchorRange[] 
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
       setActive(id);
-      
-      // Add pulse effect
       element.classList.add('animate-pulse');
       setTimeout(() => element.classList.remove('animate-pulse'), 1500);
     }
   };
 
   return (
-    <aside className="sticky top-20 space-y-3 max-h-[calc(100vh-5rem)] overflow-y-auto">
-      {anchors.map(a => (
+    <aside className="sticky top-20 max-h-[calc(100vh-5rem)] space-y-3 overflow-y-auto pr-1">
+      <h3 className="px-1 font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        Margin notes
+      </h3>
+      {anchors.map((a) => (
         <div
           id={`note-${a.id}`}
           key={a.id}
           role="note"
-          className={`rounded-lg border p-3 text-sm break-inside-avoid transition-all cursor-pointer ${
-            active === a.id
-              ? 'border-red-500 ring-1 ring-red-200 bg-red-50'
-              : 'border-gray-200 hover:border-gray-300'
-          }`}
           onClick={() => scrollTo(a.id)}
+          className={`cursor-pointer break-inside-avoid rounded-lg border p-3 text-sm transition-all ${
+            active === a.id
+              ? 'border-primary bg-primary/5 ring-1 ring-primary/20 shadow-sm'
+              : 'border-border bg-card hover:border-primary/40 hover:shadow-sm'
+          }`}
         >
-          <div className="mb-2 font-mono text-red-600 font-bold">[{a.n}]</div>
-          <div className="line-clamp-2 italic text-gray-600 text-xs mb-2 border-l-2 border-gray-200 pl-2">
-            "{a.text.length > 60 ? a.text.slice(0, 60) + '...' : a.text}"
+          <div className="mb-2 inline-flex h-5 min-w-5 items-center justify-center rounded bg-accent/15 px-1.5 metric text-xs font-semibold text-accent-foreground">
+            {a.n}
           </div>
-          <div className="text-gray-800">{a.comment}</div>
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              scrollTo(a.id);
-            }}
-            className="mt-2 text-xs text-blue-600 underline hover:text-blue-800"
+          <div className="mb-2 border-l-2 border-accent/60 pl-2 text-xs italic text-muted-foreground line-clamp-2">
+            “{a.text.length > 60 ? a.text.slice(0, 60) + '…' : a.text}”
+          </div>
+          <div className="leading-relaxed text-foreground/90">{a.comment}</div>
+          <button
+            onClick={(e) => { e.stopPropagation(); scrollTo(a.id); }}
+            className="mt-2 text-xs font-medium text-primary underline-offset-4 hover:underline"
           >
-            Jump to text
+            Jump to text →
           </button>
         </div>
       ))}

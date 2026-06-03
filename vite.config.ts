@@ -19,4 +19,18 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    // Split heavy vendors into their own chunks so the main bundle stays small (M39/L75).
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ["react", "react-dom", "react-router-dom"],
+          supabase: ["@supabase/supabase-js"],
+          pdf: ["pdfjs-dist", "mammoth"],
+          charts: ["recharts"],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 900,
+  },
 }));

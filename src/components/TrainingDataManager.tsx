@@ -69,9 +69,8 @@ const TrainingDataManager = () => {
     if (!renameDialog.item || !newName.trim()) return;
 
     try {
-      await updateTrainingData(renameDialog.item.id, { 
-        data_type: newName.trim() as "feedback" | "rubric" | "assignment"
-      });
+      // Rename sets the title label — never the data_type category (M51).
+      await updateTrainingData(renameDialog.item.id, { title: newName.trim() });
       toast({
         title: "Training data renamed",
         description: "Name updated successfully."
@@ -91,7 +90,7 @@ const TrainingDataManager = () => {
 
   const openRenameDialog = (item: TrainingData) => {
     setRenameDialog({ open: true, item });
-    setNewName(item.data_type);
+    setNewName(item.title || item.data_type);
   };
 
   const getFileIcon = (dataType: string) => {
@@ -152,7 +151,7 @@ const TrainingDataManager = () => {
                 <div className="flex items-center gap-3">
                   {getFileIcon(item.data_type)}
                   <div>
-                    <p className="font-medium">{item.data_type}</p>
+                    <p className="font-medium">{item.title || item.data_type}</p>
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                       <Calendar className="w-3 h-3" />
                       <span>{new Date(item.created_at).toLocaleDateString()}</span>

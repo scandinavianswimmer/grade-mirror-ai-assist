@@ -73,31 +73,72 @@ export const exportUserData = async (userId: string) => {
   }
 }
 
-// Data deletion
+// Best-effort delete that ignores "table/column doesn't exist" so a partial schema
+// (v1 + additive v2) never aborts the whole deletion (H29).
+const tryDelete = async (run: () => Promise<{ error: unknown }>) => {
+  try { await run() } catch { /* table may not exist in this schema */ }
+}
+
+// Remove every object a user owns from a private bucket (best-effort).
+const purgeBucket = async (bucket: string, prefix: string) => {
+  try {
+    const { data } = await supabase.storage.from(bucket).list(prefix, { limit: 1000 })
+    if (data?.length) {
+      await supabase.storage.from(bucket).remove(data.map((f) => `${prefix}/${f.name}`))
+    }
+  } catch { /* bucket may not exist */ }
+}
+
+// Full data deletion: DB rows across v1 + v2 tables AND storage files (H29, H31).
+// Note: deleting the auth account itself requires a service-role server function and is
+// not performed here — this clears all of the user's content and storage objects.
 export const deleteAllUserData = async (userId: string): Promise<void> => {
-  // First get assignment IDs for this user
-  const { data: assignments } = await supabase
-    .from('assignments')
-    .select('id')
-    .eq('user_id', userId)
-  
-  const assignmentIds = assignments?.map(a => a.id) || []
-  
-  // Delete submissions for user's assignments
+  // Assignment + submission IDs needed to clear child rows.
+  const { data: assignments } = await supabase.from('assignments').select('id').eq('user_id', userId)
+  const assignmentIds = assignments?.map((a) => a.id) || []
+
+  let submissionIds: string[] = []
   if (assignmentIds.length > 0) {
-    await supabase
-      .from('submissions')
-      .delete()
-      .in('assignment_id', assignmentIds)
+    const { data: subs } = await supabase.from('submissions').select('id').in('assignment_id', assignmentIds)
+    submissionIds = subs?.map((s) => s.id) || []
   }
-  
-  // Delete user's data in order to respect foreign key constraints
-  await supabase.from('assignments').delete().eq('user_id', userId)
-  await supabase.from('rubrics').delete().eq('user_id', userId)
-  await supabase.from('training_data').delete().eq('user_id', userId)
-  await supabase.from('privacy_settings').delete().eq('user_id', userId)
-  await supabase.from('lms_integrations').delete().eq('user_id', userId)
-  await supabase.from('llm_sessions').delete().eq('user_id', userId)
+
+  // v2 grade artifacts (scoped by user_id).
+  await tryDelete(() => supabase.from('annotation_edits').delete().eq('user_id', userId))
+  await tryDelete(() => supabase.from('annotations').delete().eq('user_id', userId))
+  await tryDelete(() => supabase.from('submission_grades').delete().eq('user_id', userId))
+  await tryDelete(() => supabase.from('teacher_style_profiles').delete().eq('user_id', userId))
+  await tryDelete(() => supabase.from('consent_records').delete().eq('user_id', userId))
+  await tryDelete(() => supabase.from('lms_credentials').delete().eq('user_id', userId))
+  await tryDelete(() => supabase.from('access_audit_log').delete().eq('actor_id', userId))
+
+  // Submissions (and any child rows keyed by submission_id).
+  if (submissionIds.length > 0) {
+    await tryDelete(() => supabase.from('annotations').delete().in('submission_id', submissionIds))
+    await tryDelete(() => supabase.from('submission_grades').delete().in('submission_id', submissionIds))
+  }
+  if (assignmentIds.length > 0) {
+    await tryDelete(() => supabase.from('submissions').delete().in('assignment_id', assignmentIds))
+  }
+
+  // v1 + core tables.
+  await tryDelete(() => supabase.from('rubric_criteria').delete().eq('user_id', userId))
+  await tryDelete(() => supabase.from('assignments').delete().eq('user_id', userId))
+  await tryDelete(() => supabase.from('rubrics').delete().eq('user_id', userId))
+  await tryDelete(() => supabase.from('training_data').delete().eq('user_id', userId))
+  await tryDelete(() => supabase.from('training_examples').delete().eq('user_id', userId))
+  await tryDelete(() => supabase.from('grading_examples').delete().eq('user_id', userId))
+  await tryDelete(() => supabase.from('ai_profiles').delete().eq('user_id', userId))
+  await tryDelete(() => supabase.from('teacher_profiles').delete().eq('user_id', userId))
+  await tryDelete(() => supabase.from('lms_integrations').delete().eq('user_id', userId))
+  await tryDelete(() => supabase.from('llm_sessions').delete().eq('user_id', userId))
+  await tryDelete(() => supabase.from('privacy_settings').delete().eq('user_id', userId))
+
+  // Storage objects across all user-owned buckets (H31).
+  await purgeBucket('submissions', userId)
+  await purgeBucket('uploads', userId)
+  await purgeBucket('grading-examples', userId)
+  await purgeBucket('training-data', userId)
 }
 
 // Auto-delete functionality

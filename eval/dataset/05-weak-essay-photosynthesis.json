@@ -1,0 +1,54 @@
+{
+  "id": "05-weak-essay-photosynthesis",
+  "title": "Weak but on-topic short-answer (different assignment: photosynthesis)",
+  "category": "realistic",
+  "notes": "A second assignment/rubric (science short-answer) to prove the harness is not hard-coded to one prompt. The response is on-topic but partly wrong and missing key concepts. Curated teacher reference at roughly 30-55/100, graded (on-topic, low quality - distinct from withheld off-topic).",
+  "assignmentPrompt": "Short answer (150-250 words): Explain the process of photosynthesis. Your answer must (1) name the inputs and outputs, (2) identify where in the plant cell it occurs, and (3) explain why photosynthesis matters for the food chain.",
+  "classContext": "7th grade Life Science, on-level.",
+  "rubric": {
+    "totalPoints": 100,
+    "criteria": [
+      {
+        "name": "Inputs & Outputs",
+        "weight": 2,
+        "maxScore": 10,
+        "levelDescriptors": {
+          "10": "Correctly names inputs (CO2, water, light) and outputs (glucose, oxygen).",
+          "5": "Partially correct; some inputs/outputs missing or wrong.",
+          "1": "Inputs and outputs absent or incorrect."
+        }
+      },
+      {
+        "name": "Cellular Location",
+        "weight": 1,
+        "maxScore": 10,
+        "levelDescriptors": {
+          "10": "Correctly identifies the chloroplast (and chlorophyll's role).",
+          "5": "Vague or partially correct location.",
+          "1": "No or incorrect location."
+        }
+      },
+      {
+        "name": "Significance to Food Chain",
+        "weight": 2,
+        "maxScore": 10,
+        "levelDescriptors": {
+          "10": "Clear explanation of producers as the base of the food chain.",
+          "5": "Mentions importance but explanation is thin or muddled.",
+          "1": "No explanation of significance."
+        }
+      }
+    ]
+  },
+  "submission": "Photosynthesis is how plants make food. The plant takes in sunlight and uses it to grow. Plants are green because of a green stuff inside them. Photosynthesis happens in the leaves of the plant where the sun hits them.\n\nThe plant breathes in air and drinks water from the ground through its roots. Then the sunlight turns that into energy so the plant does not get hungry. Plants make oxygen too which is good for people to breathe.\n\nPhotosynthesis is important because without plants there would be no oxygen and animals need plants to eat. So plants help everything stay alive.",
+  "expected": {
+    "disposition": "graded",
+    "scoreRange": { "min": 28, "max": 58 },
+    "flagsExpected": [],
+    "relevanceOnTopic": true
+  },
+  "gate": {
+    "type": "agreement",
+    "description": "Final score should land in the teacher's expected range (28-58). On-topic but low quality, so it must be GRADED (not withheld). Used for agreement + calibration metrics; does not by itself hard-fail the run."
+  }
+}

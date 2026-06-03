@@ -1,0 +1,46 @@
+# Phase 14 (DEPLOY-02): CI builds every push/PR; the deploy job ships edge functions on merge to a
+# release branch when the Supabase token is present. Frontend hosting (DEPLOY-01) + custom domain are
+# configured on the host (Netlify/Cloudflare Pages read public/_headers automatically).
+name: ci
+
+on:
+  push:
+    branches: [main, aita-production-build]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Eval gate (only when a Gemini key is configured)
+        if: ${{ secrets.GEMINI_API_KEY != '' }}
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: node eval/run.mjs
+
+  deploy-functions:
+    needs: build
+    if: ${{ github.ref == 'refs/heads/main' && secrets.SUPABASE_ACCESS_TOKEN != '' }}
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Deploy edge functions
+        run: |
+          supabase link --project-ref "$SUPABASE_PROJECT_REF"
+          for fn in grade-submission grade-enqueue ingest-document build-style-profile \
+                    generate-style-summary record-feedback-usage stripe-checkout stripe-portal stripe-webhook; do
+            supabase functions deploy "$fn" || echo "skip $fn"
+          done

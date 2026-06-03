@@ -2,14 +2,17 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, FileText, Download } from 'lucide-react';
+import { ArrowLeft, FileText, Download, Pencil, Check, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { createSubmissionWithFile } from '@/lib/submissionApi';
+import { analytics } from '@/lib/analytics';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import FileUpload from '@/components/FileUpload';
+import { statusBadgeClass, statusLabel } from '@/lib/submissionStatus';
 
 interface Assignment {
   id: string;
@@ -35,6 +38,17 @@ const AssignmentDetail = () => {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  // Student name is derived from the filename on upload; the teacher confirms/corrects it (M46).
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState('');
+
+  const saveStudentName = async (id: string) => {
+    const name = draftName.trim();
+    if (!name) { setRenamingId(null); return; }
+    await supabase.from('submissions').update({ student_name: name }).eq('id', id);
+    setSubmissions((prev) => prev.map((s) => (s.id === id ? { ...s, student_name: name } : s)));
+    setRenamingId(null);
+  };
 
   useEffect(() => {
     if (id && user) {
@@ -84,17 +98,38 @@ const AssignmentDetail = () => {
       // Extract student name from filename (remove extension)
       const studentName = file.name.replace(/\.[^/.]+$/, "");
 
-      // Create submission using the API
-      await createSubmissionWithFile({
+      // Create submission + run server-side extraction (ingest-document).
+      const { ingest, ingestError } = await createSubmissionWithFile({
         assignmentId: assignment.id,
         studentName,
         file
       });
 
-      toast({
-        title: "Essay uploaded successfully!",
-        description: `${file.name} uploaded and ready for grading.`
+      analytics.capture('submission_uploaded', {
+        assignment_id: assignment.id,
+        extraction_status: ingest?.status ?? (ingestError ? 'failed' : 'ok'),
       });
+
+      if (ingestError) {
+        toast({
+          title: "Uploaded, but extraction failed",
+          description: `${file.name} was saved, but text extraction failed (${ingestError}). It needs manual review before grading.`,
+          variant: "destructive"
+        });
+      } else if (ingest?.status === 'needs_review') {
+        toast({
+          title: "Uploaded — needs review",
+          description: `Low-confidence extraction (${Math.round((ingest.confidence ?? 0) * 100)}%). Likely a scanned PDF; review before grading.`
+        });
+      } else {
+        const pct = ingest ? Math.round((ingest.confidence ?? 0) * 100) : null;
+        toast({
+          title: "Uploaded & ready to grade",
+          description: pct != null
+            ? `${file.name} extracted (${pct}% confidence). Open it to grade with aiTA.`
+            : `${file.name} uploaded and ready for grading.`
+        });
+      }
 
       // Refresh submissions
       fetchAssignmentData();
@@ -191,7 +226,8 @@ const AssignmentDetail = () => {
             <CardContent>
               <FileUpload
                 onFileSelect={handleFileSelect}
-                acceptedTypes={['.pdf', '.docx', '.doc', '.txt']}
+                acceptedTypes={['.pdf', '.docx', '.txt']}
+                multiple
                 maxSize={10}
                 placeholder="Upload student essays (PDF, DOCX, or TXT files)"
                 showTextExtraction={false}
@@ -224,21 +260,45 @@ const AssignmentDetail = () => {
                       <div className="flex items-center gap-3">
                         <FileText className="w-5 h-5 text-gray-400" />
                         <div>
-                          <div className="font-medium">{submission.student_name}</div>
+                          {renamingId === submission.id ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                value={draftName}
+                                onChange={(e) => setDraftName(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') saveStudentName(submission.id); if (e.key === 'Escape') setRenamingId(null); }}
+                                className="h-8 w-48"
+                                autoFocus
+                                aria-label="Student name"
+                              />
+                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => saveStudentName(submission.id)} aria-label="Save name">
+                                <Check className="w-4 h-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setRenamingId(null)} aria-label="Cancel rename">
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-medium">{submission.student_name}</span>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6 text-gray-400"
+                                onClick={() => { setRenamingId(submission.id); setDraftName(submission.student_name || ''); }}
+                                aria-label="Edit student name"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          )}
                           <div className="text-sm text-gray-500">
                             Uploaded {new Date(submission.created_at).toLocaleDateString()}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          submission.status === 'pending' 
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : submission.status === 'ai_graded'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}>
-                          {submission.status.replace('_', ' ').toUpperCase()}
+                        <span className={`px-2 py-1 rounded-full text-xs ${statusBadgeClass(submission.status)}`}>
+                          {statusLabel(submission.status)}
                         </span>
                         <Link to={`/submission/${submission.id}`}>
                           <Button variant="outline" size="sm">

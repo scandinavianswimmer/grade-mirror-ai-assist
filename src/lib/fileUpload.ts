@@ -6,9 +6,25 @@ import * as pdfjsLib from 'pdfjs-dist';
 export interface FileUploadResult {
   success: boolean;
   url?: string;
+  path?: string;
   text?: string;
   error?: string;
 }
+
+// Create a short-lived signed URL for a private-bucket object. Never use getPublicUrl
+// for student/teacher files (C6).
+export const getSignedUrl = async (
+  bucket: string,
+  path: string,
+  expiresIn = 3600,
+): Promise<string | null> => {
+  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresIn);
+  if (error) {
+    console.error('Failed to create signed URL');
+    return null;
+  }
+  return data?.signedUrl ?? null;
+};
 
 export const uploadFile = async (file: File, bucket: string = 'uploads'): Promise<FileUploadResult> => {
   try {
@@ -36,15 +52,13 @@ export const uploadFile = async (file: File, bucket: string = 'uploads'): Promis
       return { success: false, error: error.message };
     }
 
-    const { data: urlData } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(filePath);
+    // Private buckets only — return a short-lived signed URL, never a public URL (C6).
+    const signedUrl = await getSignedUrl(bucket, filePath);
 
-    console.log('Upload successful, URL:', urlData.publicUrl);
-
-    return { 
-      success: true, 
-      url: urlData.publicUrl 
+    return {
+      success: true,
+      url: signedUrl ?? undefined,
+      path: filePath,
     };
   } catch (error) {
     console.error('Upload exception:', error);
@@ -80,18 +94,9 @@ export const extractTextFromFile = async (file: File): Promise<string> => {
 
     if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
         fileType === 'application/msword') {
-      // Extract text from DOCX files using mammoth
-      console.log('Processing DOCX file with mammoth...');
+      // Extract text from DOCX files using mammoth (do not log extracted content — C7)
       const arrayBuffer = await file.arrayBuffer();
-      console.log('Array buffer size:', arrayBuffer.byteLength);
-      
       const result = await mammoth.extractRawText({ arrayBuffer });
-      console.log('Mammoth extraction result:', {
-        value: result.value.substring(0, 200) + '...',
-        length: result.value.length,
-        messages: result.messages
-      });
-      
       if (result.value && result.value.trim()) {
         return result.value;
       } else {
@@ -121,7 +126,6 @@ export const extractTextFromFile = async (file: File): Promise<string> => {
         fullText += pageText + '\n';
       }
       
-      console.log('PDF text extracted:', fullText.substring(0, 100) + '...');
       return fullText;
     }
 

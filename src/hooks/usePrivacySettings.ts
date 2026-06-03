@@ -63,7 +63,8 @@ export const usePrivacySettings = () => {
       createMutation.mutate({
         user_id: user.id,
         anonymize_student_names: true,
-        allow_training_on_content: true,
+        // Training on teacher content is OFF by default — requires explicit opt-in (C10).
+        allow_training_on_content: false,
         auto_delete_training_data: true,
         ...newSettings
       })

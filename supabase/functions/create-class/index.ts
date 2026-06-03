@@ -1,99 +1,42 @@
+// POST /create-class
+// Auth: JWT. Identity from the token. CORS is allowlisted (M35); no PII logging (C7).
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.2";
+import { handlePreflight } from "../_shared/cors.ts";
+import { withErrors, ok, AppError } from "../_shared/http.ts";
+import { getUserFromJWT } from "../_shared/auth.ts";
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2'
+Deno.serve((req) => {
+  const pre = handlePreflight(req);
+  if (pre) return pre;
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  return withErrors(req, async () => {
+    if (req.method !== "POST") throw new AppError(405, "method", "POST only");
 
-Deno.serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+    const { userId } = await getUserFromJWT(req);
 
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    // Get the authorization header
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      throw new Error('No authorization header')
-    }
-
-    // Verify the user's JWT token
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-    
-    if (authError || !user) {
-      throw new Error('Authentication failed')
-    }
-
-    console.log('Authenticated user:', user.id)
-
-    // Parse the request body
-    const { className, gradeLevel, classSize, classLevel, classTime } = await req.json()
-
-    console.log('Creating class with data:', { className, gradeLevel, classSize, classLevel, classTime })
-
-    // Validate required fields
+    const { className, gradeLevel, classSize, classLevel, classTime } = await req.json().catch(() => ({}));
     if (!className || !gradeLevel || !classSize || !classTime) {
-      throw new Error('Missing required fields')
+      throw new AppError(400, "input", "Missing required fields");
     }
 
-    // Assemble the details JSON object
-    const detailsJsonb = {
-      grade: gradeLevel,
-      size: parseInt(classSize),
-      level: classLevel,
-      time: classTime
-    }
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } },
+    );
 
-    // Insert the new class into the database
     const { data, error } = await supabase
-      .from('classes')
+      .from("classes")
       .insert({
-        user_id: user.id,
+        user_id: userId,
         class_name: className,
-        details_jsonb: detailsJsonb
+        details_jsonb: { grade: gradeLevel, size: parseInt(classSize), level: classLevel, time: classTime },
       })
       .select()
-      .single()
+      .single();
 
-    if (error) {
-      console.error('Database error:', error)
-      throw error
-    }
+    if (error) throw new AppError(500, "db", "Could not create class");
 
-    console.log('Class created successfully:', data)
-
-    return new Response(
-      JSON.stringify({ success: true, class: data }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    )
-
-  } catch (error) {
-    console.error('Error in create-class function:', error)
-    
-    return new Response(
-      JSON.stringify({ 
-        error: error.message || 'An error occurred while creating the class' 
-      }),
-      { 
-        status: 400,
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    )
-  }
-})
+    return ok(req, { success: true, class: data });
+  });
+});

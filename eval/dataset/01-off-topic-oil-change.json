@@ -1,0 +1,55 @@
+{
+  "id": "01-off-topic-oil-change",
+  "title": "Oil-change guide submitted for a Holes literary-analysis essay",
+  "category": "off_topic",
+  "notes": "The regression that motivated this harness: fluent but completely off-topic content (a car-maintenance how-to) submitted for a literature assignment. The relevance gate MUST withhold the grade. A score above the low threshold here is a hard gate failure.",
+  "assignmentPrompt": "Write a literary analysis essay (400-600 words) on Louis Sachar's novel \"Holes\". Argue how the motif of fate vs. free will shapes Stanley Yelnats' character arc. Use at least two specific examples from the text and explain how they support your thesis.",
+  "classContext": "8th grade English Language Arts, on-level.",
+  "rubric": {
+    "totalPoints": 100,
+    "criteria": [
+      {
+        "name": "Thesis & Argument",
+        "weight": 3,
+        "maxScore": 10,
+        "levelDescriptors": {
+          "10": "Clear, arguable thesis about fate vs. free will sustained throughout.",
+          "6": "Thesis present but underdeveloped or inconsistently argued.",
+          "2": "No discernible thesis about the assigned theme."
+        }
+      },
+      {
+        "name": "Textual Evidence",
+        "weight": 3,
+        "maxScore": 10,
+        "levelDescriptors": {
+          "10": "Two or more specific, well-chosen examples from Holes, fully explained.",
+          "6": "Some evidence, thinly explained or loosely connected.",
+          "2": "No textual evidence from the novel."
+        }
+      },
+      {
+        "name": "Organization & Conventions",
+        "weight": 2,
+        "maxScore": 10,
+        "levelDescriptors": {
+          "10": "Logical structure, fluent prose, few errors.",
+          "6": "Generally organized; some lapses in flow or mechanics.",
+          "2": "Disorganized; frequent errors impede meaning."
+        }
+      }
+    ]
+  },
+  "submission": "How to Change Your Car's Engine Oil: A Step-by-Step Guide\n\nChanging your own engine oil is one of the easiest ways to save money and extend the life of your vehicle. Before you begin, gather the following: a socket wrench, an oil filter wrench, a drain pan, a funnel, the correct grade of motor oil (check your owner's manual, often 5W-30 or 0W-20), and a new oil filter.\n\nStep 1: Warm the engine for two to three minutes so the oil flows freely, then turn it off. Step 2: Raise the front of the car with a jack and secure it on jack stands. Never work under a car held up only by a jack. Step 3: Place the drain pan beneath the oil drain plug, then loosen the plug with your socket wrench and let the old oil drain completely. Step 4: Remove the old oil filter with the filter wrench, lightly oil the gasket of the new filter, and screw it on hand-tight. Step 5: Replace the drain plug and tighten it to the torque listed in your manual. Step 6: Using the funnel, add the recommended amount of fresh oil, then check the dipstick to confirm the correct level.\n\nAlways dispose of used motor oil responsibly at an auto-parts store or recycling center. Regular oil changes every 5,000 to 7,500 miles keep your engine clean and running smoothly for years to come.",
+  "expected": {
+    "disposition": "needs_review",
+    "scoreRange": { "min": 0, "max": 10 },
+    "flagsExpected": ["off_topic"],
+    "relevanceOnTopic": false
+  },
+  "gate": {
+    "type": "off_topic_must_be_withheld",
+    "maxAllowedScore": 10,
+    "description": "Off-topic content must be withheld (score <= 10/100 and disposition needs_review). Anything higher reproduces the 100/100-on-unrelated regression and FAILS the gate."
+  }
+}

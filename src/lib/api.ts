@@ -167,12 +167,14 @@ export const uploadFile = async (file: File, bucket: string, path: string) => {
   return data
 }
 
-export const getFileUrl = (bucket: string, path: string) => {
-  const { data } = supabase.storage
+// Buckets are private — return a short-lived signed URL, never a public URL (C6).
+export const getFileUrl = async (bucket: string, path: string) => {
+  const { data, error } = await supabase.storage
     .from(bucket)
-    .getPublicUrl(path)
+    .createSignedUrl(path, 3600)
 
-  return data.publicUrl
+  if (error) throw error
+  return data.signedUrl
 }
 
 // AI Grading API

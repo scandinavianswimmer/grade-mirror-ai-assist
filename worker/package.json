@@ -1,0 +1,9 @@
+{
+  "name": "aita-grading-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "aiTA async grading worker (Cloud Run) — consumes the Upstash grading queue.",
+  "engines": { "node": ">=20" },
+  "scripts": { "start": "node index.mjs" }
+}

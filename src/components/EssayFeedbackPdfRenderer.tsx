@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { parseAIFeedback, type ParsedAIFeedback } from '@/lib/aiParser';
 import { resolveAnchors } from '@/lib/annotations/resolveAnchors';
+import { moderateStudentText } from '@/lib/moderation';
 import EssayWithAnnotations from './EssayWithAnnotations';
 import AnnotationSidebar from './AnnotationSidebar';
 
@@ -32,14 +33,22 @@ export const EssayFeedbackPdfRenderer: React.FC<EssayFeedbackPdfRendererProps> =
     return <div className="p-8">Error: Unable to parse feedback data</div>;
   }
 
-  // Debug logging to see what we're getting
-  console.log('Raw feedbackJson:', feedbackJson);
-  console.log('Parsed feedback:', parsedFeedback);
+  // Only teacher-approved, student-facing comments belong in the exported PDF — never
+  // dismissed or un-reviewed (internal) notes (H27). If no status is present (legacy data),
+  // include the comment (it predates the review workflow).
+  const studentFacing = (parsedFeedback.inlineComments || []).filter((c) => {
+    const status = (c as { status?: string }).status;
+    return !status || status === 'accepted' || status === 'edited';
+  });
 
-  // Resolve anchors from inline comments
-  const anchors = resolveAnchors(essayText, parsedFeedback.inlineComments || []);
-  console.log('Resolved anchors:', anchors);
-  
+  // Resolve anchors from approved comments. Do not log essay/feedback content (C7).
+  const anchors = resolveAnchors(essayText, studentFacing);
+
+  // Non-blocking moderation pass over student-facing text (M70).
+  const moderation = moderateStudentText(
+    [parsedFeedback.overallFeedback, ...studentFacing.map((c) => c.comment)].filter(Boolean).join(' '),
+  );
+
   const handlePrint = () => {
     if (onPrint) {
       onPrint();
@@ -83,12 +92,20 @@ export const EssayFeedbackPdfRenderer: React.FC<EssayFeedbackPdfRendererProps> =
       
       {/* Print button - hidden in print */}
       <div className="no-print p-4 border-b">
-        <button 
+        <button
           onClick={handlePrint}
           className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
         >
           Export PDF
         </button>
+        {moderation.flagged && (
+          <div className="mt-3 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+            <strong>Review before sharing:</strong> some feedback may read as harsh to a student.
+            <ul className="ml-5 mt-1 list-disc">
+              {moderation.reasons.map((r, i) => <li key={i}>{r}</li>)}
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* Header */}
@@ -176,11 +193,7 @@ export const EssayFeedbackPdfRenderer: React.FC<EssayFeedbackPdfRendererProps> =
             <div className="text-3xl font-bold text-primary mb-2">
               {parsedFeedback.suggestedGrade}
             </div>
-            {parsedFeedback.confidence && (
-              <p className="text-muted-foreground">
-                Confidence: {Math.round(parsedFeedback.confidence * 100)}%
-              </p>
-            )}
+            {/* Internal AI confidence is intentionally not shown to students (H27/M66). */}
           </div>
         </div>
       )}
