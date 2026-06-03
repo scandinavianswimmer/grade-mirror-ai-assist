@@ -47,3 +47,28 @@ export const statusDescription = (status: string | null | undefined): string => 
 // A teacher has finished review when the grade is approved.
 export const isFinalized = (status: string | null | undefined): boolean =>
   status === 'finalized' || status === 'exported';
+
+// "No usable grade yet" states. If a grade row actually exists the submission has progressed
+// past these regardless of a stale persisted value — most notably a failed *re-grade* leaves
+// `grade_error` while the previous valid grade still stands, which otherwise renders a real
+// grade under a red "Grading failed" badge. `needs_review` is deliberately NOT in this set: an
+// off-topic / low-confidence withholding keeps `needs_review` even with a grade present, because
+// the disposition is the point (the teacher must look). Finalized/exported are likewise preserved.
+const PRE_GRADE_STATES = new Set(['uploaded', 'grading', 'pending', 'grade_error']);
+
+// Reconcile the persisted status against ground truth (does a grade row exist?). Use this for
+// any badge/label so the list, detail, and dashboard never show "Grading failed" / "Uploaded"
+// over a submission that actually has a grade.
+export const effectiveStatus = (
+  status: string | null | undefined,
+  hasGrade: boolean,
+): string => (hasGrade && PRE_GRADE_STATES.has(status ?? '') ? 'graded' : (status ?? 'uploaded'));
+
+// True when the latest grading attempt errored but a previous grade is still on record. The page
+// should show that prior grade plus a calm "last attempt didn't finish" note — not a bare red
+// "Grading failed" badge over a real grade. (When there is no grade, `grade_error` is accurate and
+// the badge stands.)
+export const hasStaleGradingError = (
+  status: string | null | undefined,
+  hasGrade: boolean,
+): boolean => status === 'grade_error' && hasGrade;
