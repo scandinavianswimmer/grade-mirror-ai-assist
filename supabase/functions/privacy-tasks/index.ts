@@ -6,18 +6,7 @@ import { handlePreflight } from "../_shared/cors.ts";
 import { withErrors, ok, AppError } from "../_shared/http.ts";
 import { requireCronSecret } from "../_shared/auth.ts";
 import { adminClient } from "../_shared/db.ts";
-
-// Replace each known student name with an opaque token everywhere it appears in free text.
-function scrub(text: string | null, names: string[]): string | null {
-  if (!text) return text;
-  let out = text;
-  names.forEach((name, i) => {
-    if (!name || name.trim().length < 2) return;
-    const re = new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
-    out = out.replace(re, `Student_${i + 1}`);
-  });
-  return out;
-}
+import { scrubNames as scrub } from "../_shared/deid.ts";
 
 Deno.serve((req) => {
   const pre = handlePreflight(req);
@@ -85,10 +74,22 @@ Deno.serve((req) => {
       }
     }
 
-    // 2) Retention: delete submissions older than each teacher's retention window.
+    // 2) Retention: delete submissions older than each teacher's retention window — AND their
+    // uploaded Storage files (H3: previously orphaned, defeating retention/erasure).
     const { data: settings } = await admin.from("privacy_settings").select("user_id, retention_days");
     for (const s of settings ?? []) {
       const cutoff = new Date(Date.now() - (s.retention_days ?? 365) * 86400_000).toISOString();
+      // Collect file paths BEFORE deleting the rows so we can remove the backing objects.
+      const { data: expiring } = await admin
+        .from("submissions")
+        .select("id, file_path")
+        .eq("user_id", s.user_id)
+        .lt("created_at", cutoff);
+      const filePaths = (expiring ?? []).map((r) => r.file_path as string).filter((p) => typeof p === "string" && p.length > 0);
+      if (filePaths.length > 0) {
+        const { error: rmErr } = await admin.storage.from("uploads").remove(filePaths);
+        if (rmErr) console.error(`[privacy-tasks] storage remove failed (continuing): ${rmErr.message}`);
+      }
       const { data: del } = await admin
         .from("submissions")
         .delete()

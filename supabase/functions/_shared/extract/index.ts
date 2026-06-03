@@ -13,6 +13,9 @@ export interface ExtractResult {
 }
 
 const MAX_BYTES = 20 * 1024 * 1024; // 20MB guard
+// Page cap (Layer D): a <20MB PDF can still carry thousands of pages → heavy parse cost + an
+// unbounded downstream grading prompt. A single student essay is realistically well under this.
+const MAX_PAGES = 50;
 
 function detectKind(filename: string, bytes: Uint8Array): "pdf" | "docx" | "text" | "unknown" {
   // Magic bytes first; fall back to extension. Don't trust the extension alone.
@@ -62,9 +65,14 @@ export async function extractDocument(filename: string, bytes: Uint8Array): Prom
   try {
     if (kind === "pdf") {
       const pdf = await getDocumentProxy(bytes);
+      // Page cap before the full extract pass — reject oversized PDFs early.
+      const totalPages = (pdf as unknown as { numPages?: number }).numPages ?? 0;
+      if (totalPages > MAX_PAGES) {
+        throw new AppError(413, "extract", `PDF has too many pages (${totalPages}; max ${MAX_PAGES}). Submit a single essay.`);
+      }
       const res = await extractPdf(pdf, { mergePages: true });
       text = Array.isArray(res.text) ? res.text.join("\n") : (res.text as string);
-      pages = res.totalPages ?? 1;
+      pages = res.totalPages ?? (totalPages || 1);
     } else if (kind === "docx") {
       const res = await mammoth.extractRawText({ buffer: bytes });
       text = res.value ?? "";

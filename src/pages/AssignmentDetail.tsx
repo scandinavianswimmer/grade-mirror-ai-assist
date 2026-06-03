@@ -38,6 +38,36 @@ const AssignmentDetail = () => {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [enqueuing, setEnqueuing] = useState(false);
+
+  // Phase 4: bulk-enqueue every not-yet-graded submission for async grading by the Cloud Run worker.
+  const gradeAll = async () => {
+    const targets = submissions.filter((s) => s.status !== 'graded' && s.status !== 'finalized').map((s) => s.id);
+    if (targets.length === 0) {
+      toast({ title: 'Nothing to grade', description: 'Every submission is already graded or finalized.' });
+      return;
+    }
+    setEnqueuing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('grade-enqueue', { body: { submissionIds: targets } });
+      if (error) {
+        let msg = 'Could not queue grading';
+        try {
+          const b = await (error as { context?: { json?: () => Promise<{ error?: string; stage?: string }> } }).context?.json?.();
+          if (b?.error) msg = `${b.error}${b.stage ? ` (${b.stage})` : ''}`;
+        } catch { /* ignore */ }
+        toast({ title: 'Bulk grading unavailable', description: msg, variant: 'destructive' });
+      } else {
+        const queued = (data as { queued?: number } | null)?.queued ?? targets.length;
+        setSubmissions((prev) => prev.map((s) => (targets.includes(s.id) ? { ...s, status: 'grading' } : s)));
+        toast({ title: 'Queued for grading', description: `${queued} submission(s) queued — results appear as the worker grades them.` });
+      }
+    } catch (e) {
+      toast({ title: 'Bulk grading unavailable', description: e instanceof Error ? e.message : 'Unexpected error', variant: 'destructive' });
+    } finally {
+      setEnqueuing(false);
+    }
+  };
   // Student name is derived from the filename on upload; the teacher confirms/corrects it (M46).
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
@@ -243,7 +273,14 @@ const AssignmentDetail = () => {
           {/* Submissions List */}
           <Card>
             <CardHeader>
-              <CardTitle>Student Submissions ({submissions.length})</CardTitle>
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle>Student Submissions ({submissions.length})</CardTitle>
+                {submissions.length > 0 && (
+                  <Button size="sm" onClick={gradeAll} disabled={enqueuing}>
+                    {enqueuing ? 'Queuing…' : 'Grade all ungraded'}
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {submissions.length === 0 ? (

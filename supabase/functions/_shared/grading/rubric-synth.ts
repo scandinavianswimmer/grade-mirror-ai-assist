@@ -68,7 +68,10 @@ Design the rubric now.`;
     userContent,
     jsonSchema: SYNTH_SCHEMA as unknown as Record<string, unknown>,
     deterministic: true,
-    maxOutputTokens: 2048,
+    // Disable thinking + give headroom: a 3–6 criterion rubric with prose descriptors can exceed a
+    // 2048 budget once dynamic thinking eats into it, truncating the JSON and forcing a free-text fallback.
+    thinkingBudget: 0,
+    maxOutputTokens: 4096,
   });
   const o = (json ?? {}) as Record<string, unknown>;
   const rawCriteria = Array.isArray(o.criteria) ? (o.criteria as Record<string, unknown>[]) : [];

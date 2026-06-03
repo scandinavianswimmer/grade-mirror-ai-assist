@@ -5,7 +5,10 @@ project_id = "rwiqwuohbcvhuvtlxlvh"
 # privacy-tasks is the exception: it is service-role/cron only and must NOT accept user JWTs —
 # it is gated by the x-cron-secret header (CRON_SECRET) in code.
 [functions.grade-submission]
-verify_jwt = true
+# Deployed with --no-verify-jwt so the internal Cloud Run worker can call it without a user JWT.
+# Auth IS enforced in code: getUserFromJWT for normal calls, OR a matching INTERNAL_GRADE_SECRET
+# header for the worker path. config now matches the deployed reality (was a silent drift).
+verify_jwt = false
 
 [functions.ingest-document]
 verify_jwt = true
@@ -15,6 +18,15 @@ verify_jwt = true
 
 [functions.record-feedback-usage]
 verify_jwt = true
+
+[functions.generate-podcast]
+verify_jwt = true   # auth also enforced in code (getUserFromJWT); userId derived from the token
+
+[functions.delete-data]
+verify_jwt = true   # right-to-erasure; RLS-scoped deletes of the caller's own data only
+
+[functions.stripe-webhook]
+verify_jwt = false   # Stripe cannot present a Supabase JWT; HMAC-SHA256 signature is the auth boundary
 
 [functions.privacy-tasks]
 verify_jwt = false   # gated by CRON_SECRET in code; never expose without that header

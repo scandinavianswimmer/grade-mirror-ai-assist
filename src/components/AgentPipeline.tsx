@@ -32,7 +32,9 @@ const StatusIcon = ({ status }: { status: string }) => {
   return <MinusCircle className="h-3.5 w-3.5 text-muted-foreground" />;
 };
 
-export default function AgentPipeline({ submissionId }: { submissionId: string }) {
+// `refreshKey` (e.g. the current grade id) changes after a re-grade so the pipeline refetches the
+// newly-written agent_events instead of showing the prior run.
+export default function AgentPipeline({ submissionId, refreshKey }: { submissionId: string; refreshKey?: string | number }) {
   const [steps, setSteps] = useState<AgentEvent[]>([]);
 
   useEffect(() => {
@@ -43,7 +45,8 @@ export default function AgentPipeline({ submissionId }: { submissionId: string }
         .select('agent, status, model_id, latency_ms, job_id, created_at')
         .eq('submission_id', submissionId)
         .order('created_at', { ascending: false });
-      if (cancelled || error || !data || data.length === 0) return; // table absent or no run yet → render nothing
+      if (cancelled) return;
+      if (error || !data || data.length === 0) { setSteps([]); return; } // table absent or no run yet → render nothing
       const latestJob = (data as AgentEvent[])[0].job_id;
       const run = (data as AgentEvent[]).filter((e) => e.job_id === latestJob);
       run.sort((a, b) => AGENT_ORDER.indexOf(a.agent) - AGENT_ORDER.indexOf(b.agent));
@@ -52,7 +55,7 @@ export default function AgentPipeline({ submissionId }: { submissionId: string }
     return () => {
       cancelled = true;
     };
-  }, [submissionId]);
+  }, [submissionId, refreshKey]);
 
   if (steps.length === 0) return null;
 

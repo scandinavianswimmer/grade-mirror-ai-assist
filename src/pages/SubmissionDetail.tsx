@@ -320,7 +320,7 @@ const SubmissionDetail = () => {
               </Card>
             )}
 
-            {grade && id && <AgentPipeline submissionId={id} />}
+            {grade && id && <AgentPipeline submissionId={id} refreshKey={grade.id} />}
 
             {/* Margin notes — human-in-the-loop */}
             {(placed.length > 0 || unplaced.length > 0) && (
