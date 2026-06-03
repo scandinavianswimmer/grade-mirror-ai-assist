@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { analytics } from '@/lib/analytics';
 import AgentPipeline from '@/components/AgentPipeline';
 import { statusBadgeClass, statusLabel, isFinalized, effectiveStatus, hasStaleGradingError } from '@/lib/submissionStatus';
+import { normalizedEditDistance } from '@/lib/convergenceMetrics';
 
 type AnnoType = 'praise' | 'suggestion' | 'error' | 'question';
 const PEN: Record<AnnoType, string> = { praise: 'praise', suggestion: 'suggestion', error: 'critique', question: 'question' };
@@ -52,6 +53,8 @@ const SubmissionDetail = () => {
   const [active, setActive] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
+  // Phase 15: capture the teacher's "how much did you change it?" rating at finalize.
+  const [pendingFinalize, setPendingFinalize] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -116,11 +119,15 @@ const SubmissionDetail = () => {
 
   const saveEdit = async (ann: AnnotationRow) => {
     const revised = draft.trim();
+    // Phase 15: score how far the teacher's final wording is from aiTA's original (ai_comment).
+    // This per-annotation edit-distance is the raw signal the convergence curve aggregates.
+    const aiOriginal = ann.ai_comment ?? ann.comment;
+    const editDistance = normalizedEditDistance(aiOriginal, revised);
     setAnnotations((prev) => prev.map((a) => (a.id === ann.id ? { ...a, comment: revised, status: 'edited' } : a)));
     setEditing(null);
-    await supabase.from('annotations').update({ comment: revised, status: 'edited' }).eq('id', ann.id);
+    await supabase.from('annotations').update({ comment: revised, status: 'edited', edit_distance: editDistance }).eq('id', ann.id);
     if (user) await supabase.from('annotation_edits').insert({ user_id: user.id, annotation_id: ann.id, action: 'edit', original: { comment: ann.comment }, revised: { comment: revised } });
-    analytics.capture('annotation_edited', { submission_id: id, annotation_id: ann.id, annotation_type: ann.type });
+    analytics.capture('annotation_edited', { submission_id: id, annotation_id: ann.id, annotation_type: ann.type, edit_distance: editDistance });
   };
 
   // Bulk review actions — persisted server-side so they survive reload (H12).
@@ -163,12 +170,45 @@ const SubmissionDetail = () => {
     }
   };
 
-  // Teacher approves the grade — the human-in-the-loop finalize step (M48).
-  const finalize = async () => {
+  // Phase 15: a grading "batch" = one assignment for this teacher. Find-or-create the batch row so
+  // successive assignments form an ordered series the convergence curve plots edit-rate across.
+  const resolveBatchId = async (): Promise<string | null> => {
+    if (!user || !submission?.assignment_id) return null;
+    const { data: existing } = await supabase
+      .from('grading_batches')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('assignment_id', submission.assignment_id)
+      .maybeSingle();
+    if (existing?.id) return existing.id;
+    // seq = next ordinal for this teacher's batches (drives the x-axis of the curve).
+    const { count } = await supabase
+      .from('grading_batches')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+    const { data: created } = await supabase
+      .from('grading_batches')
+      .insert({ user_id: user.id, assignment_id: submission.assignment_id, seq: (count ?? 0) + 1 })
+      .select('id')
+      .maybeSingle();
+    return created?.id ?? null;
+  };
+
+  // Teacher approves the grade — the human-in-the-loop finalize step (M48). Phase 15 inserts a
+  // one-tap "how much did you change it?" rating before locking, so the convergence proof has the
+  // teacher-reported "barely edited" signal alongside the measured edit-distance.
+  const finalize = () => setPendingFinalize(true);
+
+  const confirmFinalize = async (selfRating: number) => {
     if (!id) return;
-    await supabase.from('submissions').update({ status: 'finalized' }).eq('id', id);
+    setPendingFinalize(false);
+    const batchId = await resolveBatchId();
+    await supabase
+      .from('submissions')
+      .update({ status: 'finalized', edit_self_rating: selfRating, ...(batchId ? { batch_id: batchId } : {}) })
+      .eq('id', id);
     setSubmission((prev) => (prev ? { ...prev, status: 'finalized' } : prev));
-    analytics.capture('grade_finalized', { submission_id: id });
+    analytics.capture('grade_finalized', { submission_id: id, edit_self_rating: selfRating });
     toast({ title: 'Grade finalized', description: 'Approved by you — aiTA will learn from your edits.' });
     void learnFromFinalized();
   };
@@ -276,6 +316,26 @@ const SubmissionDetail = () => {
 
           {/* Review rail */}
           <div className="space-y-4">
+            {pendingFinalize && (
+              <Card className="border-primary/40 bg-primary/5 p-4" role="dialog" aria-label="Finalize rating">
+                <p className="text-sm font-semibold text-foreground">How much did you change aiTA's feedback?</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">This is how we measure whether aiTA is learning your voice.</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {[
+                    { v: 1, label: 'Rewrote it all' },
+                    { v: 2, label: 'A lot' },
+                    { v: 3, label: 'Some' },
+                    { v: 4, label: 'A little' },
+                    { v: 5, label: 'Barely touched it' },
+                  ].map((o) => (
+                    <Button key={o.v} size="sm" variant="outline" className="text-xs" onClick={() => confirmFinalize(o.v)}>
+                      {o.v} · {o.label}
+                    </Button>
+                  ))}
+                </div>
+                <button className="mt-3 text-xs text-muted-foreground underline" onClick={() => setPendingFinalize(false)}>Cancel</button>
+              </Card>
+            )}
             {hasStaleGradingError(submission.status, !!grade) && (
               <Card className="border-suggestion/40 bg-suggestion-soft/40 p-3 text-sm">
                 <span className="flex items-start gap-2 text-foreground/80">
