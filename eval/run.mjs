@@ -32,6 +32,11 @@ const PRIMARY_GRADING_MODEL = process.env.GEMINI_GRADING_MODEL || "gemini-2.5-pr
 const RELEVANCE_MODEL = "gemini-2.5-flash"; // engine.ts RELEVANCE_MODEL
 const RELEVANCE_THRESHOLD = 0.5; // engine.ts RELEVANCE_THRESHOLD
 const DRY_RUN = process.env.EVAL_DRY_RUN === "1";
+const CONVERGENCE = process.argv.includes("--convergence"); // Phase 15 Task 3A
+
+// Phase 15 (PROOF-02): top-K binary-signal few-shot exemplars injected per batch. Mirrors
+// grade-submission's STYLE_EXEMPLAR_K=6, newest-first selection (engine.ts buildCachedSystem).
+const STYLE_EXEMPLAR_K = 6;
 
 // ── Prompts (copied verbatim from engine.ts so we grade the way production grades) ─────────────
 const SYSTEM_PROMPT = `You are a fair, consistent grading assistant for a teacher (product: aiTA).
@@ -204,13 +209,48 @@ function renderRubric(r) {
   return `RUBRIC (total ${r.totalPoints} pts):\n${lines.join("\n")}`;
 }
 
-function buildCachedSystem(rubric, classContext) {
+// Ported verbatim from supabase/functions/_shared/grading/exemplars.ts — keep in lockstep (see README).
+// Renders a teacher's binary-signal few-shot exemplars (KEEP/REWRITE/AVOID) into the cacheable prefix.
+const MAX_EXEMPLAR_CHARS = 400;
+function clipExemplar(s) {
+  const t = (s ?? "").trim();
+  return t.length > MAX_EXEMPLAR_CHARS ? `${t.slice(0, MAX_EXEMPLAR_CHARS)}…` : t;
+}
+function renderExemplars(exemplars) {
+  if (!exemplars.length) return "";
+  const lines = exemplars
+    .map((e) => {
+      const tag = e.annotationType ? ` (${e.annotationType})` : "";
+      if (e.kind === "positive") {
+        const t = clipExemplar(e.finalText);
+        return t ? `✓ KEEP — this teacher accepted a note like this${tag}: "${t}"` : "";
+      }
+      if (e.kind === "correction") {
+        const from = clipExemplar(e.aiText);
+        const to = clipExemplar(e.finalText);
+        return to ? `✎ REWRITE — this teacher changed aiTA's "${from}" into "${to}"` : "";
+      }
+      const t = clipExemplar(e.aiText);
+      return t ? `✗ AVOID — this teacher dismissed a note like this${tag}: "${t}"` : "";
+    })
+    .filter(Boolean);
+  if (!lines.length) return "";
+  return `\n\nTHIS TEACHER'S FEEDBACK SIGNALS — learned from their own edits to aiTA's past notes. Match the
+voice of the KEEP examples, apply the direction of the REWRITE corrections, and avoid the AVOID patterns.
+Stay within the rubric; do not invent new criteria:
+${lines.join("\n")}`;
+}
+
+function buildCachedSystem(rubric, classContext, styleExemplars) {
   const calibration = classContext
     ? `\n\nCLASS CONTEXT — calibrate your standards to this level. Higher grade levels and honors/AP/gifted
 classes demand more sophistication; do NOT inflate scores. Hold the work to what is expected of THIS class:
 ${classContext}`
     : "";
-  return `${SYSTEM_PROMPT}${calibration}\n\n${renderRubric(rubric)}`;
+  // PROOF-02: binary-signal few-shot exemplars (mirrors engine.ts buildCachedSystem). Stable for a
+  // given store ⇒ the prefix still earns prompt-cache hits within a batch.
+  const fewShot = styleExemplars?.length ? renderExemplars(styleExemplars) : "";
+  return `${SYSTEM_PROMPT}${calibration}${fewShot}\n\n${renderRubric(rubric)}`;
 }
 
 function buildUserContent(essay) {
@@ -332,6 +372,7 @@ async function gradeSubmission(input) {
       result: offTopicResult(input.rubric, relevance, RELEVANCE_MODEL),
       disposition: "needs_review",
       relevance,
+      annotations: [], // withheld ⇒ no AI annotations to review (keeps convergence replay safe)
     };
   }
 
@@ -339,14 +380,16 @@ async function gradeSubmission(input) {
   //    health-based fallback to flash, which we omit here — eval measures the primary path).
   const { json } = await geminiGenerateJSON({
     modelId: PRIMARY_GRADING_MODEL,
-    systemText: buildCachedSystem(input.rubric, input.classContext),
+    systemText: buildCachedSystem(input.rubric, input.classContext, input.styleExemplars),
     userContent: buildUserContent(input.essay),
     jsonSchema: GRADING_TOOL_INPUT_SCHEMA,
     maxOutputTokens: 8192,
   });
   const result = finalize(json, input.rubric, input.essay, PRIMARY_GRADING_MODEL);
   const disposition = result.overall.confidence < 0.5 ? "needs_review" : "graded";
-  return { result, disposition, relevance };
+  // Convergence replay needs the model's raw annotations (to compare against the teacher's reference
+  // voice); the standard eval ignores this field.
+  return { result, disposition, relevance, annotations: json?.annotations ?? [] };
 }
 
 // ── Dataset loading ──────────────────────────────────────────────────────────
@@ -515,8 +558,334 @@ function printReport(results) {
   };
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+//  CONVERGENCE MODE (Phase 15 Task 3A — PROOF-01/EVAL-03/04)
+//  Replays a teacher's ordered grading batches, rebuilding the binary-signal exemplar store between
+//  batches, and measures whether the per-batch edit-rate declines past the ≥40% bar. Also grades a
+//  held-out batch with-vs-without the learned store. PASS iff the curve converges AND the store does
+//  not hurt held-out essays; exits non-zero on FAIL so it is CI-gateable.
+// ══════════════════════════════════════════════════════════════════════════════
+
+const CONVERGENCE_DIR = path.join(__dirname, "convergence");
+
+// ── Convergence metric math — ported VERBATIM from src/lib/convergenceMetrics.ts. ───────────────
+// KEEP IN LOCKSTEP: if you change the metric definitions there, mirror them here (and vice versa),
+// exactly as run.mjs mirrors engine.ts. The eval and the in-app trend must compute one identical curve.
+const CONVERGENCE_DECLINE_PCT = 40; // ≥40% edit-rate decline = converging
+const FLAT_DECLINE_PCT = 15; //        <15% = flat (kill criterion)
+// A teacher-final note within this normalized distance of aiTA's wording counts as "accepted as-is".
+const ACCEPT_THRESHOLD = 0.15;
+
+const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+
+// Normalized Levenshtein distance in [0,1] (0 = identical, 1 = maximally different).
+function normalizedEditDistance(original, final) {
+  const a = original ?? "";
+  const b = final ?? "";
+  const maxLen = Math.max(a.length, b.length);
+  if (maxLen === 0) return 0;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  let curr = new Array(b.length + 1).fill(0);
+  for (let i = 1; i <= a.length; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return prev[b.length] / maxLen;
+}
+
+function computeBatchMetric(signal) {
+  const total = signal.acceptCount + signal.editCount + signal.dismissCount;
+  return {
+    batchSeq: signal.batchSeq,
+    label: signal.label,
+    total,
+    editRate: total === 0 ? 0 : (signal.editCount + signal.dismissCount) / total,
+    meanEditDistance: mean(signal.editDistances),
+    meanSelfRating: mean(signal.selfRatings ?? []),
+  };
+}
+
+function computeConvergence(signals) {
+  const batches = [...signals].sort((a, b) => a.batchSeq - b.batchSeq).map(computeBatchMetric);
+  let editRateDeltaPct = null;
+  if (batches.length >= 2) {
+    const first = batches[0].editRate;
+    const last = batches[batches.length - 1].editRate;
+    if (first > 0) editRateDeltaPct = ((first - last) / first) * 100;
+  }
+  return {
+    batches,
+    batchCount: batches.length,
+    editRateDeltaPct,
+    converged: editRateDeltaPct !== null && editRateDeltaPct >= CONVERGENCE_DECLINE_PCT,
+    flat: editRateDeltaPct !== null && editRateDeltaPct < FLAT_DECLINE_PCT,
+  };
+}
+
+// ── Annotation matching → accept/edit/dismiss decisions ─────────────────────────────────────────
+// We model the teacher as a fixed reference voice (the fixture's per-essay `reference` annotations).
+// "Learning" shows up as later-batch AI notes landing closer to that voice (fewer edits/dismissals).
+function essaySpan(essay, ann) {
+  if (ann.quote) {
+    const i = essay.indexOf(ann.quote);
+    if (i >= 0) return [i, i + ann.quote.length];
+  }
+  if (Number.isInteger(ann.startIndex) && Number.isInteger(ann.endIndex) && ann.endIndex > ann.startIndex) {
+    return [ann.startIndex, ann.endIndex];
+  }
+  return null;
+}
+function spansOverlap(a, b) {
+  return a && b && a[0] < b[1] && b[0] < a[1];
+}
+
+// For one essay: classify each AI annotation against the teacher's reference notes.
+//   matched + AI text ~= reference  → accepted (positive)
+//   matched + AI text differs       → edited   (correction, ai→final, with edit-distance)
+//   no matching reference note      → dismissed (negative)
+function deriveDecisions(essay, aiAnnotations, referenceAnnotations) {
+  const refs = referenceAnnotations.map((r) => ({ ...r, span: essaySpan(essay, r), used: false }));
+  const decisions = [];
+  for (const ai of aiAnnotations) {
+    const aiSpan = essaySpan(essay, ai);
+    let best = null;
+    let bestOverlap = 0;
+    for (const r of refs) {
+      if (r.used || !spansOverlap(aiSpan, r.span)) continue;
+      const ov = Math.min(aiSpan[1], r.span[1]) - Math.max(aiSpan[0], r.span[0]);
+      if (ov > bestOverlap) {
+        best = r;
+        bestOverlap = ov;
+      }
+    }
+    if (best) {
+      best.used = true;
+      const dist = normalizedEditDistance(ai.comment ?? "", best.comment ?? "");
+      if (dist <= ACCEPT_THRESHOLD) {
+        decisions.push({ kind: "positive", annotationType: ai.type, aiText: ai.comment, finalText: ai.comment });
+      } else {
+        decisions.push({ kind: "correction", annotationType: ai.type, aiText: ai.comment, finalText: best.comment, editDistance: dist });
+      }
+    } else {
+      decisions.push({ kind: "negative", annotationType: ai.type, aiText: ai.comment });
+    }
+  }
+  return decisions;
+}
+
+function batchSignalFromDecisions(batchSeq, label, decisions) {
+  let acceptCount = 0;
+  let editCount = 0;
+  let dismissCount = 0;
+  const editDistances = [];
+  for (const d of decisions) {
+    if (d.kind === "positive") acceptCount++;
+    else if (d.kind === "correction") {
+      editCount++;
+      if (typeof d.editDistance === "number") editDistances.push(d.editDistance);
+    } else dismissCount++;
+  }
+  return { batchSeq, label, acceptCount, editCount, dismissCount, editDistances, selfRatings: [] };
+}
+
+// Build the injected exemplar store from all decisions so far: newest-first, top-K — mirroring
+// rebuild-exemplars (field nulling) + grade-submission (STYLE_EXEMPLAR_K, recency order).
+function buildStore(allDecisions) {
+  return allDecisions
+    .slice()
+    .reverse()
+    .slice(0, STYLE_EXEMPLAR_K)
+    .map((d) => ({
+      kind: d.kind,
+      annotationType: d.annotationType,
+      aiText: d.kind === "positive" ? undefined : d.aiText,
+      finalText: d.kind === "negative" ? undefined : d.finalText,
+    }));
+}
+
+// Grade a set of essays with a fixed store and return the batch metric (used for held-out with/without).
+async function gradeEssaysToMetric(fixture, essays, store, label) {
+  const decisions = [];
+  for (const essay of essays) {
+    const outcome = await gradeSubmission({
+      essay: essay.text,
+      rubric: fixture.rubric,
+      assignmentPrompt: fixture.assignmentPrompt,
+      classContext: fixture.classContext,
+      styleExemplars: store,
+    });
+    decisions.push(...deriveDecisions(essay.text, outcome.annotations, essay.reference ?? []));
+  }
+  return computeBatchMetric(batchSignalFromDecisions(0, label, decisions));
+}
+
+// ── Convergence fixture loading + validation ────────────────────────────────────────────────────
+function validateFixture(fx, file) {
+  const need = (cond, msg) => {
+    if (!cond) throw new Error(`Convergence fixture ${file}: ${msg}`);
+  };
+  need(fx.teacher, "missing teacher");
+  need(fx.assignmentPrompt, "missing assignmentPrompt");
+  need(fx.rubric && typeof fx.rubric.totalPoints === "number", "missing rubric.totalPoints");
+  need(Array.isArray(fx.batches) && fx.batches.length >= 2, "needs >= 2 batches to measure a decline");
+  for (const b of fx.batches) {
+    need(Number.isInteger(b.seq), `batch missing integer seq`);
+    need(Array.isArray(b.essays) && b.essays.length > 0, `batch ${b.seq} has no essays`);
+    for (const e of b.essays) {
+      need(typeof e.text === "string" && e.text.length > 0, `batch ${b.seq} essay missing text`);
+      need(Array.isArray(e.reference), `batch ${b.seq} essay missing reference[] (teacher voice)`);
+    }
+  }
+  need(fx.heldOut && Array.isArray(fx.heldOut.essays) && fx.heldOut.essays.length > 0, "missing heldOut.essays");
+}
+
+async function loadConvergenceFixtures() {
+  let files;
+  try {
+    files = (await readdir(CONVERGENCE_DIR)).filter((f) => f.endsWith(".json")).sort();
+  } catch {
+    throw new Error(`No convergence fixtures directory at ${CONVERGENCE_DIR}`);
+  }
+  const fixtures = [];
+  for (const f of files) {
+    let parsed;
+    try {
+      parsed = JSON.parse(await readFile(path.join(CONVERGENCE_DIR, f), "utf8"));
+    } catch (e) {
+      throw new Error(`Convergence fixture ${f} is not valid JSON: ${e.message}`);
+    }
+    validateFixture(parsed, f);
+    parsed.batches.sort((a, b) => a.seq - b.seq);
+    fixtures.push({ ...parsed, _file: f });
+  }
+  if (fixtures.length === 0) throw new Error(`No convergence fixtures found in ${CONVERGENCE_DIR}`);
+  return fixtures;
+}
+
+// ── Replay one teacher's fixture (live; needs GEMINI_API_KEY) ───────────────────────────────────
+async function replayConvergence(fixture) {
+  const allDecisions = [];
+  const signals = [];
+  for (const batch of fixture.batches) {
+    const store = buildStore(allDecisions); // from PRIOR batches only ⇒ batch 1 is cold start
+    process.stdout.write(`  ${fixture.teacher} · batch ${batch.seq} (${batch.essays.length} essays, store=${store.length}) ... `);
+    const batchDecisions = [];
+    for (const essay of batch.essays) {
+      const outcome = await gradeSubmission({
+        essay: essay.text,
+        rubric: fixture.rubric,
+        assignmentPrompt: fixture.assignmentPrompt,
+        classContext: fixture.classContext,
+        styleExemplars: store,
+      });
+      batchDecisions.push(...deriveDecisions(essay.text, outcome.annotations, essay.reference ?? []));
+    }
+    allDecisions.push(...batchDecisions);
+    const sig = batchSignalFromDecisions(batch.seq, batch.label ?? `Batch ${batch.seq}`, batchDecisions);
+    signals.push(sig);
+    console.log(`editRate ${(computeBatchMetric(sig).editRate * 100).toFixed(0)}%`);
+  }
+
+  // Held-out: does the learned store help essays it never trained on?
+  const finalStore = buildStore(allDecisions);
+  process.stdout.write(`  ${fixture.teacher} · held-out with-profile ... `);
+  const heldWith = await gradeEssaysToMetric(fixture, fixture.heldOut.essays, finalStore, "held-out (with profile)");
+  console.log(`editRate ${(heldWith.editRate * 100).toFixed(0)}%`);
+  process.stdout.write(`  ${fixture.teacher} · held-out without-profile ... `);
+  const heldWithout = await gradeEssaysToMetric(fixture, fixture.heldOut.essays, [], "held-out (no profile)");
+  console.log(`editRate ${(heldWithout.editRate * 100).toFixed(0)}%`);
+
+  return { series: computeConvergence(signals), heldWith, heldWithout };
+}
+
+function printConvergenceReport(fixture, run) {
+  const { series, heldWith, heldWithout } = run;
+  console.log("\n------------------------------------------------------------");
+  console.log(`  CONVERGENCE — ${fixture.teacher}  (${fixture._file})`);
+  console.log("------------------------------------------------------------");
+  for (const b of series.batches) {
+    const ed = b.meanEditDistance == null ? "—" : b.meanEditDistance.toFixed(2);
+    console.log(
+      `  ${String(b.label).padEnd(16)} editRate ${(b.editRate * 100).toFixed(0).padStart(3)}%  | mean edit-dist ${ed} | n=${b.total}`,
+    );
+  }
+  const delta = series.editRateDeltaPct;
+  console.log(
+    `  Δ edit-rate batch1→N : ${delta == null ? "n/a (need ≥2 batches w/ signal)" : `${delta.toFixed(1)}% decline`}  (bar: ≥${CONVERGENCE_DECLINE_PCT}%)`,
+  );
+  console.log(
+    `  Held-out edit-rate   : with profile ${(heldWith.editRate * 100).toFixed(0)}%  vs  without ${(heldWithout.editRate * 100).toFixed(0)}%`,
+  );
+
+  const heldOk = heldWith.editRate <= heldWithout.editRate;
+  const passed = series.converged && heldOk;
+  if (passed) {
+    console.log(`  VERDICT: PASS — voice convergence demonstrated (≥${CONVERGENCE_DECLINE_PCT}% decline, held-out not harmed).`);
+  } else if (series.flat) {
+    console.log(`  VERDICT: FAIL (KILL) — edit-rate is flat (<${FLAT_DECLINE_PCT}% decline). Wedge disproven on this fixture.`);
+  } else if (!series.converged) {
+    console.log(`  VERDICT: FAIL — decline did not reach the ≥${CONVERGENCE_DECLINE_PCT}% bar.`);
+  } else {
+    console.log(`  VERDICT: FAIL — the learned store made held-out essays WORSE (regression).`);
+  }
+  console.log("------------------------------------------------------------\n");
+  return passed;
+}
+
+async function mainConvergence() {
+  const fixtures = await loadConvergenceFixtures();
+  console.log(`Loaded ${fixtures.length} convergence fixture(s) from eval/convergence.`);
+
+  if (DRY_RUN) {
+    console.log("\nEVAL_DRY_RUN=1 — validating fixtures + prompt assembly + metric math, NOT calling Gemini.\n");
+    for (const fx of fixtures) {
+      console.log(`  ${fx.teacher} (${fx._file}): ${fx.batches.length} batches, held-out ${fx.heldOut.essays.length}`);
+      for (const b of fx.batches) {
+        const refs = b.essays.reduce((s, e) => s + e.reference.length, 0);
+        console.log(`    batch ${b.seq} "${b.label ?? ""}": ${b.essays.length} essays, ${refs} reference notes`);
+      }
+      // Prove the exemplar store actually renders into the cacheable prefix.
+      const sampleStore = [
+        { kind: "correction", annotationType: "suggestion", aiText: "Good.", finalText: "Notice how the imagery builds tension here." },
+      ];
+      const sys = buildCachedSystem(fx.rubric, fx.classContext, sampleStore);
+      console.log(`    prompt assembly: ${sys.includes("REWRITE") ? "exemplar injected OK" : "INJECTION FAILED"} (${sys.length}c)`);
+    }
+    // Prove the metric + gate wiring on a synthetic declining series (no Gemini needed).
+    const synthetic = computeConvergence([
+      { batchSeq: 1, acceptCount: 3, editCount: 6, dismissCount: 1, editDistances: [0.5], selfRatings: [] },
+      { batchSeq: 2, acceptCount: 9, editCount: 1, dismissCount: 0, editDistances: [0.1], selfRatings: [] },
+    ]);
+    console.log(
+      `\n  metric self-check: synthetic Δ=${synthetic.editRateDeltaPct.toFixed(1)}% → converged=${synthetic.converged} (expected true)\n`,
+    );
+    console.log("Dry run complete. Provide GEMINI_API_KEY and re-run with --convergence to replay grading.\n");
+    process.exit(0);
+  }
+
+  let anyFail = false;
+  for (const fx of fixtures) {
+    console.log(`\nReplaying ${fx.teacher} ...`);
+    const run = await replayConvergence(fx);
+    const passed = printConvergenceReport(fx, run);
+    if (!passed) anyFail = true;
+  }
+
+  if (anyFail) {
+    console.log("CONVERGENCE GATE: FAIL — at least one fixture did not meet the decline bar.\n");
+    process.exit(1); // EVAL-03/04 — CI-gateable.
+  }
+  console.log("CONVERGENCE GATE: PASS — every fixture converged.\n");
+  process.exit(0);
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
+  if (CONVERGENCE) return mainConvergence();
   const cases = await loadDataset();
   console.log(`Loaded ${cases.length} reference case(s) from eval/dataset (v${DATASET_VERSION}).`);
 

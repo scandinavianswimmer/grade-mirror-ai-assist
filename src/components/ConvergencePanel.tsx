@@ -1,0 +1,165 @@
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Sparkles, TrendingDown, Minus } from 'lucide-react';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from 'recharts';
+import { useAuth } from '@/components/AuthProvider';
+import { fetchConvergenceSeries } from '@/lib/convergenceApi';
+import { CONVERGENCE_DECLINE_PCT, type ConvergenceSeries } from '@/lib/convergenceMetrics';
+
+// Phase 15 Task 3B (PROOF-01) — "Is aiTA learning you?" The honest convergence trend a teacher/judge
+// sees: per-batch edit-rate for the signed-in teacher. If the line is flat, it shows flat — the whole
+// point of the proof is that disproof is visible, not hidden.
+
+interface Verdict {
+  tone: 'good' | 'flat' | 'neutral' | 'empty';
+  headline: string;
+  sub: string;
+}
+
+function verdictFor(series: ConvergenceSeries): Verdict {
+  const { batchCount, converged, flat, editRateDeltaPct } = series;
+  if (batchCount === 0) {
+    return {
+      tone: 'empty',
+      headline: 'No finalized batches yet',
+      sub: 'Grade and finalize a batch of submissions to start tracking whether aiTA is matching your voice.',
+    };
+  }
+  if (batchCount === 1) {
+    return {
+      tone: 'neutral',
+      headline: 'One batch in',
+      sub: 'Grade and finalize another batch to see whether your edit rate is falling — convergence needs at least two.',
+    };
+  }
+  if (editRateDeltaPct === null) {
+    return {
+      tone: 'neutral',
+      headline: 'Not enough signal yet',
+      sub: 'Your first batch had no edits to measure against. Keep grading to build the trend.',
+    };
+  }
+  const delta = Math.round(editRateDeltaPct);
+  if (converged) {
+    return {
+      tone: 'good',
+      headline: `aiTA is learning your voice — edit rate down ${delta}%`,
+      sub: `Across ${batchCount} batches you're editing aiTA's feedback ${delta}% less (bar: ≥${CONVERGENCE_DECLINE_PCT}%).`,
+    };
+  }
+  if (flat) {
+    return {
+      tone: 'flat',
+      headline: `Holding steady — edit rate down only ${delta}%`,
+      sub: `Across ${batchCount} batches your edit rate hasn't really moved. aiTA isn't matching your voice on this assignment yet.`,
+    };
+  }
+  return {
+    tone: 'neutral',
+    headline: `Trending down ${delta}%`,
+    sub: `Edit rate is falling but hasn't reached the ≥${CONVERGENCE_DECLINE_PCT}% convergence bar across ${batchCount} batches.`,
+  };
+}
+
+const ConvergencePanel = () => {
+  const { user } = useAuth();
+  const [series, setSeries] = useState<ConvergenceSeries | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const s = await fetchConvergenceSeries();
+        if (!cancelled) setSeries(s);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const verdict = series ? verdictFor(series) : null;
+  const chartData = (series?.batches ?? []).map((b) => ({
+    label: b.label ?? `Batch ${b.batchSeq}`,
+    editRatePct: Math.round(b.editRate * 100),
+    selfRating: b.meanSelfRating,
+  }));
+
+  const Icon = verdict?.tone === 'good' ? TrendingDown : verdict?.tone === 'flat' ? Minus : Sparkles;
+  const accent =
+    verdict?.tone === 'good' ? 'text-praise' : verdict?.tone === 'flat' ? 'text-muted-foreground' : 'text-primary';
+
+  return (
+    <Card className="mt-8">
+      <CardHeader className="rule">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <CardTitle className="font-display text-lg">Is aiTA learning you?</CardTitle>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          How often you edit or dismiss aiTA's notes, batch over batch. A downward line means aiTA is
+          starting to write feedback in your voice.
+        </p>
+      </CardHeader>
+      <CardContent className="pt-6">
+        {loading ? (
+          <Skeleton className="h-64 w-full" />
+        ) : (
+          <>
+            {verdict && (
+              <div className="mb-6 flex items-start gap-3">
+                <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${accent}`} />
+                <div>
+                  <p className={`font-display text-base font-semibold ${accent}`}>{verdict.headline}</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">{verdict.sub}</p>
+                </div>
+              </div>
+            )}
+
+            {chartData.length >= 1 ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 8, left: -8 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/60" />
+                  <XAxis dataKey="label" tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                  <YAxis
+                    tick={{ fontSize: 12 }}
+                    domain={[0, 100]}
+                    unit="%"
+                    className="text-muted-foreground"
+                  />
+                  <Tooltip
+                    formatter={(v: number, name) =>
+                      name === 'editRatePct'
+                        ? [`${v}%`, 'Edited / dismissed']
+                        : [v == null ? '—' : Number(v).toFixed(1), 'Mean self-rating (1–5)']
+                    }
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="editRatePct"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    name="editRatePct"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="py-12 text-center text-sm text-muted-foreground">
+                No finalized batches yet. Grade a batch to start tracking your improvement.
+              </p>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default ConvergencePanel;
