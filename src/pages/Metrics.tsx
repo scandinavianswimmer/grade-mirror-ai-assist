@@ -6,6 +6,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import Navbar from '@/components/Navbar';
+import ConvergencePanel from '@/components/ConvergencePanel';
 import { useAuth } from '@/components/AuthProvider';
 import {
   fetchMetricsSummary, fetchEditRateOverTime,
@@ -140,6 +141,9 @@ const Metrics = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* PROOF-01 — "Is aiTA learning you?" per-batch convergence trend */}
+        <ConvergencePanel />
       </div>
     </div>
   );

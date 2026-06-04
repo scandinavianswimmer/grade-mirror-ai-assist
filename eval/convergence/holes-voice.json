@@ -1,0 +1,194 @@
+{
+  "teacher": "ref-holes-teacher",
+  "notes": "Phase 15 Task 3A convergence fixture. Models one 8th-grade ELA teacher with a distinct feedback voice (opens notes with 'Notice how…' / 'Push this further—', names the specific craft move, warm but demanding). Each essay's `reference` array is that teacher's canonical annotations — the fixed voice the replay measures aiTA against. As the binary-signal exemplar store accumulates across batches, later-batch AI notes should land closer to this voice (fewer edits/dismissals). The curve is NOT pre-baked here; the live replay grades with Gemini and measures it. Reference `quote` values are exact substrings of each essay so spans resolve. SYNTHETIC — contains no real student PII.",
+  "assignmentPrompt": "Write a literary analysis essay on Louis Sachar's novel \"Holes\". Argue how the motif of fate vs. free will shapes Stanley Yelnats' character arc. Use at least two specific examples from the text and explain how they support your thesis.",
+  "classContext": "8th grade English Language Arts, on-level.",
+  "rubric": {
+    "totalPoints": 100,
+    "criteria": [
+      {
+        "name": "Thesis & Argument",
+        "weight": 3,
+        "maxScore": 10,
+        "levelDescriptors": {
+          "10": "Clear, arguable thesis about fate vs. free will sustained throughout.",
+          "6": "Thesis present but underdeveloped or inconsistently argued.",
+          "2": "No discernible thesis about the assigned theme."
+        }
+      },
+      {
+        "name": "Textual Evidence",
+        "weight": 3,
+        "maxScore": 10,
+        "levelDescriptors": {
+          "10": "Two or more specific, well-chosen examples from Holes, fully explained.",
+          "6": "Some evidence, thinly explained or loosely connected.",
+          "2": "No textual evidence from the novel."
+        }
+      },
+      {
+        "name": "Organization & Conventions",
+        "weight": 2,
+        "maxScore": 10,
+        "levelDescriptors": {
+          "10": "Logical structure, fluent prose, few errors.",
+          "6": "Generally organized; some lapses in flow or mechanics.",
+          "2": "Disorganized; frequent errors impede meaning."
+        }
+      }
+    ]
+  },
+  "batches": [
+    {
+      "seq": 1,
+      "label": "Batch 1",
+      "essays": [
+        {
+          "id": "b1-e1",
+          "text": "Stanley thinks the curse controls his whole life. He gets arrested for shoes that fell from the sky and just accepts it. Later he carries Zero up the mountain and that is when his luck changes. So Stanley uses free will in the end.",
+          "reference": [
+            {
+              "quote": "He gets arrested for shoes that fell from the sky and just accepts it.",
+              "type": "suggestion",
+              "comment": "Push this further—name the irony. Stanley treats a false arrest as proof of the curse, and that passivity is exactly what you'll argue he outgrows."
+            },
+            {
+              "quote": "So Stanley uses free will in the end.",
+              "type": "suggestion",
+              "comment": "Notice how your real thesis is hiding in the last line. Move it up front and make it arguable: fate sets the stage, but Stanley's choices break the curse."
+            }
+          ]
+        },
+        {
+          "id": "b1-e2",
+          "text": "In Holes the theme is fate versus free will. Stanley is unlucky because of his great-great-grandfather. He digs holes every day at Camp Green Lake. At the end everything works out and the curse is gone.",
+          "reference": [
+            {
+              "quote": "He digs holes every day at Camp Green Lake.",
+              "type": "suggestion",
+              "comment": "Notice how this is plot summary, not analysis. Tie the digging to your argument—what does it show about Stanley accepting his fate?"
+            },
+            {
+              "quote": "At the end everything works out and the curse is gone.",
+              "type": "question",
+              "comment": "Push this further—what specific choice of Stanley's makes the curse lift? Anchor the claim to a moment in the text."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "seq": 2,
+      "label": "Batch 2",
+      "essays": [
+        {
+          "id": "b2-e1",
+          "text": "Sachar uses fate and free will to shape Stanley. Early on Stanley blames his no-good-dirty-rotten-pig-stealing-great-great-grandfather for everything. But when Stanley chooses to carry Zero up God's Thumb, he is acting on his own. This choice is what starts to break the family's bad luck.",
+          "reference": [
+            {
+              "quote": "Early on Stanley blames his no-good-dirty-rotten-pig-stealing-great-great-grandfather for everything.",
+              "type": "praise",
+              "comment": "Notice how naming the exact phrase grounds your point—this is the passive Stanley your thesis needs."
+            },
+            {
+              "quote": "This choice is what starts to break the family's bad luck.",
+              "type": "suggestion",
+              "comment": "Push this further—explain WHY the choice matters: nothing forces Stanley to save Zero, so the rescue is pure free will, not luck."
+            }
+          ]
+        },
+        {
+          "id": "b2-e2",
+          "text": "Stanley starts as a victim of fate. He accepts the unfair sentence without fighting it. The turning point is when he keeps climbing the mountain to save his friend. Sachar ties the curse breaking to a choice Stanley makes, not to luck.",
+          "reference": [
+            {
+              "quote": "He accepts the unfair sentence without fighting it.",
+              "type": "praise",
+              "comment": "Notice how this shows the passive Stanley clearly—good setup for the contrast to come."
+            },
+            {
+              "quote": "Sachar ties the curse breaking to a choice Stanley makes, not to luck.",
+              "type": "suggestion",
+              "comment": "Push this further—land the thesis explicitly here: Stanley becomes the reason his luck changes."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "seq": 3,
+      "label": "Batch 3",
+      "essays": [
+        {
+          "id": "b3-e1",
+          "text": "Although Stanley believes a curse rules his life, Sachar argues the opposite: fate sets the stage, but Stanley's own choices finally break the family's bad luck. At first Stanley hands his life over to fate, accepting his wrongful arrest as one more sign of the curse. The turning point is his choice to carry Zero up God's Thumb, a moment of pure free will that no one forces on him. By tying the lifting of the curse to that choice, Sachar transforms Stanley from a passive victim into the cause of his own good fortune.",
+          "reference": [
+            {
+              "quote": "fate sets the stage, but Stanley's own choices finally break the family's bad luck.",
+              "type": "praise",
+              "comment": "Notice how clear and arguable this thesis is now—it carries the whole essay."
+            },
+            {
+              "quote": "a moment of pure free will that no one forces on him.",
+              "type": "praise",
+              "comment": "Notice how you explain the evidence instead of just naming it—this is the analysis the rubric rewards."
+            }
+          ]
+        },
+        {
+          "id": "b3-e2",
+          "text": "Sachar's motif of fate versus free will drives Stanley's arc from helpless to heroic. Stanley begins by blaming destiny for his wrongful arrest, a sign of how completely he has surrendered to the curse. Yet when he chooses to keep climbing to save Zero, he acts for himself and his friend with no promise of reward. Sachar deliberately rewards that choice by lifting the curse, showing that Stanley, not luck, is what finally changes his fate.",
+          "reference": [
+            {
+              "quote": "drives Stanley's arc from helpless to heroic.",
+              "type": "praise",
+              "comment": "Notice how the thesis names the arc precisely—helpless to heroic is exactly the through-line."
+            },
+            {
+              "quote": "he acts for himself and his friend with no promise of reward.",
+              "type": "praise",
+              "comment": "Notice how you explain why the choice counts as free will—fully earned analysis."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "heldOut": {
+    "label": "Held-out",
+    "essays": [
+      {
+        "id": "ho-e1",
+        "text": "The book Holes is about fate and free will. Stanley gets blamed for stealing shoes and goes to a camp. He digs a lot of holes in the dirt. Then he climbs a mountain with Zero and after that the curse goes away on its own.",
+        "reference": [
+          {
+            "quote": "He digs a lot of holes in the dirt.",
+            "type": "suggestion",
+            "comment": "Notice how this is summary, not argument. Connect the digging to Stanley accepting his fate."
+          },
+          {
+            "quote": "after that the curse goes away on its own.",
+            "type": "question",
+            "comment": "Push this further—the curse doesn't lift on its own. Which choice of Stanley's breaks it?"
+          }
+        ]
+      },
+      {
+        "id": "ho-e2",
+        "text": "Stanley believes he is cursed, and at first he does nothing to change his situation, accepting his arrest as fate. His decision to carry Zero up the mountain is the moment he takes control. Sachar ties the end of the curse to that choice, arguing that free will, not destiny, shapes Stanley's fate.",
+        "reference": [
+          {
+            "quote": "accepting his arrest as fate.",
+            "type": "praise",
+            "comment": "Notice how this sets up the passive Stanley your argument needs."
+          },
+          {
+            "quote": "arguing that free will, not destiny, shapes Stanley's fate.",
+            "type": "praise",
+            "comment": "Notice how you land the thesis explicitly—clear and arguable."
+          }
+        ]
+      }
+    ]
+  }
+}

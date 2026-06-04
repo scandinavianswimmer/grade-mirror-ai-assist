@@ -110,6 +110,42 @@ the safety-critical off-topic/injection failures do.
 
 ---
 
+## Convergence mode (Phase 15 — PROOF-01, EVAL-03/04)
+
+`node eval/run.mjs --convergence` answers a different question: **does aiTA learn an individual
+teacher's feedback voice over successive grading batches?** It replays a teacher's ordered batches,
+rebuilding the binary-signal few-shot exemplar store between batches (the same store
+`rebuild-exemplars` builds and `grade-submission` injects), and measures whether the per-batch
+**edit-rate** declines.
+
+```bash
+# Validate fixtures + prompt assembly + metric math WITHOUT calling Gemini:
+EVAL_DRY_RUN=1 node eval/run.mjs --convergence
+
+# Full replay (calls Gemini — needs your key):
+GEMINI_API_KEY=... node eval/run.mjs --convergence
+```
+
+**Fixtures** live in `eval/convergence/*.json`. Each models one teacher with a fixed feedback
+**voice** — every essay carries a `reference` array of that teacher's canonical annotations. The
+replay grades each essay with the current exemplar store, then classifies every AI annotation against
+the reference voice: a note that matches the teacher's wording is **accepted** (positive exemplar),
+one the teacher would reword is **edited** (correction pair, with a normalized edit-distance), and one
+with no matching reference note is **dismissed** (negative). Those decisions rebuild the store
+(newest-first, top-`STYLE_EXEMPLAR_K=6`, mirroring production) for the next batch.
+
+The curve is **not pre-baked** in the fixture — it emerges only if later-batch AI notes actually land
+closer to the teacher's voice. The run prints the per-batch edit-rate, the batch-1→N decline, and a
+**with-profile vs without-profile** comparison on a held-out batch the store never trained on.
+
+- **Metric definitions are ported verbatim from `src/lib/convergenceMetrics.ts`** (the same module the
+  in-app trend uses) and carry a lockstep comment — there is exactly one definition of the curve.
+- **Gate:** PASS iff the edit-rate declines **≥40%** (`CONVERGENCE_DECLINE_PCT`) **and** the learned
+  store does not make held-out essays worse. A **<15% decline** is reported as `FAIL (KILL)` — the
+  kill criterion from `15-CONTEXT.md`: an honest disproof, not a hidden one. FAIL ⇒ `process.exit(1)`.
+- Fixtures are **synthetic** (no real student PII); the production de-identification transform lives in
+  `rebuild-exemplars`, not in the eval.
+
 ## Using this to gate future changes (CI)
 
 Treat the harness as a required check before any grading prompt, schema, or model change ships:
