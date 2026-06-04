@@ -107,6 +107,33 @@ Deno.serve((req) => {
       if (prof?.style_summary) styleProfile = prof.style_summary as string;
     }
 
+    // Phase 15 Wave 2 (PROOF-02): top-K binary-signal few-shot exemplars from the teacher's own
+    // accept/edit/dismiss edits, injected alongside the prose summary. Ordered newest-first so the
+    // selection (and thus the cacheable prefix) is stable between batch rebuilds. Best-effort: the
+    // table is absent until migration 0018 is applied on the cloud schema, so a load failure simply
+    // falls back to the prose profile / cold start (no rubric-criterion filter — annotations don't
+    // carry a criterion link, so recency is the selector; documented as Claude's discretion in 15-PLAN).
+    const STYLE_EXEMPLAR_K = 6;
+    let styleExemplars:
+      | { kind: "positive" | "correction" | "negative"; annotationType?: string; aiText?: string; finalText?: string }[]
+      | undefined;
+    {
+      const { data: exs } = await db
+        .from("teacher_feedback_exemplars")
+        .select("kind, annotation_type, ai_text, final_text")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(STYLE_EXEMPLAR_K);
+      if (exs && exs.length) {
+        styleExemplars = exs.map((e) => ({
+          kind: e.kind as "positive" | "correction" | "negative",
+          annotationType: (e.annotation_type as string) ?? undefined,
+          aiText: (e.ai_text as string) ?? undefined,
+          finalText: (e.final_text as string) ?? undefined,
+        }));
+      }
+    }
+
     // Load the structured rubric. If none exists, synthesize a strict one from the assignment +
     // class level and persist it (GRADE-02) — never grade against model-invented generic criteria.
     // Load the canonical rubric for this assignment. Tolerate duplicates (don't use maybeSingle,
@@ -236,6 +263,7 @@ Deno.serve((req) => {
         assignmentPrompt,
         classContext,
         styleProfile,
+        styleExemplars,
       });
     } catch (err) {
       await db.from("submissions").update({ status: "grade_error" }).eq("id", submissionId);

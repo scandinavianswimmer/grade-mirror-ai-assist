@@ -165,6 +165,11 @@ const SubmissionDetail = () => {
         user_id: user.id, essay: text, feedback, grade: String(grade.overall_score ?? ''), source: 'reinforcement',
       });
       await supabase.functions.invoke('build-style-profile', { body: {} });
+      // Phase 15 Wave 2 (PROOF-02): rebuild the binary-signal exemplar store from this teacher's
+      // accept/edit/dismiss decisions so the next batch grades against their actual edits, not just
+      // the prose blurb. Best-effort and consent-gated server-side; the prose summary stays the
+      // cold-start fallback (LEARN-06).
+      await supabase.functions.invoke('rebuild-exemplars', { body: {} });
     } catch {
       /* learning is best-effort; never block the teacher */
     }

@@ -13,6 +13,7 @@ import {
 import { geminiGenerateJSON } from "../ai/gemini.ts";
 import { getHealthyGradingModels, recordModelResult, type ModelSpec } from "../ai/router.ts";
 import { anchorOne, quoteExists } from "./anchor.ts";
+import { renderExemplars, type StyleExemplar } from "./exemplars.ts";
 import { AppError } from "../http.ts";
 
 // ── Cost-control bounds (Layer C/D) ──────────────────────────────────────────
@@ -145,9 +146,16 @@ function renderRubric(r: RubricInput): string {
   return `RUBRIC (total ${r.totalPoints} pts):\n${lines.join("\n")}`;
 }
 
-// The cacheable prefix: system + calibration + teacher style + rubric. Stable across a class's
-// submissions (same rubric + same teacher style) ⇒ implicit prompt-cache hits.
-function buildCachedSystem(rubric: RubricInput, classContext?: string, styleProfile?: string): string {
+// The cacheable prefix: system + calibration + teacher style + few-shot exemplars + rubric. Stable
+// across a class's submissions (same rubric + same teacher style + same exemplar store) ⇒ implicit
+// prompt-cache hits. The exemplar store changes only between batches (rebuild-exemplars), so within a
+// batch the prefix is identical from submission to submission.
+function buildCachedSystem(
+  rubric: RubricInput,
+  classContext?: string,
+  styleProfile?: string,
+  styleExemplars?: StyleExemplar[],
+): string {
   const calibration = classContext
     ? `\n\nCLASS CONTEXT — calibrate your standards to this level. Higher grade levels and honors/AP/gifted
 classes demand more sophistication; do NOT inflate scores. Hold the work to what is expected of THIS class:
@@ -159,7 +167,9 @@ ${classContext}`
 standards (distilled from their past grading). Stay within the rubric; do not invent new criteria:
 ${styleProfile}`
     : "";
-  return `${SYSTEM_PROMPT}${calibration}${style}\n\n${renderRubric(rubric)}`;
+  // PROOF-02: binary-signal few-shot exemplars from the teacher's own accept/edit/dismiss decisions.
+  const fewShot = styleExemplars?.length ? renderExemplars(styleExemplars) : "";
+  return `${SYSTEM_PROMPT}${calibration}${style}${fewShot}\n\n${renderRubric(rubric)}`;
 }
 
 // Volatile per-submission content, AFTER the cache breakpoint, with the essay clearly delimited.
@@ -177,6 +187,7 @@ export interface GradeInput {
   assignmentPrompt?: string; // raw assignment task, used for the relevance gate + reference
   classContext?: string; // subject / grade level / program, used for calibration
   styleProfile?: string; // the teacher's distilled grading style (Phase 9), injected into the prompt
+  styleExemplars?: StyleExemplar[]; // top-K binary-signal few-shot exemplars (Phase 15 / PROOF-02)
 }
 
 // Normalize confidence to 0..1: handle 0-10 (÷10) and 0-100 (÷100) readings, then clamp.
@@ -271,7 +282,7 @@ async function callModel(model: ModelSpec, input: GradeInput, deterministic: boo
   spend(budget);
   return await geminiGenerateJSON({
     modelId: model.id,
-    systemText: buildCachedSystem(input.rubric, input.classContext, input.styleProfile), // stable prefix → cache hits
+    systemText: buildCachedSystem(input.rubric, input.classContext, input.styleProfile, input.styleExemplars), // stable prefix → cache hits
     userContent: buildUserContent(input.essay), // volatile, delimited essay
     jsonSchema: GRADING_TOOL_INPUT_SCHEMA as unknown as Record<string, unknown>,
     deterministic,
@@ -408,13 +419,17 @@ export async function gradeSubmission(input: GradeInput): Promise<GradeOutcome> 
       // each as a discrete pipeline step so the workflow reads as an AI workforce (AGENT-01/03).
       trace.push({ agent: "annotation", status: "ok", modelId: model.id, latencyMs: 0, detail: { count: result.annotations.length, matched: result.annotations.filter((a) => a.matched).length } });
       trace.push({ agent: "feedback_summary", status: "ok", modelId: model.id, latencyMs: 0, detail: { length: result.summaryFeedback.length } });
+      // PROOF-02: report how the teacher's voice was applied — the binary-signal few-shot exemplar
+      // count is the metric the convergence eval and pipeline view read to confirm the loop is live.
+      const exemplarCount = input.styleExemplars?.length ?? 0;
+      const styleApplied = Boolean(input.styleProfile) || exemplarCount > 0;
       trace.push({
         agent: "style",
-        status: input.styleProfile ? "ok" : "skipped",
+        status: styleApplied ? "ok" : "skipped",
         latencyMs: 0,
-        detail: input.styleProfile
-          ? { applied: true, chars: input.styleProfile.length }
-          : { reason: "no teacher style profile yet (cold start — bootstraps from your edits)" },
+        detail: styleApplied
+          ? { applied: true, exemplarCount, profileChars: input.styleProfile?.length ?? 0 }
+          : { reason: "no teacher style profile or exemplars yet (cold start — bootstraps from your edits)" },
       });
 
       // Low overall confidence ⇒ surface for review rather than presenting as settled (GRADE-04).
