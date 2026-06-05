@@ -117,7 +117,12 @@ ${essay}
     userContent,
     jsonSchema: RELEVANCE_SCHEMA as unknown as Record<string, unknown>,
     deterministic: true,
-    maxOutputTokens: 256,
+    // Disable thinking + give headroom. gemini-2.5-flash is a THINKING model: with the old 256-token
+    // budget and no thinkingBudget, dynamic thinking consumed the whole budget, the JSON answer came
+    // back empty (finishReason MAX_TOKENS), geminiGenerateJSON threw, and the relevance gate FAILED
+    // OPEN on every grade — silently disabling off-topic withholding. (Same fix as rubric-synth.)
+    thinkingBudget: 0,
+    maxOutputTokens: 512,
   });
   const o = (json ?? {}) as Record<string, unknown>;
   const rawScore = typeof o.relevanceScore === "number" ? o.relevanceScore : 0;
