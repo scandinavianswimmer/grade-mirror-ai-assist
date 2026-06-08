@@ -1,73 +1,57 @@
-# Welcome to your Lovable project
+# aiTA — your grading co-pilot
 
-## Project info
+**aiTA helps middle- and high-school teachers grade student essays in their own voice and standards — while keeping the teacher as the final authority.**
 
-**URL**: https://lovable.dev/projects/cd7bc6b8-e8dc-43e0-8d41-fb7c56ca81ef
+Paste a rubric, upload student work, and aiTA returns rubric-aligned scores and margin feedback written the way *you* write it. Off-topic or adversarial submissions are flagged and withheld, never silently scored. Every grade is reviewable: accept, edit, or dismiss each comment — and your edits teach aiTA your voice over time.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## Why it's different
 
-**Use Lovable**
+- **Grades in the teacher's voice.** A consent-gated style profile learns from your past feedback, so comments read like yours — not generic AI. ("I barely had to edit this.")
+- **Trustworthy by construction.** Rubric-mandatory, relevance-gated scoring. Off-assignment work is withheld with a flag, not given a fabricated grade.
+- **Human-in-the-loop.** Teacher keeps final authority — accept / edit / dismiss every annotation; edits feed the learning loop.
+- **Auditable.** Each grade carries a rubric snapshot, evidence anchoring, and an agent-pipeline trace.
+- **Privacy-first.** Owner-isolated data, private storage with signed URLs, de-identification before model calls, right-to-erasure, and retention controls.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/cd7bc6b8-e8dc-43e0-8d41-fb7c56ca81ef) and start prompting.
+## How it works
 
-Changes made via Lovable will be committed automatically to this repo.
+1. **Set up** a class and a rubric-aligned assignment.
+2. **Upload** student submissions (PDF / DOCX / text) — server-side extraction with confidence scoring.
+3. **Grade** — the AI pipeline validates against the rubric, verifies evidence, recomputes totals, anchors comments to the text, and fails loud rather than guessing.
+4. **Review** — accept, edit, or dismiss each comment; finalize when satisfied.
+5. **Improve** — your edits sharpen aiTA's grasp of your voice on the next batch.
 
-**Use your preferred IDE**
+## Tech stack
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Frontend:** Vite · React 18 · TypeScript · shadcn/ui · Tailwind · **Firebase Hosting**
+- **Backend:** Supabase (Postgres + Edge Functions) → migrating to Google Cloud (Cloud Run · Cloud SQL · Cloud Storage · Firebase)
+- **AI:** Google **Gemini** (via Vertex AI) — rubric-aligned grading with structured JSON output, evidence verification, and teacher-style injection
+- **Payments:** Stripe · **Analytics:** PostHog
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Local development
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+npm install
+npm run dev        # → http://localhost:8080
+npm run build      # production build
+npm test           # vitest
 ```
 
-**Edit a file directly in GitHub**
+Copy `.env.example` → `.env` and fill in the public values. Server secrets are never committed — they live in Supabase function secrets (and, post-migration, Google Cloud Secret Manager).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Project layout
 
-**Use GitHub Codespaces**
+```
+src/                         React app (pages, components, lib)
+supabase/functions/          Edge functions (grading, ingest, billing, privacy)
+supabase/functions/_shared/  Grading engine, AI router, auth, rate-limiting
+supabase/migrations*/        Database schema
+worker/                      Async grading worker (Cloud Run)
+docs/                        Concepts, guides, references
+.planning/                   Roadmap, state, launch plan
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Status
 
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/cd7bc6b8-e8dc-43e0-8d41-fb7c56ca81ef) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Active build toward a public launch and the **Build with Gemini XPRIZE** (Education & Human Potential). See `.planning/LAUNCH-PLAN.md` for the roadmap.

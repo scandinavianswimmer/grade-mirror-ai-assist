@@ -28,6 +28,17 @@ export const ENV = {
     // De-dup while preserving order (primary stays first).
     return [...new Set([primary, ...extras])];
   },
+  // ── Vertex AI backend (M1 — additive, OFF by default) ──────────────────────────────────────────
+  // Selects which Gemini transport ai/gemini.ts uses. Default (unset/"generativelanguage") keeps the
+  // existing API-key + rotation path byte-for-byte. Set to "vertex" (or set vertexAiEnabled below)
+  // to route generateContent through Google Cloud Vertex AI with an OAuth2 bearer token.
+  geminiBackend: () => optionalEnv("GEMINI_BACKEND").trim().toLowerCase(),
+  // Alternative boolean toggle for Vertex (VERTEX_AI=true|1). Either this OR GEMINI_BACKEND=vertex
+  // turns Vertex on. Both default off ⇒ no behavior change.
+  vertexAiEnabled: () => /^(true|1|yes|on)$/i.test(optionalEnv("VERTEX_AI").trim()),
+  // GCP project + region for the Vertex endpoint. Required when Vertex is selected.
+  vertexProject: () => optionalEnv("VERTEX_PROJECT"),
+  vertexLocation: () => optionalEnv("VERTEX_LOCATION", "us-central1"),
   // Shared secret that gates service-role/cron-only functions (privacy-tasks).
   cronSecret: () => requireEnv("CRON_SECRET"),
   // Billing (Phase 12 / Stripe). Set via: supabase secrets set STRIPE_SECRET_KEY=... etc.

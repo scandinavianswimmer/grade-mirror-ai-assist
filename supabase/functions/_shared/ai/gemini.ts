@@ -6,6 +6,7 @@
 import { ENV } from "../env.ts";
 import { withinGlobalGeminiBudget, paceUpstreamCall } from "../ratelimit.ts";
 import { AppError } from "../http.ts";
+import { getGoogleAccessToken, hasGoogleCredential } from "./google-auth.ts";
 
 const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
@@ -71,7 +72,51 @@ function isQuotaError(status: number, body: string): boolean {
   return status === 429 || /RESOURCE_EXHAUSTED|quota/i.test(body);
 }
 
+// ── Vertex AI backend (M1) ───────────────────────────────────────────────────
+// Selected only when an env flag asks for it AND the required GCP config is present. When ANY of
+// those is missing we return false so call() stays on the default generativelanguage key path — the
+// flag can be set without breaking grading before the project/credential are configured.
+function vertexSelected(): boolean {
+  const wantsVertex = ENV.geminiBackend() === "vertex" || ENV.vertexAiEnabled();
+  if (!wantsVertex) return false;
+  return Boolean(ENV.vertexProject() && ENV.vertexLocation() && hasGoogleCredential());
+}
+
+function vertexUrl(modelId: string): string {
+  const project = ENV.vertexProject();
+  const location = ENV.vertexLocation();
+  return `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/publishers/google/models/${modelId}:generateContent`;
+}
+
+// Vertex transport: same request body + same response shape as the generativelanguage path, but
+// authenticated with an OAuth2 bearer token instead of a URL API key, and pointed at the regional
+// aiplatform endpoint. No key-rotation pool — Vertex bills against the project, so quota exhaustion
+// is surfaced (RESOURCE_EXHAUSTED) for the engine's model-level fallback exactly as before.
+async function callVertex(modelId: string, body: AnyObj): Promise<AnyObj> {
+  // Same global ceiling + dev pacer guards as the key path so the two backends share one valve.
+  await paceUpstreamCall();
+  const budget = await withinGlobalGeminiBudget();
+  if (!budget.ok) {
+    throw new AppError(
+      429,
+      "global_ceiling",
+      `Gemini global rate ceiling reached (${budget.count}/${budget.ceiling} per min) — backing off to protect the key pool`,
+    );
+  }
+  const token = await getGoogleAccessToken();
+  if (!token) throw new Error("Vertex backend selected but no Google OAuth credential is available");
+  const res = await fetch(vertexUrl(modelId), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  });
+  if (res.ok) return (await res.json()) as AnyObj;
+  const txt = await res.text();
+  throw new Error(`Vertex ${modelId} HTTP ${res.status}: ${txt.slice(0, 400)}`);
+}
+
 async function call(modelId: string, body: AnyObj): Promise<AnyObj> {
+  if (vertexSelected()) return await callVertex(modelId, body);
   const keys = ENV.geminiKeys();
   const payload = JSON.stringify(body);
   let lastQuotaErr = "";

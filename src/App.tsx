@@ -33,6 +33,7 @@ const PodcastGenerator = lazy(() => import("./pages/PodcastGenerator"));
 const PodcastDetail = lazy(() => import("./pages/PodcastDetail"));
 const PdfSubmission = lazy(() => import("./pages/PdfSubmission").then((m) => ({ default: m.PdfSubmission })));
 const Pitch = lazy(() => import("./pages/Pitch"));
+const Pricing = lazy(() => import("./pages/Pricing"));
 const Billing = lazy(() => import("./pages/Billing"));
 const Metrics = lazy(() => import("./pages/Metrics"));
 const History = lazy(() => import("./pages/History"));
@@ -130,11 +131,12 @@ const AppContent = () => {
     );
   }
 
-  // Allow /pitch page to be viewed without authentication
-  if (location.pathname === '/pitch') {
+  // Allow public marketing pages to be viewed without authentication.
+  if (location.pathname === '/pitch' || location.pathname === '/pricing') {
     return (
       <Routes>
         <Route path="/pitch" element={<Pitch />} />
+        <Route path="/pricing" element={<Pricing />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     );
@@ -295,6 +297,7 @@ const AppContent = () => {
       
       <Route path="/pdf/submission/:id" element={<PdfSubmission />} />
       <Route path="/pitch" element={<Pitch />} />
+      <Route path="/pricing" element={<Pricing />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="*" element={<NotFound />} />

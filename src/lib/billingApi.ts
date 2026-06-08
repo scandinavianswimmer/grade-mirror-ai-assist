@@ -44,10 +44,20 @@ export const getSubscription = async (): Promise<Subscription | null> => {
   return (data as Subscription) ?? null;
 };
 
+// Pro billing cadence. The edge function maps the plan → a Stripe price id server-side
+// (see stripe-checkout's ENV.stripePriceId), so the client only needs to name the cadence.
+export type BillingInterval = 'monthly' | 'annual';
+
 // Start Stripe Checkout for a plan; returns a URL the caller should redirect to.
-export const startCheckout = async (plan: Plan = 'pro'): Promise<string> => {
+// `interval` is forwarded so the edge function can pick the monthly vs annual Stripe price.
+// The function ignores unknown body fields, so passing it is safe even before the founder
+// wires the annual price id (see VITE_STRIPE_PRICE_PRO_* in pricingPlans.ts).
+export const startCheckout = async (
+  plan: Plan = 'pro',
+  interval: BillingInterval = 'monthly',
+): Promise<string> => {
   const { data, error } = await supabase.functions.invoke('stripe-checkout', {
-    body: { plan },
+    body: { plan, interval },
   });
   if (error) throw error;
   if (!data?.url) throw new Error('Checkout session did not return a URL');
