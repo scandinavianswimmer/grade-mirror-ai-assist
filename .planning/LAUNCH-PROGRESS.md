@@ -59,3 +59,21 @@
 - UI polish on remaining old-styled pages (CreateAssignment, AssignmentDetail, Profile, Training, UploadTraining) to the Marginalia system.
 - Fire `paywall_viewed` from the actual cap-hit render sites (callers weren't in iteration-2 scope).
 - M2 scaffolding: containerize an edge function for Cloud Run (Dockerfile + entry) as a proof, non-destructive.
+
+---
+
+## Iteration 3 — 2026-06-08
+**Done (committed):**
+- ✅ **Dead-page cleanup (frontend):** deleted 8 dead/duplicate files (`Upload.tsx`, `GradingPreview.tsx`, `Index.tsx`, `Onboarding.tsx`, `OnboardingFlow.tsx`, `PodcastDetail.tsx`, `PodcastGenerator.tsx`, `components/GeminiSetup.tsx`); removed 7 lazy imports + 6 routes from `App.tsx`. Onboarding consolidated to the single `TeacherOnboarding` flow. No dangling nav. tsc + build verified green by the agent.
+- ✅ **M2 Cloud Run proof (non-destructive):** hardened `worker/` for Cloud Run (`$PORT` bind, `.dockerignore`); new `deploy/cloud-run/` — generic Deno Dockerfile + `serve-edge-function.ts` shim that runs an **unmodified** Supabase edge function on Cloud Run ($PORT), worked example `grade-submission`, + README with exact `gcloud run deploy` commands and Supabase→Cloud Run secret mapping. Strangler-fig: Supabase path keeps working. **This is the Google Cloud product that locks XPRIZE eligibility** (alongside Vertex AI from M1).
+- ✅ Build green, `tsc` clean.
+
+**New founder-gated (added):**
+- ⛔ Deploy the Cloud Run service (`gcloud builds submit` + `gcloud run deploy` per `deploy/cloud-run/README.md`) → locks the GCloud-product gate live. Needs gcloud auth + project + secrets.
+
+**⏭ Next codeable (iteration 4):**
+- UI polish on remaining old-styled pages (CreateAssignment, AssignmentDetail, Profile, Training, UploadTraining) → Marginalia design system.
+- Fire `paywall_viewed` + enforce the Free cap UX at the real grading cap-hit sites (wire `UpgradePaywall` where a Free user is blocked).
+- README/docs: add the public URL + a screenshot/GIF once the founder deploys.
+- M3 scaffolding (Storage → GCS) design doc + a non-destructive adapter sketch.
+- Consider merging `aita-launch-prep` once the founder OKs (still local-only).

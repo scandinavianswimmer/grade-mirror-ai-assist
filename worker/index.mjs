@@ -86,7 +86,9 @@ async function loop() {
 }
 
 requireEnv();
-http.createServer((_req, res) => { res.writeHead(200); res.end("ok"); }).listen(Number(PORT), () => {
-  console.log(`[worker] health server on :${PORT}; polling ${QUEUE}`);
+// Cloud Run requires the container to listen on 0.0.0.0:$PORT. Bind the host explicitly (not just the
+// port) so the contract is unambiguous and doesn't rely on Node's default-interface behavior.
+http.createServer((_req, res) => { res.writeHead(200); res.end("ok"); }).listen(Number(PORT), "0.0.0.0", () => {
+  console.log(`[worker] health server on 0.0.0.0:${PORT}; polling ${QUEUE}`);
   loop();
 });

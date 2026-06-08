@@ -13,13 +13,10 @@ import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 // Route-level code splitting — keep the initial bundle small (M39). Heavy pages load on demand.
-const Index = lazy(() => import("./pages/Index"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const CreateAssignment = lazy(() => import("./pages/CreateAssignment"));
 const AssignmentDetail = lazy(() => import("./pages/AssignmentDetail"));
 const SubmissionDetail = lazy(() => import("./pages/SubmissionDetail"));
-const Upload = lazy(() => import("./pages/Upload"));
-const GradingPreview = lazy(() => import("./pages/GradingPreview"));
 const Training = lazy(() => import("./pages/Training"));
 const LMSIntegration = lazy(() => import("./pages/LMSIntegration"));
 const LMSCallback = lazy(() => import("./pages/LMSCallback"));
@@ -27,10 +24,6 @@ const Profile = lazy(() => import("./pages/Profile"));
 const FreemiumDashboard = lazy(() => import("./pages/FreemiumDashboard"));
 const UploadTraining = lazy(() => import("./pages/UploadTraining"));
 const SubmitAssignment = lazy(() => import("./pages/SubmitAssignment"));
-const Onboarding = lazy(() => import("./pages/Onboarding"));
-const OnboardingFlow = lazy(() => import("./pages/OnboardingFlow"));
-const PodcastGenerator = lazy(() => import("./pages/PodcastGenerator"));
-const PodcastDetail = lazy(() => import("./pages/PodcastDetail"));
 const PdfSubmission = lazy(() => import("./pages/PdfSubmission").then((m) => ({ default: m.PdfSubmission })));
 const Pitch = lazy(() => import("./pages/Pitch"));
 const Pricing = lazy(() => import("./pages/Pricing"));
@@ -205,18 +198,6 @@ const AppContent = () => {
         </AuthGuard>
       } />
       
-      <Route path="/onboarding" element={
-        <AuthGuard>
-          <Onboarding />
-        </AuthGuard>
-      } />
-      
-      <Route path="/onboarding-flow" element={
-        <AuthGuard>
-          <OnboardingFlow />
-        </AuthGuard>
-      } />
-      
       <Route path="/upload-training" element={
         <AuthGuard>
           <UploadTraining />
@@ -226,18 +207,6 @@ const AppContent = () => {
       <Route path="/submit-assignment" element={
         <AuthGuard>
           <SubmitAssignment />
-        </AuthGuard>
-      } />
-      
-      <Route path="/upload" element={
-        <AuthGuard>
-          <Upload />
-        </AuthGuard>
-      } />
-      
-      <Route path="/grading/preview" element={
-        <AuthGuard>
-          <GradingPreview />
         </AuthGuard>
       } />
       
@@ -280,18 +249,6 @@ const AppContent = () => {
       <Route path="/history" element={
         <AuthGuard>
           <History />
-        </AuthGuard>
-      } />
-      
-      <Route path="/podcast-generator" element={
-        <AuthGuard>
-          <PodcastGenerator />
-        </AuthGuard>
-      } />
-      
-      <Route path="/podcast/:id" element={
-        <AuthGuard>
-          <PodcastDetail />
         </AuthGuard>
       } />
       
