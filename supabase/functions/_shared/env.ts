@@ -44,9 +44,28 @@ export const ENV = {
   // Billing (Phase 12 / Stripe). Set via: supabase secrets set STRIPE_SECRET_KEY=... etc.
   stripeSecretKey: () => requireEnv("STRIPE_SECRET_KEY"),
   stripeWebhookSecret: () => requireEnv("STRIPE_WEBHOOK_SECRET"),
-  // Map app plan -> Stripe Price ID. Configure per-plan price IDs as secrets (never hardcode).
-  stripePriceId: (plan: string) =>
-    requireEnv(`STRIPE_PRICE_${plan.toUpperCase()}`),
+  // Map (app plan, billing interval) -> Stripe Price ID. Configure price IDs as secrets (never
+  // hardcode). Interval-aware names take precedence so a plan can have both a monthly and an annual
+  // price; the legacy single-price name is the backward-compatible fallback when only one is set.
+  //   STRIPE_PRICE_PRO_MONTHLY / STRIPE_PRICE_PRO_ANNUAL   (preferred)
+  //   STRIPE_PRICE_PRO                                       (legacy fallback — treated as monthly)
+  // 'annual' falls back to the monthly price id when no annual id is configured, so enabling annual
+  // is purely additive: set STRIPE_PRICE_PRO_ANNUAL when the annual Stripe price exists.
+  stripePriceId: (plan: string, interval: "monthly" | "annual" = "monthly") => {
+    const base = `STRIPE_PRICE_${plan.toUpperCase()}`;
+    const intervalKey = interval === "annual" ? `${base}_ANNUAL` : `${base}_MONTHLY`;
+    // Resolution order: exact interval id → (annual only) monthly id → legacy single id.
+    const candidates = interval === "annual"
+      ? [intervalKey, `${base}_MONTHLY`, base]
+      : [intervalKey, base];
+    for (const key of candidates) {
+      const v = Deno.env.get(key);
+      if (v) return v;
+    }
+    throw new Error(
+      `Missing Stripe price id for plan '${plan}' (${interval}); set one of: ${candidates.join(", ")}`,
+    );
+  },
   // Where Stripe sends the teacher back after Checkout / the Customer Portal. e.g.
   //   https://app.aita.example  (no trailing slash). Defaults to localhost for dev.
   appUrl: () => optionalEnv("APP_URL", "http://localhost:5173"),

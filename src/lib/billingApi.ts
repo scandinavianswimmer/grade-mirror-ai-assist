@@ -15,8 +15,8 @@ export interface PlanLimits {
 // the SAME numbers server-side (see the integration hook documented in PHASE-12-NOTES.md);
 // the client copy is for UX only and is NOT a security boundary.
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
-  free: { monthlyGradingLimit: 25, maxClasses: 1, label: 'Free' },
-  pro: { monthlyGradingLimit: 1000, maxClasses: null, label: 'Pro' },
+  free: { monthlyGradingLimit: 15, maxClasses: 1, label: 'Free' },
+  pro: { monthlyGradingLimit: 500, maxClasses: null, label: 'Pro' },
   enterprise: { monthlyGradingLimit: null, maxClasses: null, label: 'Enterprise' },
 };
 

@@ -38,3 +38,24 @@
 - UI polish + dead-page cleanup (delete `Upload.tsx`, `GradingPreview.tsx`, `Index.tsx`, `Onboarding.tsx`/`OnboardingFlow.tsx`, podcast pages, `GeminiSetup.tsx`; pick one onboarding flow) — own App.tsx routing carefully.
 - PH launch assets draft (tagline, description, gallery copy, maker story).
 - PostHog event coverage for paywall view → checkout start (XPRIZE user evidence).
+
+---
+
+## Iteration 2 — 2026-06-08
+**Done (committed):**
+- ✅ **Annual interval (backend):** `stripe-checkout` reads `interval`; `ENV.stripePriceId(plan, interval)` resolves monthly/annual; webhook `planForPrice` interval-aware. New env `STRIPE_PRICE_PRO_MONTHLY/_ANNUAL` (legacy `STRIPE_PRICE_PRO` still works).
+- ✅ **Plan-limit enforcement (backend):** canonical caps in new `_shared/plan-limits.ts` (Free=15, Pro=500); webhook→`users.plan`→`consume_grading_quota`→`grade-submission` flow; **new migration `0019_grading_quota_monthly_caps.sql`** fixes the broken `0015` (it used weekly caps keyed on a `'freemium'` label that never matched `'free'`/`'pro'` → free users were effectively uncapped). Fail-open preserved until applied.
+- ✅ **PostHog funnel events (frontend):** `pricing_page_viewed`, `paywall_viewed{source}`, `upgrade_clicked{plan,interval}`, `checkout_started{plan,interval}` wired into Pricing/Paywall/checkout hook.
+- ✅ **Free-cap reconciled:** `billingApi.ts` 25/1000 → **15/500** to match backend + plan.
+- ✅ **Launch assets drafted:** `docs/launch/PRODUCT-HUNT.md` (taglines, gallery, maker comment, checklist) + `docs/launch/XPRIZE-SUBMISSION.md` (criteria mapping, deliverables checklist, <3min video script, eligibility framing).
+- ✅ Build green, `tsc` clean.
+
+**New founder-gated (added):**
+- ⛔ **Apply migration `0019`** (DB password) — turns on real Free-vs-Pro gating. Until then grading fails open. (`0015` is superseded; `0019` is the live one.)
+- ⛔ Set `STRIPE_PRICE_PRO_MONTHLY` + `STRIPE_PRICE_PRO_ANNUAL` secrets (server-side) in addition to the `VITE_` ones.
+
+**⏭ Next codeable (iteration 3):**
+- Dead-page cleanup + onboarding-flow consolidation (own App.tsx routing carefully; verify build) — delete `Upload.tsx`, `GradingPreview.tsx`, `Index.tsx`, `Onboarding.tsx`/`OnboardingFlow.tsx`, podcast pages + `generate-podcast`, `GeminiSetup.tsx`.
+- UI polish on remaining old-styled pages (CreateAssignment, AssignmentDetail, Profile, Training, UploadTraining) to the Marginalia system.
+- Fire `paywall_viewed` from the actual cap-hit render sites (callers weren't in iteration-2 scope).
+- M2 scaffolding: containerize an edge function for Cloud Run (Dockerfile + entry) as a proof, non-destructive.

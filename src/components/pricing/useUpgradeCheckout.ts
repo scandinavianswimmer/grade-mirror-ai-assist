@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/components/AuthProvider';
 import { startCheckout, type BillingInterval } from '@/lib/billingApi';
 import { isProPriceConfigured } from '@/lib/pricingPlans';
+import { analytics } from '@/lib/analytics';
 
 interface UseUpgradeCheckout {
   /** True while a checkout session is being created (disable the CTA). */
@@ -36,6 +37,8 @@ export function useUpgradeCheckout(): UseUpgradeCheckout {
 
       try {
         setStarting(true);
+        // Funnel: the Stripe redirect is being initiated (guards passed, user authed).
+        analytics.capture('checkout_started', { plan: 'pro', interval });
         const url = await startCheckout('pro', interval);
         window.location.href = url; // redirect to Stripe-hosted Checkout
       } catch (err: unknown) {

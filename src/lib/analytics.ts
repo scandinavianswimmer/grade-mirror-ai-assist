@@ -12,7 +12,13 @@ export type AnalyticsEvent =
   | 'annotation_accepted'
   | 'annotation_edited'
   | 'annotation_dismissed'
-  | 'grade_finalized';
+  | 'grade_finalized'
+  // Pricing → checkout conversion funnel (METRIC-04 / Launch Plan §3 B3).
+  // The "user evidence" backbone: every step is a discrete event so the funnel is measurable.
+  | 'pricing_page_viewed'
+  | 'paywall_viewed'
+  | 'upgrade_clicked'
+  | 'checkout_started';
 
 type AnalyticsProps = Record<string, unknown>;
 

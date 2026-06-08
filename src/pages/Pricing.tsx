@@ -2,7 +2,7 @@
 // with a monthly/annual toggle (annual shows the 20% saving). CTAs: Free → sign up,
 // Pro → Stripe checkout (sign-up-then-checkout when logged out), School → contact (mailto).
 // Reachable without auth (registered as a public route in App.tsx, like /pitch).
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ import {
   type PricingTier,
 } from '@/lib/pricingPlans';
 import type { BillingInterval } from '@/lib/billingApi';
+import { analytics } from '@/lib/analytics';
 
 const schoolContactHref = `mailto:${SCHOOL_CONTACT_EMAIL}?subject=${encodeURIComponent(SCHOOL_CONTACT_SUBJECT)}`;
 
@@ -27,6 +28,11 @@ const Pricing = () => {
   const { plan, isPaid } = usePlan();
   const { starting, startProCheckout } = useUpgradeCheckout();
   const [interval, setInterval] = useState<BillingInterval>('monthly');
+
+  // Funnel entry: the public pricing page was viewed (fires once per mount).
+  useEffect(() => {
+    analytics.capture('pricing_page_viewed');
+  }, []);
 
   // Per-tier CTA. Behaviour follows Launch Plan §3: Free → sign up, Pro → checkout
   // (or sign up first when logged out, handled inside startProCheckout), School → contact.
@@ -55,7 +61,14 @@ const Pricing = () => {
         );
       }
       return (
-        <Button className="w-full" onClick={() => startProCheckout(interval)} disabled={starting}>
+        <Button
+          className="w-full"
+          onClick={() => {
+            analytics.capture('upgrade_clicked', { plan: 'pro', interval });
+            startProCheckout(interval);
+          }}
+          disabled={starting}
+        >
           {starting ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
