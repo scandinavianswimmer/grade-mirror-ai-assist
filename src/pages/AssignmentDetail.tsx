@@ -12,6 +12,8 @@ import { analytics } from '@/lib/analytics';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import FileUpload from '@/components/FileUpload';
+import { UpgradePaywall } from '@/components/pricing/UpgradePaywall';
+import { useGradingGate } from '@/hooks/useGradingGate';
 import { statusBadgeClass, statusLabel, effectiveStatus } from '@/lib/submissionStatus';
 
 interface Assignment {
@@ -40,9 +42,19 @@ const AssignmentDetail = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [enqueuing, setEnqueuing] = useState(false);
+  // Free-plan grading cap gate (fail-open). A capped Free teacher sees the upgrade paywall
+  // instead of enqueuing a bulk grade run.
+  const { atCap: gradingAtCap } = useGradingGate();
+  const [showPaywall, setShowPaywall] = useState(false);
 
   // Phase 4: bulk-enqueue every not-yet-graded submission for async grading by the Cloud Run worker.
   const gradeAll = async () => {
+    // Free teacher at/over their monthly cap: surface the paywall instead of grading (fail-open —
+    // within-limit and Pro/Enterprise teachers fall straight through).
+    if (gradingAtCap) {
+      setShowPaywall(true);
+      return;
+    }
     const targets = submissions.filter((s) => s.status !== 'graded' && s.status !== 'finalized').map((s) => s.id);
     if (targets.length === 0) {
       toast({ title: 'Nothing to grade', description: 'Every submission is already graded or finalized.' });
@@ -297,6 +309,11 @@ const AssignmentDetail = () => {
               </div>
             </CardHeader>
             <CardContent>
+              {showPaywall && gradingAtCap && (
+                <div className="mb-4">
+                  <UpgradePaywall source="assignment_detail" />
+                </div>
+              )}
               {submissions.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   No student submissions yet. Upload essays above to get started.

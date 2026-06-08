@@ -77,3 +77,21 @@
 - README/docs: add the public URL + a screenshot/GIF once the founder deploys.
 - M3 scaffolding (Storage → GCS) design doc + a non-destructive adapter sketch.
 - Consider merging `aita-launch-prep` once the founder OKs (still local-only).
+
+---
+
+## Iteration 4 — 2026-06-08
+**Done (committed):**
+- ✅ **Paywall wired at grading gates (frontend):** new `src/hooks/useGradingGate.ts` (fail-open `atCap` = free plan + monthly grade count ≥ 15); `AssignmentDetail` (bulk grade) + `SubmissionDetail` (single grade) now show `UpgradePaywall` (source-tagged) instead of grading when a Free user is at cap. Pro/Enterprise/within-limit/unknown users grade normally. `paywall_viewed` fires on render. **This is the conversion mechanic** (Free cap → upgrade → revenue).
+- ✅ **Test coverage:** 36 new unit tests (`pricingPlans.test.ts`, `billingApi.test.ts`, `planLimitsShared.test.ts`) — annual-savings math, price points, `PLAN_LIMITS` 15/500, interval forwarding, `monthlyGradingLimit`. Full suite **69 passing**.
+- ✅ Discovery: the 5 "old-styled" pages already use Marginalia design tokens (0 hardcoded colors) — **UI-polish task was stale, dropped.**
+- ✅ tsc clean, build green, tests green.
+
+**Notes / minor (non-blocking):**
+- `vitest.config.ts` `include` glob is `src/**` only → backend tests under `supabase/` aren't collected; the shared plan-limits module is covered via a `src/lib/` test instead. Broaden the glob later if backend tests should live beside source.
+
+**⏭ Next codeable (iteration 5):**
+- M3 (Storage → GCS) design doc + non-destructive adapter sketch in `_shared/` (mirrors the M1/M2 strangler pattern).
+- Public-repo hygiene for judges: ensure `.env`/secrets fully gitignored, LICENSE, CONTRIBUTING note, screenshot placeholders in README (real shots after founder deploys).
+- Reconcile `freemiumApi`/`usePlan` usage source with the new monthly-cap semantics if any drift.
+- Approaching done: after M3 sketch + repo hygiene, remaining work is largely founder-gated (deploys, secrets, Stripe, migrations, real users/revenue) → prepare to CronDelete and hand off.
