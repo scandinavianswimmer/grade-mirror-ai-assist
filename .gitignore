@@ -12,10 +12,28 @@ dist
 dist-ssr
 *.local
 
+# Firebase (hosting) — build cache + debug logs, not source.
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+
 # Secrets — never commit. Run `git rm --cached .env` to untrack the existing one.
 .env
 .env.*
 !.env.example
+supabase/.env
+supabase/.env.*
+
+# Keys, certs, and service-account credentials — never commit.
+*.key
+*.pem
+*service-account*.json
+*-sa.json
+gcp-*.json
+
+# Database backups / dumps — never commit.
+*.sql.backup
+*.backup
 
 # Supabase CLI cache (project ref, pooler url, linked-project) — not source.
 supabase/.temp/

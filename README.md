@@ -55,3 +55,16 @@ docs/                        Concepts, guides, references
 ## Status
 
 Active build toward a public launch and the **Build with Gemini XPRIZE** (Education & Human Potential). See `.planning/LAUNCH-PLAN.md` for the roadmap.
+
+## Screenshots
+
+_Real images go here once the app is deployed. Placeholders for now:_
+
+- **Dashboard** — classes, assignments, and grading queue at a glance.
+- **Grading workspace** — rubric-aligned scores with voice feedback.
+- **The "trust moment"** — an off-topic submission flagged and withheld instead of silently scored.
+- **Pricing** — plans and limits.
+
+## License
+
+Licensing is **TBD — all rights reserved** pending the founder's decision. No license is granted until a `LICENSE` file is added.

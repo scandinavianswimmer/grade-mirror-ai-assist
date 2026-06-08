@@ -95,3 +95,28 @@
 - Public-repo hygiene for judges: ensure `.env`/secrets fully gitignored, LICENSE, CONTRIBUTING note, screenshot placeholders in README (real shots after founder deploys).
 - Reconcile `freemiumApi`/`usePlan` usage source with the new monthly-cap semantics if any drift.
 - Approaching done: after M3 sketch + repo hygiene, remaining work is largely founder-gated (deploys, secrets, Stripe, migrations, real users/revenue) → prepare to CronDelete and hand off.
+
+---
+
+## Iteration 5 — 2026-06-08  ·  CODEABLE LAUNCH-PREP COMPLETE → loop stopped
+**Done (committed):**
+- ✅ **M3 Storage→GCS adapter (non-destructive):** new `supabase/functions/_shared/storage/` — `ObjectStore` port + `supabase-store.ts` (default, wraps current calls 1:1) + `gcs-store.ts` (GCS JSON API + V4 signed URLs, reuses M1 google-auth) + `index.ts` factory gated by `STORAGE_BACKEND=gcs`. Default path unchanged; call sites NOT yet rewired (that's M3 execution, needs live GCS). Doc: `deploy/gcs/README.md`.
+- ✅ **Repo hygiene:** `.gitignore` hardened (firebase, supabase/.env, *.key/*.pem, service-account JSON, *.backup); `CONTRIBUTING.md` + `SECURITY.md`; README Screenshots + License sections. **Secret audit CLEAN — no `.env`/secret/key file is git-tracked.**
+- ✅ tsc clean, build green, 69 tests passing.
+
+**🔎 Bug surfaced for founder (NOT auto-fixed — needs live verification):**
+- Pre-existing **bucket-name inconsistency**: `ingest-document` uses bucket `"submissions"` while `delete-data` + `privacy-tasks` use `"uploads"`. Could mean uploaded files aren't found for deletion/retention (orphaned objects) or vice-versa. Verify which bucket is canonical and reconcile.
+
+### Loop stopped (CronDelete) — why
+All substantial CODEABLE launch-prep is done and committed on `aita-launch-prep` (6 commits). Everything still open is **founder-gated** (deploys, secret rotation, Stripe live, migrations, real users/revenue) or **M4/M5** (DB/Auth cutover — explicitly out of autonomous scope; needs the live GCP env + verification). Continuing the loop would only pad low-value/risky polish. See the consolidated hand-off in the session + the founder action list below.
+
+### Founder action list (ordered, unblocks everything)
+1. **Deploy frontend:** `firebase login && firebase deploy --only hosting` → live URL.
+2. **Fix CORS:** `supabase secrets set ALLOWED_ORIGINS="https://aita-5aca5.web.app,…"`.
+3. **Rotate** exposed secrets (DB pw, Stripe key, Gemini key).
+4. **Stripe live:** create Pro monthly ($15) + annual ($144) prices; set `VITE_STRIPE_PRICE_PRO_MONTHLY/_ANNUAL` + server `STRIPE_PRICE_PRO_MONTHLY/_ANNUAL`.
+5. **Apply migration `0019`** (DB password) → real Free/Pro gating.
+6. **GCloud eligibility:** enable Vertex AI API + SA (`roles/aiplatform.user`) → set `GEMINI_BACKEND=vertex`; deploy Cloud Run per `deploy/cloud-run/README.md`.
+7. Merge `aita-launch-prep` → main (after review).
+8. Decisions: pick a LICENSE; real SECURITY.md contact; reconcile the bucket-name bug; choose free cap 15 (current).
+9. Then: launch on Product Hunt (assets in `docs/launch/PRODUCT-HUNT.md`); start collecting users/revenue/testimonials for XPRIZE (`docs/launch/XPRIZE-SUBMISSION.md`).
