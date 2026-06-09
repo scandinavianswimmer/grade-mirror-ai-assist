@@ -6,6 +6,25 @@
 
 ---
 
+## ADDENDUM — Reconciliation & locked decisions (2026-06-08, PM)
+
+> Supersedes the contested parts of this doc after a full-project assessment. Three corrections:
+
+1. **LAUNCH TIMING — LOCKED: prove first, launch back-to-school.** **No public/Product Hunt launch in June.** Summer (now → Aug) = deploy trust + **prove the wedge** with design-partner teachers + harden. Launch into **back-to-school (mid-Aug)**, which coincides with the XPRIZE Aug-17 deadline. Rationale: the school year just ended; a summer/PH launch buys maker buzz, not teacher adoption; launching *with* a real convergence proof + testimonial beats launching cold. (This reverses §2's "PH launch THIS WEEK.")
+2. **THE WEDGE IS NOT YET PROVEN.** This doc's "voice-convergence-proven app" is inaccurate — `phase-15-voice-convergence-proof/VERDICT.md` is **PENDING** (the proof was built but never run with a real teacher). Proving it is now the **summer centerpiece (Phase B)**, not an assumption. Per the competitive research it's the one defensible moat — and right now it's only a claim.
+3. **GRADING-TRUST BUG IS LIVE IN PROD.** F-001/F-002 (weak essays → 100/100, real essays → "off topic") are live because the fix (on `aita-launch-prep`, commit `4274336`) is committed but **NOT deployed**. Deploying `grade-submission` is the **hard gate** before ANY launch or teacher onboarding.
+
+### Corrected milestone sequence (supersedes the "Horizon A — launch this week" framing)
+- **Phase A — Trust live (🔒 GATE):** deploy `grade-submission`; validate 1 real end-to-end grade; merge+push the launch branch; apply migration `0015` (real paywall).
+- **Phase B — Prove the moat (summer centerpiece):** 1–3 design-partner teachers × ≥4 batches → convergence eval → fill `VERDICT.md` with real decline % + a testimonial.
+- **Phase C — XPRIZE eligibility:** Firebase Hosting (live URL) + Vertex AI flip + Cloud Run + register on Devpost for credits.
+- **Phase D — Launch + GTM (back-to-school):** PH + acquisition channel (SEO / AI-SEO / teacher communities / ELL beachhead) + pricing/WTP.
+- **Phase E — Firestore migration:** background strangler (M4–M6), never blocks A–D.
+
+Detailed Phase A plan: `.planning/milestone-2-launch/PHASE-A-PLAN.md`.
+
+---
+
 ## 0. North star & the hard constraint
 
 Two deadlines, deeply complementary:
