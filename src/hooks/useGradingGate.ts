@@ -11,7 +11,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { usePlan } from './usePlan';
+import { analytics } from '@/lib/analytics';
 import type { Plan } from '@/lib/billingApi';
+
+// Product-qualified-lead threshold: a teacher who has graded this many essays in a month is
+// demonstrably getting value — the best moment to nudge conversion (Launch Plan §B / Cohort A).
+const PQL_GRADE_THRESHOLD = 12;
 
 interface UseGradingGateResult {
   plan: Plan;
@@ -30,7 +35,7 @@ function monthStartIso(): string {
 
 export function useGradingGate(): UseGradingGateResult {
   const { user } = useAuth();
-  const { plan, limits, loading: planLoading, isWithinGradingLimit } = usePlan();
+  const { plan, limits, loading: planLoading, isTrial, isWithinGradingLimit } = usePlan();
   const [usedThisMonth, setUsedThisMonth] = useState<number | null>(null);
   const [usageLoading, setUsageLoading] = useState(true);
 
@@ -62,6 +67,22 @@ export function useGradingGate(): UseGradingGateResult {
   useEffect(() => {
     loadUsage();
   }, [loadUsage]);
+
+  // Grade-12 PQL: fire once per teacher per month when usage crosses the threshold. localStorage
+  // guards idempotency so PostHog gets exactly one signal (the funnel counts qualified leads, not
+  // every grade past 12). Best-effort — analytics no-ops without a key, and storage may be absent.
+  useEffect(() => {
+    if (!user || usedThisMonth === null || usedThisMonth < PQL_GRADE_THRESHOLD) return;
+    try {
+      const period = monthStartIso().slice(0, 7); // YYYY-MM
+      const key = `pql_grade_12:${user.id}:${period}`;
+      if (typeof localStorage !== 'undefined' && localStorage.getItem(key)) return;
+      analytics.capture('pql_grade_12', { used_this_month: usedThisMonth, plan, on_trial: isTrial });
+      if (typeof localStorage !== 'undefined') localStorage.setItem(key, '1');
+    } catch {
+      // Never let a PQL signal break grading.
+    }
+  }, [user, usedThisMonth, plan, isTrial]);
 
   const loading = planLoading || usageLoading;
   const monthlyLimit = limits.monthlyGradingLimit;
