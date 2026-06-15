@@ -145,6 +145,14 @@ const AppContent = () => {
     );
   }
 
+  if (location.pathname === '/auth') {
+    return (
+      <Routes>
+        <Route path="/auth" element={<Auth />} />
+      </Routes>
+    );
+  }
+
   // Show login overlay for unauthenticated users (except /pitch)
   if (showLoginOverlay) {
     return (
@@ -252,7 +260,11 @@ const AppContent = () => {
         </AuthGuard>
       } />
       
-      <Route path="/pdf/submission/:id" element={<PdfSubmission />} />
+      <Route path="/pdf/submission/:id" element={
+        <AuthGuard>
+          <PdfSubmission />
+        </AuthGuard>
+      } />
       <Route path="/pitch" element={<Pitch />} />
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/auth" element={<Auth />} />
