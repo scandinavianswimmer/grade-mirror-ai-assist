@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
+import TrialBanner from '@/components/TrialBanner';
 import CreateClassModal from '@/components/CreateClassModal';
 import EditClassModal from '@/components/EditClassModal';
 
@@ -238,6 +239,7 @@ const Dashboard = () => {
       <Navbar />
 
       <div className="container mx-auto px-4 py-10" data-tour="dashboard-overview">
+        <TrialBanner />
         <div className={`mb-8 flex flex-wrap items-end justify-between gap-4 ${reveal()}`}>
           <div>
             <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">Your workspace</p>
