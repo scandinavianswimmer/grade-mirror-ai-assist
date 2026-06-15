@@ -501,6 +501,60 @@ const Profile = () => {
                 </div>
               </Card>
 
+              {/* Grading Automation — Auto-finalize (On-the-Loop) */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-1">Grading Automation</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  aiTA grades on its own. With auto-finalize on, high-confidence, on-topic grades are
+                  published for you — and only low-confidence or off-topic essays land in your review
+                  queue. You stay on the loop, not in it.
+                </p>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="auto-finalize" className="text-base font-medium">
+                        Auto-finalize high-confidence grades
+                      </Label>
+                      <p className="text-sm text-gray-600">
+                        Publish confident, rubric-aligned grades without manual approval. Essays with
+                        integrity flags (possible AI-generated, off-topic, prompt injection) always
+                        come to you regardless of this setting.
+                      </p>
+                    </div>
+                    <Switch
+                      id="auto-finalize"
+                      checked={privacySettings?.auto_finalize_enabled ?? true}
+                      onCheckedChange={(checked) => handlePrivacySettingChange('auto_finalize_enabled', checked)}
+                      disabled={isSaving}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="auto-finalize-threshold" className="text-base font-medium">
+                      Confidence threshold
+                    </Label>
+                    <p className="text-sm text-gray-600 mb-2">
+                      How sure aiTA must be before it finalizes on its own. Higher = more essays routed
+                      to your review.
+                    </p>
+                    <Select
+                      value={String(privacySettings?.auto_finalize_threshold ?? 0.85)}
+                      onValueChange={(value) => saveSettings({ auto_finalize_threshold: parseFloat(value) })}
+                      disabled={isSaving || !(privacySettings?.auto_finalize_enabled ?? true)}
+                    >
+                      <SelectTrigger id="auto-finalize-threshold" className="w-full max-w-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white">
+                        <SelectItem value="0.75">75% — More automation</SelectItem>
+                        <SelectItem value="0.85">85% — Balanced (recommended)</SelectItem>
+                        <SelectItem value="0.95">95% — Cautious</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </Card>
+
               {/* Data Handling Settings */}
               <Card className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Data Handling</h3>

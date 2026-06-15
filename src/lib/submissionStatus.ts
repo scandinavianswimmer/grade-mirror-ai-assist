@@ -48,6 +48,28 @@ export const statusDescription = (status: string | null | undefined): string => 
 export const isFinalized = (status: string | null | undefined): boolean =>
   status === 'finalized' || status === 'exported';
 
+// True when aiTA published this grade unattended (auto-finalize / On-the-Loop), vs. a teacher
+// approving it by hand. Drives provenance labels and the AI-native evidence count.
+export const isAutoFinalized = (finalizedBy: string | null | undefined): boolean =>
+  finalizedBy === 'ai';
+
+// Status metadata that reflects WHO finalized the grade. A green "Auto-finalized" badge makes the
+// unattended-grading claim legible in the list/detail/dashboard and on the demo video. Falls back
+// to the plain status meta for teacher-approved or non-finalized submissions.
+export const statusMetaWithProvenance = (
+  status: string | null | undefined,
+  finalizedBy: string | null | undefined,
+): StatusMeta => {
+  if ((status === 'finalized' || status === 'exported') && isAutoFinalized(finalizedBy)) {
+    return {
+      label: 'Auto-finalized',
+      badgeClass: 'bg-green-100 text-green-800',
+      description: 'aiTA published this high-confidence grade for you. Open it to review or adjust.',
+    };
+  }
+  return statusMeta(status);
+};
+
 // "No usable grade yet" states. If a grade row actually exists the submission has progressed
 // past these regardless of a stale persisted value — most notably a failed *re-grade* leaves
 // `grade_error` while the previous valid grade still stands, which otherwise renders a real

@@ -11,6 +11,11 @@ import { synthesizeRubric, toRubricInput } from "../_shared/grading/rubric-synth
 import { resolveAssignmentContext, MISSING_CONTEXT_REASON } from "../_shared/grading/assignment-context.ts";
 import { maskNamesPreservingOffsets } from "../_shared/deid.ts";
 import { enforceGradingQuota } from "../_shared/quota.ts";
+import {
+  decideFinalization,
+  AUTO_FINALIZE_DEFAULT_ENABLED,
+  AUTO_FINALIZE_DEFAULT_THRESHOLD,
+} from "../_shared/grading/auto-finalize.ts";
 import type { RubricInput } from "../_shared/grading-schema.ts";
 
 Deno.serve((req) => {
@@ -355,9 +360,72 @@ Deno.serve((req) => {
       if (annErr) console.error(`[grade-submission] annotation insert failed: ${annErr.message}`);
     }
 
-    // Disposition: off-topic / low-confidence grades are surfaced for review, not presented as settled.
-    const finalStatus = disposition === "needs_review" ? "needs_review" : "graded";
-    await db.from("submissions").update({ status: finalStatus }).eq("id", submissionId);
+    // Auto-finalize (XPRIZE #1 must-go-right): publish high-confidence, on-topic, flag-free grades
+    // UNATTENDED — "On-the-Loop" — routing only exceptions (off-topic / low-confidence / integrity
+    // flags) to the teacher's needs_review queue. The decision is a pure, unit-tested function so the
+    // edge behavior matches the tests in src/lib/autoFinalize.test.ts.
+    //
+    // Load the teacher's preference best-effort: the auto_finalize_* columns are absent until
+    // migration 0020 (migrations_v2) is applied, in which case we fall back to the product defaults
+    // (enabled, threshold 0.85). A read failure must never block grading.
+    let afEnabled = AUTO_FINALIZE_DEFAULT_ENABLED;
+    let afThreshold = AUTO_FINALIZE_DEFAULT_THRESHOLD;
+    {
+      const { data: af } = await db
+        .from("privacy_settings")
+        .select("auto_finalize_enabled, auto_finalize_threshold")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (af) {
+        if (typeof af.auto_finalize_enabled === "boolean") afEnabled = af.auto_finalize_enabled;
+        if (typeof af.auto_finalize_threshold === "number") afThreshold = af.auto_finalize_threshold;
+      }
+    }
+
+    const decision = decideFinalization({
+      disposition,
+      confidence: result.overall.confidence,
+      flags: result.flags,
+      enabled: afEnabled,
+      threshold: afThreshold,
+    });
+
+    // Disposition: off-topic / low-confidence grades are surfaced for review, not presented as
+    // settled. A clear, high-confidence grade is auto-finalized when the teacher allows it.
+    const finalStatus = decision.autoFinalize
+      ? "finalized"
+      : (disposition === "needs_review" ? "needs_review" : "graded");
+
+    // Update status, attaching provenance when we auto-publish. finalized_by/auto_finalized_at are
+    // absent pre-migration — retry without them on an unknown-column error (the status still lands).
+    const statusUpdate: Record<string, unknown> = { status: finalStatus };
+    if (decision.autoFinalize) {
+      statusUpdate.finalized_by = "ai";
+      statusUpdate.auto_finalized_at = new Date().toISOString();
+    }
+    let statusRes = await db.from("submissions").update(statusUpdate).eq("id", submissionId);
+    if (statusRes.error && /finalized_by|auto_finalized_at|column|schema cache/i.test(statusRes.error.message)) {
+      statusRes = await db.from("submissions").update({ status: finalStatus }).eq("id", submissionId);
+    }
+    if (statusRes.error) {
+      console.error(`[grade-submission] status update failed: ${statusRes.error.message}`);
+    }
+
+    // Finalize agent step (AGENT-05): record the unattended-publish decision so the pipeline view and
+    // the AI-native evidence trail show the agent finalizing (or deferring to) each grade.
+    trace.push({
+      agent: "finalize",
+      status: "ok",
+      latencyMs: 0,
+      detail: {
+        autoFinalized: decision.autoFinalize,
+        reason: decision.reason,
+        confidence: result.overall.confidence,
+        threshold: decision.appliedThreshold,
+        ...(decision.blockingFlag ? { blockingFlag: decision.blockingFlag } : {}),
+        finalStatus,
+      },
+    });
 
     // Audit + LLM session via service role (server-only tables).
     const admin = adminClient();
@@ -375,6 +443,14 @@ Deno.serve((req) => {
       action: "grade_submission",
       resource: `submission:${submissionId}`,
     });
+    if (decision.autoFinalize) {
+      // Distinct audit row so the AI-native evidence trail can count agent-published grades.
+      await admin.from("access_audit_log").insert({
+        actor_id: userId,
+        action: "grade_auto_finalized",
+        resource: `submission:${submissionId}`,
+      });
+    }
 
     // Persist the agent-workflow trace (AGENT-02) for the pipeline view + observability. Until
     // migration 0013 is applied the agent_events table is absent — log, don't fail the grade.
@@ -394,6 +470,14 @@ Deno.serve((req) => {
     );
     if (traceErr) console.error(`[grade-submission] agent_events insert failed: ${traceErr.message}`);
 
-    return ok(req, { gradeId: grade?.id ?? null, result, jobId, trace });
+    return ok(req, {
+      gradeId: grade?.id ?? null,
+      result,
+      jobId,
+      trace,
+      status: finalStatus,
+      autoFinalized: decision.autoFinalize,
+      finalizeReason: decision.reason,
+    });
   });
 });
