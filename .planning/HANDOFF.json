@@ -1,0 +1,50 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-06-15T16:10:58-0700",
+  "phase": "A",
+  "phase_name": "Trust Live = Week 1 of the XPRIZE Master Plan",
+  "phase_dir": ".planning/milestone-2-launch",
+  "plan": "XPRIZE-MASTER-PLAN.md",
+  "task": 0,
+  "total_tasks": 7,
+  "status": "paused",
+  "completed_tasks": [
+    {"id": 1, "name": "Clean git tree: commit loose 2026-06-08 QA work + gitignore heavy artifacts", "status": "done", "commit": "2154df3"},
+    {"id": 2, "name": "Push aita-launch-prep; PR #14 open/clean/mergeable", "status": "done", "commit": "2154df3"},
+    {"id": 3, "name": "Full hyperresearch deep-research pass (16 steps, ~135 sources, adversarial review)", "status": "done", "commit": "n/a (artifact: ~/research/notes/final_report_aita-xprize-gtm-launch-5f2d05.md)"},
+    {"id": 4, "name": "Write XPRIZE-MASTER-PLAN.md (strategy mapped onto codebase)", "status": "done", "commit": "uncommitted"},
+    {"id": 5, "name": "Update cross-session memory with locked strategy decisions", "status": "done", "commit": "n/a (memory file)"}
+  ],
+  "remaining_tasks": [
+    {"id": 1, "name": "Merge PR #14 -> main (founder; gh pr merge 14 --merge)", "status": "not_started"},
+    {"id": 2, "name": "Deploy grade-submission + functions to cloud (founder; deploy-gated)", "status": "not_started"},
+    {"id": 3, "name": "BUILD confidence-thresholded auto-finalize (#1 must-go-right; agent can build, founder deploys)", "status": "not_started"},
+    {"id": 4, "name": "Stripe live + apply migration 0019 (founder; DB pw)", "status": "not_started"},
+    {"id": 5, "name": "Compliance posture (ToS attestation + SDPC NDPA + confirm de-id keeps PII out of Vertex) + write 'newly created' eligibility paragraph", "status": "not_started"},
+    {"id": 6, "name": "Build 14-day full-trial flow + 15-grade free floor + grade-12 PQL + pre-load Sarah-seed sample essays", "status": "not_started"},
+    {"id": 7, "name": "Recruit 4-6 grades 9-12 ELA teachers for proof cohort + draft school DPA; redesign Phase-15 proof (LUAR+GPT-judge, NOT edit-rate)", "status": "not_started"}
+  ],
+  "blockers": [
+    {"description": "Merge PR #14 to main denied by auto-mode classifier when agent attempted it (high-severity self-merge to default branch)", "type": "human_action", "workaround": "Founder runs gh pr merge 14 --merge, or merges in GitHub UI"},
+    {"description": "Edge-function deploys are permission-gated (incl. --no-verify-jwt); agent cannot deploy", "type": "human_action", "workaround": "Founder runs supabase functions deploy"},
+    {"description": "Auto-finalize is a NEW build that aiTA does not have yet (likely per-grade approval today) — architecture change, not framing", "type": "technical", "workaround": "Build confidence-threshold publish path; verify current grade-finalize behavior first"}
+  ],
+  "human_actions_pending": [
+    {"action": "Merge PR #14 to main", "context": "Kills single-point-of-failure; gates the deploy", "blocking": true},
+    {"action": "Deploy grade-submission + functions; Stripe live; apply migration 0019", "context": "Makes the trust fix + paywall live", "blocking": true},
+    {"action": "Recruit 4-6 grades 9-12 ELA design-partner teachers + sign school DPAs", "context": "Longest-lead item; gates the voice-convergence proof cohort", "blocking": true},
+    {"action": "OSF pre-registration of the proof by Jul 7", "context": "The kill criterion is the persuasive centerpiece for Criterion C", "blocking": false},
+    {"action": "Record <3-min demo video showing UNATTENDED batch grading + voice + refusal", "context": "Required deliverable; must show AI executing grades, not an approval queue", "blocking": false}
+  ],
+  "decisions": [
+    {"decision": "Target a $50K runner-up prize on the balanced 3-criteria score", "rationale": "Education category prize is a gross-revenue race aiTA loses at $15/mo vs B2B at 3-10x ARPU; runner-up rewards AI-native edge", "phase": "A"},
+    {"decision": "Two-cohort split: trial cohort (sample essays, revenue) + DPA design-partner cohort (real essays, proof)", "rationale": "Revenue needs speed/no-PII; proof needs real student data/rigor — opposite data strategies", "phase": "A"},
+    {"decision": "Auto-finalize (confidence-thresholded On-the-Loop) is the #1 build before submission", "rationale": "Without it the AI-native Criterion B claim is narrated not true, and the video can't show unattended grading", "phase": "A"},
+    {"decision": "REDESIGN the voice-convergence proof: drop edit-rate, use GPT-judge (primary) + aggregated LUAR + holdout + OSF pre-reg", "rationale": "Borchers AIED 2026: 51.3% of teachers never edit AI feedback -> edit-rate uninterpretable; LUAR degrades on short text", "phase": "B"},
+    {"decision": "14-day full-access trial (not permanent freemium); hold $15/mo + annual + thin free floor", "rationale": "EdTech trial->paid 24.8% vs freemium 2.6% (~10x); decisive for revenue in 9 weeks", "phase": "A"},
+    {"decision": "De-identification (already shipped) is the FERPA compliance keystone", "rationale": "Standard Vertex/Gemini is NOT FERPA-covered (only Workspace-for-Edu); de-id means no education record reaches Gemini -> 5-7 day launch posture", "phase": "A"}
+  ],
+  "uncommitted_files": [".planning/milestone-2-launch/XPRIZE-MASTER-PLAN.md (will be committed by this handoff)"],
+  "next_action": "Merge PR #14 (founder), then build confidence-thresholded auto-finalize (the #1 must-go-right). See XPRIZE-MASTER-PLAN.md 'Immediate next 7 days'.",
+  "context_notes": "This session did the strategy, not execution. Ran a full deep-research pass and wrote XPRIZE-MASTER-PLAN.md mapping it onto aiTA's code. The plan REPLACES the Phase-15 edit-rate proof bar (now invalid). Phase A (trust-live) IS Week 1 of the master plan. Most Week-1 items are founder-gated; the one big agent-doable build is auto-finalize. Full strategy + citations in ~/research/notes/final_report_aita-xprize-gtm-launch-5f2d05.md."
+}
