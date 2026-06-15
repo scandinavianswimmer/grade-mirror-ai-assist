@@ -159,6 +159,8 @@
 @layer utilities {
   .animate-fade-up { animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
   .animate-ink-in  { animation: ink-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .animate-typing-blink { animation: typing-blink 1.2s infinite; }
+  .animate-cursor-fade { animation: cursor-fade 1.5s ease-in-out infinite; }
 }
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(10px); }
@@ -167,6 +169,14 @@
 @keyframes ink-in {
   from { opacity: 0; filter: blur(4px); transform: translateY(6px); }
   to   { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+@keyframes typing-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+@keyframes cursor-fade {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 
 /* ── Preserved utilities used by existing components ────────────────────────── */

@@ -47,34 +47,10 @@ const TypewriterText: React.FC<TypewriterTextProps> = ({
     <span className={className}>
       {displayText}
       <span 
-        className="inline-block w-0.5 h-[1em] ml-1 bg-primary"
-        style={{
-          animation: isComplete 
-            ? 'cursor-fade 1.5s ease-in-out infinite'
-            : 'typing-blink 1.2s infinite'
-        }}
+        className={`inline-block w-0.5 h-[1em] ml-1 bg-primary ${
+          isComplete ? 'animate-cursor-fade' : 'animate-typing-blink'
+        }`}
       />
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          @keyframes typing-blink {
-            0%, 50% {
-              opacity: 1;
-            }
-            51%, 100% {
-              opacity: 0;
-            }
-          }
-          
-          @keyframes cursor-fade {
-            0%, 100% {
-              opacity: 1;
-            }
-            50% {
-              opacity: 0.3;
-            }
-          }
-        `
-      }} />
     </span>
   );
 };
