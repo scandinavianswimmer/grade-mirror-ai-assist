@@ -48,3 +48,9 @@ supabase/.temp/
 *.njsproj
 *.sln
 *.sw?
+
+# QA/audit run artifacts — regenerable Playwright output (screenshots, audit json)
+qa-artifacts/
+
+# Relocated Desktop reference assets (32M of screenshots, sample essays, Sleuth runs) — not source
+docs/loose-assets-2026-06/
