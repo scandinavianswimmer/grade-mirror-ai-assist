@@ -20,6 +20,7 @@
 | `product-hunt-launch-kit.md` | Full PH listing, first comment, gallery, comment bank, timeline | ✅ done (fires Wk6) |
 | `webinar-kit.md` | Free-PD webinar (deck, run-of-show, landing, promo) — #1 ban-proof FB motion | ✅ done |
 | `xprize-video-and-narrative.md` | <3-min demo video script + ~700w judge narrative | ✅ done |
+| `video-teaser-60s.md` | 60-sec teaser (PH/social/landing) — 16:9 + 9:16 cuts, muted-safe captions | ✅ done |
 | `../../recruiting/osf-prereg.md` | Complete fileable OSF pre-registration (file by Jul 7) | ✅ done |
 | `../../../eval/convergence/judge-rubric.md` | v1.0 LOCKED GPT-judge voice-fidelity instrument | ✅ done |
 
