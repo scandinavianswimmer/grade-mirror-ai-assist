@@ -1,0 +1,148 @@
+{
+  "_comment": "aiTA outreach prospect registry. Seeded from docs/marketing/gtm/targets/*. channel: email = sendable by personalize.mjs --send (needs RESEND_API_KEY); form/dm/fb/exhibitor = manual (script renders a paste-ready draft + tells the operator where to put it). Add individual teacher rows as lists are built. Founder-network contacts MUST set related_party:true (revenue cohort = strangers only).",
+  "prospects": [
+    {
+      "id": "edutopia-guestblog",
+      "outlet": "Edutopia",
+      "contact_name": "Editors",
+      "to": "guestblog@edutopia.org",
+      "channel": "email",
+      "template": "guest-post",
+      "related_party": false,
+      "vars": {
+        "angle": "a pedagogy-first guest post on responsible AI feedback that keeps the teacher as the final grader",
+        "title_idea": "Let AI Draft the Feedback — But Keep the Red Pen",
+        "audience": "national K-12 teacher audience"
+      },
+      "notes": "Requires commercial-interest disclosure; 850-1000 words, original only. Pitch is editorial, not promo."
+    },
+    {
+      "id": "cult-of-pedagogy",
+      "outlet": "Cult of Pedagogy",
+      "contact_name": "Jennifer Gonzalez",
+      "to": "",
+      "channel": "form",
+      "template": "newsletter-sponsor",
+      "related_party": false,
+      "vars": {
+        "audience": "50,000+ email subscribers + a large podcast",
+        "angle": "a sponsored placement / podcast read framed around teacher-stays-final-grader integrity"
+      },
+      "notes": "Contact via site form (cultofpedagogy.com). Paid; she vets quality. Lead with integrity angle."
+    },
+    {
+      "id": "ditch-that-textbook",
+      "outlet": "Ditch That Textbook",
+      "contact_name": "Matt Miller",
+      "to": "",
+      "channel": "form",
+      "template": "newsletter-sponsor",
+      "related_party": false,
+      "vars": {
+        "audience": "140,000+ weekly educators + the Ditch Summit + AI-for-Educators cohorts",
+        "angle": "a bundled deal: newsletter mention + social + a Ditch Summit spotlight session"
+      },
+      "notes": "Best paid-reach-per-dollar. Explicitly AI-in-ed. Contact via site / LinkedIn."
+    },
+    {
+      "id": "spark-creativity-potash",
+      "outlet": "Spark Creativity",
+      "contact_name": "Betsy Potash",
+      "to": "",
+      "channel": "form",
+      "template": "influencer-collab",
+      "related_party": false,
+      "vars": {
+        "audience": "37K IG + 40,000 weekly email + a top-ranked ELA podcast",
+        "angle": "a podcast sponsor read or a 'creative, humane feedback' collab"
+      },
+      "notes": "Single best HS-ELA borrowed channel. Press kit at nowsparkcreativity.com."
+    },
+    {
+      "id": "adrian-neibauer",
+      "outlet": "Adrian Neibauer's Substack",
+      "contact_name": "Adrian Neibauer",
+      "to": "",
+      "channel": "form",
+      "template": "guest-post",
+      "related_party": false,
+      "vars": {
+        "angle": "a guest essay on rehumanizing feedback in the age of AI",
+        "title_idea": "Rehumanizing the Red Pen: AI That Sounds Like You",
+        "audience": "86,000+ education subscribers (3x/week)"
+      },
+      "notes": "Largest education Substack. Guest essay / cross-promo via Substack."
+    },
+    {
+      "id": "knowledge-gap-wexler",
+      "outlet": "The Knowledge Gap (Natalie Wexler)",
+      "contact_name": "Natalie Wexler",
+      "to": "",
+      "channel": "form",
+      "template": "guest-post",
+      "related_party": false,
+      "vars": {
+        "angle": "a guest post on feedback quality, writing, and cognitive science",
+        "title_idea": "Why Generic Feedback Fails Writers — and What Fixes It",
+        "audience": "an established writing/literacy + cognitive-science readership"
+      },
+      "notes": "Strong fit: writing-quality audience cares about feedback fidelity."
+    },
+    {
+      "id": "brave-new-teaching",
+      "outlet": "Brave New Teaching (podcast)",
+      "contact_name": "Caitlin & Amanda",
+      "to": "",
+      "channel": "form",
+      "template": "influencer-collab",
+      "related_party": false,
+      "vars": {
+        "audience": "an established HS/MS ELA podcast audience",
+        "angle": "a guest episode on grading fatigue + trying something brave"
+      },
+      "notes": "Tone match: 'trying brave new things.' Contact via Mud & Ink / Caffeinated Classroom."
+    },
+    {
+      "id": "dan-fitzpatrick-ai-educator",
+      "outlet": "The AI Educator / The AI Classroom",
+      "contact_name": "Dan Fitzpatrick",
+      "to": "",
+      "channel": "dm",
+      "template": "influencer-collab",
+      "related_party": false,
+      "vars": {
+        "audience": "20K+ FB group + a large LinkedIn AI-in-ed following",
+        "angle": "co-host a free PD webinar: 'Grade essays faster while staying the final grader'"
+      },
+      "notes": "Strongest AI angle. Borrowed channel + webinar co-host, not a cold group post."
+    },
+    {
+      "id": "fb-2ndary-ela-admins",
+      "outlet": "2ndary ELA (Facebook group)",
+      "contact_name": "Group admins",
+      "to": "",
+      "channel": "fb",
+      "template": "fb-webinar-pitch",
+      "related_party": false,
+      "vars": {
+        "audience": "the largest concentrated HS-ELA group on Facebook",
+        "angle": "a free PD webinar for the group (no self-promo post)"
+      },
+      "notes": "NEVER self-post. Pitch admins a free webinar via Messenger; confirm rules logged-in first."
+    },
+    {
+      "id": "fb-ap-lit-sztabnik",
+      "outlet": "AP Literature and Composition (Facebook group)",
+      "contact_name": "Brian Sztabnik",
+      "to": "",
+      "channel": "fb",
+      "template": "fb-webinar-pitch",
+      "related_party": false,
+      "vars": {
+        "audience": "AP Lit teachers — the heaviest essay-grading load in the profession",
+        "angle": "a guest PD webinar on faster rubric-aligned feedback"
+      },
+      "notes": "Single-mod group; all promo banned. Offer Sztabnik a guest webinar."
+    }
+  ]
+}
