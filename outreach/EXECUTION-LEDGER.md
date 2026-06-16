@@ -102,6 +102,18 @@ evidence:
   - docs/marketing/gtm/xprize-video-and-narrative.md (<3-min shot-by-shot script + ~700w judge narrative)
 ```
 
+```yaml
+id: aita-gtm-20260615-011
+commitment: Expand the registry with individual teachers + build the individual-import path.
+owner: agent
+status: executed
+evidence:
+  - prospects.json +5 real named individuals (Cardenas, Washburn, Sackstein, Seidel, Ms. James) — 15 total.
+  - prospects.individuals.csv (template + skipped example rows) auto-merged by personalize.mjs (CSV parser added).
+  - templates/cold-teacher.md (individual-teacher -> trial). Dry run verified 15 prospects, examples skipped.
+note: did NOT fabricate classroom-teacher emails; CSV is fed by the funnel (referrals/webinar/trial/opt-in), not harvested.
+```
+
 ## Blocked
 
 ```yaml

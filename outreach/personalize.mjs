@@ -36,6 +36,48 @@ const FROM = process.env.OUTREACH_FROM || ""; // "Name <addr>" matching a Mail a
 
 const data = JSON.parse(readFileSync(join(__dir, "prospects.json"), "utf8"));
 let prospects = (data.prospects || []).filter((p) => p && p.id);
+
+// Merge individual-teacher rows from the CSV (if present). Skips comment (#) and example- rows.
+function parseCsvLine(line) {
+  const out = [];
+  let cur = "", inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (inQ) {
+      if (c === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+      else if (c === '"') inQ = false;
+      else cur += c;
+    } else if (c === '"') inQ = true;
+    else if (c === ",") { out.push(cur); cur = ""; }
+    else cur += c;
+  }
+  out.push(cur);
+  return out.map((s) => s.trim());
+}
+const csvPath = join(__dir, "prospects.individuals.csv");
+if (existsSync(csvPath)) {
+  const lines = readFileSync(csvPath, "utf8").split(/\r?\n/).filter((l) => l.trim() && !l.startsWith("#"));
+  if (lines.length > 1) {
+    const header = parseCsvLine(lines[0]);
+    for (const line of lines.slice(1)) {
+      const cells = parseCsvLine(line);
+      const row = Object.fromEntries(header.map((h, i) => [h, cells[i] ?? ""]));
+      if (!row.id || row.id.startsWith("example-") || !row.contact_name) continue;
+      prospects.push({
+        id: row.id,
+        outlet: row.outlet || row.contact_name,
+        contact_name: row.contact_name,
+        to: row.to || "",
+        channel: row.channel || "email",
+        template: row.template || "cold-teacher",
+        related_party: String(row.related_party).toLowerCase() === "true",
+        vars: { audience: row.audience || "", angle: row.angle || "" },
+        notes: row.notes || (row.source ? `source: ${row.source}` : ""),
+      });
+    }
+  }
+}
+
 if (ONLY) prospects = prospects.filter((p) => p.id === ONLY);
 if (prospects.length === 0) {
   console.error(`No prospects matched${ONLY ? ` --only=${ONLY}` : ""}.`);

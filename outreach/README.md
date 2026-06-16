@@ -7,7 +7,9 @@ configured on this Mac (your real identity + deliverability). Pulls voice from
 `~/Desktop/AGENT_EXECUTION_OS.md` (execute → evidence; see `EXECUTION-LEDGER.md`).
 
 ## Files
-- `prospects.json` — the registry. Each row has a `channel` that decides how it's sent.
+- `prospects.json` — the registry (outlets + named individuals). Each row has a `channel`.
+- `prospects.individuals.csv` — drop real individual teachers here (referrals, webinar/trial signups, warm
+  list). Auto-merged by `personalize.mjs`; `example-` rows are skipped. Legit sources only — no harvested PII.
 - `templates/*.md` — message templates (`Subject:` line + body, `{{vars}}` placeholders).
 - `personalize.mjs` — renders per-prospect drafts; creates Mail.app drafts / sends for `channel:"email"`.
 - `mailer.applescript` — the Mail.app driver (draft or send). No API key.
@@ -53,8 +55,10 @@ gate is just:
    agent drives your logged-in browser per-post with approval).
 
 Everything else — finding targets, writing/personalizing, drafting into Mail, sequencing, tracking — is
-automated. To scale individual-teacher cold email, add rows to `prospects.json` (set `related_party:true`
-on anyone in the founder network so the revenue count stays arms-length), then re-run `--mail-drafts`.
+automated. To scale **individual-teacher** outreach, paste real contacts into `prospects.individuals.csv`
+(set `related_party=TRUE` for founder-network people so the revenue count stays arms-length), then re-run
+`--mail-drafts`. The funnel — referrals, webinar registrants, trial signups, opt-ins — feeds that CSV;
+we do **not** cold-harvest teacher emails (spam + privacy).
 
 ## Alternative delivery paths (if you prefer)
 - **`.eml` files** (`--eml`): double-click any `outbox/*.eml` to open it in Mail.app pre-filled, ready to send.

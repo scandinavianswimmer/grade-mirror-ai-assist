@@ -143,6 +143,76 @@
         "angle": "a guest PD webinar on faster rubric-aligned feedback"
       },
       "notes": "Single-mod group; all promo banned. Offer Sztabnik a guest webinar."
+    },
+    {
+      "id": "amanda-cardenas-mudink",
+      "outlet": "Mud & Ink Teaching",
+      "contact_name": "Amanda Cardenas",
+      "to": "",
+      "channel": "form",
+      "template": "influencer-collab",
+      "related_party": false,
+      "vars": {
+        "audience": "a secondary-ELA creator audience (TPT + podcast)",
+        "angle": "a 'voice-matched feedback' collab or affiliate"
+      },
+      "notes": "Real individual. Contact via mudandinkteaching.org. Co-host of Brave New Teaching."
+    },
+    {
+      "id": "brittany-washburn",
+      "outlet": "Technology Teacher Tribe",
+      "contact_name": "Brittany Washburn",
+      "to": "",
+      "channel": "dm",
+      "template": "influencer-collab",
+      "related_party": false,
+      "vars": {
+        "audience": "33K+ edtech-integration teacher community",
+        "angle": "a sponsored 'tool I tested' piece"
+      },
+      "notes": "Real individual; edtech-integration creator. DM via site/IG."
+    },
+    {
+      "id": "starr-sackstein",
+      "outlet": "Teachers Throwing Out Grades",
+      "contact_name": "Starr Sackstein",
+      "to": "",
+      "channel": "dm",
+      "template": "influencer-collab",
+      "related_party": false,
+      "vars": {
+        "audience": "a feedback-philosophy / alternative-grading following",
+        "angle": "aiTA as feedback-first, teacher-stays-final-grader (matches her ethos)"
+      },
+      "notes": "Real individual; will be skeptical of 'grading' tools — lead with feedback-first framing."
+    },
+    {
+      "id": "kristy-seidel-aplang",
+      "outlet": "AP Language and Composition (Facebook group)",
+      "contact_name": "Kristy Seidel",
+      "to": "",
+      "channel": "fb",
+      "template": "fb-webinar-pitch",
+      "related_party": false,
+      "vars": {
+        "audience": "AP Lang teachers — argument/rhetoric essays, heavy rubric grading",
+        "angle": "a guest PD webinar on faster rubric-aligned feedback"
+      },
+      "notes": "Real individual (group mod). Never self-post; pitch a guest webinar."
+    },
+    {
+      "id": "ms-james-thatenglishteacher",
+      "outlet": "I am That English Teacher",
+      "contact_name": "Ms. James",
+      "to": "",
+      "channel": "dm",
+      "template": "influencer-collab",
+      "related_party": false,
+      "vars": {
+        "audience": "5.7M TikTok (broad/MS-leaning) — awareness spike, not deep ICP",
+        "angle": "one well-framed grading video for top-of-funnel awareness"
+      },
+      "notes": "Real individual; massive reach but broad. Use for awareness, not deep conversion."
     }
   ]
 }
