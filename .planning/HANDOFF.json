@@ -1,50 +1,41 @@
 {
   "version": "1.0",
-  "timestamp": "2026-06-15T16:10:58-0700",
+  "timestamp": "2026-06-15T16:59:41-0700",
   "phase": "A",
   "phase_name": "Trust Live = Week 1 of the XPRIZE Master Plan",
   "phase_dir": ".planning/milestone-2-launch",
   "plan": "XPRIZE-MASTER-PLAN.md",
-  "task": 0,
-  "total_tasks": 7,
+  "task": 4,
+  "total_tasks": 5,
   "status": "paused",
+  "branch": "aita-launch-prep",
   "completed_tasks": [
-    {"id": 1, "name": "Clean git tree: commit loose 2026-06-08 QA work + gitignore heavy artifacts", "status": "done", "commit": "2154df3"},
-    {"id": 2, "name": "Push aita-launch-prep; PR #14 open/clean/mergeable", "status": "done", "commit": "2154df3"},
-    {"id": 3, "name": "Full hyperresearch deep-research pass (16 steps, ~135 sources, adversarial review)", "status": "done", "commit": "n/a (artifact: ~/research/notes/final_report_aita-xprize-gtm-launch-5f2d05.md)"},
-    {"id": 4, "name": "Write XPRIZE-MASTER-PLAN.md (strategy mapped onto codebase)", "status": "done", "commit": "uncommitted"},
-    {"id": 5, "name": "Update cross-session memory with locked strategy decisions", "status": "done", "commit": "n/a (memory file)"}
+    {"id": 1, "name": "Auto-finalize high-confidence grades unattended (On-the-Loop) — decision module + migration 0020 + grade-submission wiring + UI", "status": "done", "commit": "1e95e9a"},
+    {"id": 2, "name": "14-day full-access trial (zero-friction, no card) — migration 0021 + trial.ts + usePlan + TrialBanner", "status": "done", "commit": "17ad741"},
+    {"id": 3, "name": "Grade-12 PQL trigger + Week-1 founder artifacts (runbook, compliance posture, recruiting DPA/OSF/outreach)", "status": "done", "commit": "656c6ca"},
+    {"id": 4, "name": "Sample-essay one-click onboarding (5 essays incl. off-topic) → grade in minute one", "status": "done", "commit": "fe22dc7"}
   ],
   "remaining_tasks": [
-    {"id": 1, "name": "Merge PR #14 -> main (founder; gh pr merge 14 --merge)", "status": "not_started"},
-    {"id": 2, "name": "Deploy grade-submission + functions to cloud (founder; deploy-gated)", "status": "not_started"},
-    {"id": 3, "name": "BUILD confidence-thresholded auto-finalize (#1 must-go-right; agent can build, founder deploys)", "status": "not_started"},
-    {"id": 4, "name": "Stripe live + apply migration 0019 (founder; DB pw)", "status": "not_started"},
-    {"id": 5, "name": "Compliance posture (ToS attestation + SDPC NDPA + confirm de-id keeps PII out of Vertex) + write 'newly created' eligibility paragraph", "status": "not_started"},
-    {"id": 6, "name": "Build 14-day full-trial flow + 15-grade free floor + grade-12 PQL + pre-load Sarah-seed sample essays", "status": "not_started"},
-    {"id": 7, "name": "Recruit 4-6 grades 9-12 ELA teachers for proof cohort + draft school DPA; redesign Phase-15 proof (LUAR+GPT-judge, NOT edit-rate)", "status": "not_started"}
+    {"id": 5, "name": "Demo-path polish for the <3-min unattended-grading video (dashboard as monitoring/exception UI; throughput 'N grades/hr' framing)", "status": "not_started", "owner": "agent"}
   ],
   "blockers": [
-    {"description": "Merge PR #14 to main denied by auto-mode classifier when agent attempted it (high-severity self-merge to default branch)", "type": "human_action", "workaround": "Founder runs gh pr merge 14 --merge, or merges in GitHub UI"},
-    {"description": "Edge-function deploys are permission-gated (incl. --no-verify-jwt); agent cannot deploy", "type": "human_action", "workaround": "Founder runs supabase functions deploy"},
-    {"description": "Auto-finalize is a NEW build that aiTA does not have yet (likely per-grade approval today) — architecture change, not framing", "type": "technical", "workaround": "Build confidence-threshold publish path; verify current grade-finalize behavior first"}
+    {"description": "Auto-finalize + trial + sample grading need migrations 0015-0021 applied AND grade-submission deployed to actually run; agent cannot do either", "type": "human_action", "workaround": "Founder follows .planning/milestone-2-launch/WEEK-1-FOUNDER-RUNBOOK.md (steps 2 + 3)"},
+    {"description": "Project-ref mismatch: config.toml = rwiqwuohbcvhuvtlxlvh but STATE.md cited yhdobsmmhdvqswjpousc — confirm the live ref before any supabase command", "type": "technical", "workaround": "supabase projects list; supabase link --project-ref <REF> before db push / functions deploy"}
   ],
   "human_actions_pending": [
-    {"action": "Merge PR #14 to main", "context": "Kills single-point-of-failure; gates the deploy", "blocking": true},
-    {"action": "Deploy grade-submission + functions; Stripe live; apply migration 0019", "context": "Makes the trust fix + paywall live", "blocking": true},
-    {"action": "Recruit 4-6 grades 9-12 ELA design-partner teachers + sign school DPAs", "context": "Longest-lead item; gates the voice-convergence proof cohort", "blocking": true},
-    {"action": "OSF pre-registration of the proof by Jul 7", "context": "The kill criterion is the persuasive centerpiece for Criterion C", "blocking": false},
-    {"action": "Record <3-min demo video showing UNATTENDED batch grading + voice + refusal", "context": "Required deliverable; must show AI executing grades, not an approval queue", "blocking": false}
+    {"action": "Merge PR #14 to main (gh pr merge 14 --merge), then reconcile aita-launch-prep onto main", "context": "Launch build + all 4 of this session's slices live on aita-launch-prep only; main is unchanged", "blocking": true},
+    {"action": "Apply migrations_v2 0015-0021 (DB password) incl. the new 0020 auto-finalize + 0021 trial", "context": "Turns on real Free/Pro gating, auto-finalize provenance, and the trial Pro-cap; verification SQL in the runbook", "blocking": true},
+    {"action": "Deploy grade-submission (--no-verify-jwt)", "context": "Activates the trust fix + auto-finalize; smoke-test: a strong essay auto-finalizes, off-topic routes to needs_review", "blocking": true},
+    {"action": "Stripe live (Pro $15/mo + ~$150/yr prices, secret + webhook)", "context": "Trial works without it, but conversion needs it", "blocking": false},
+    {"action": "Recruit 4-6 gr9-12 ELA teachers + sign school DPA; pre-register OSF by Jul 7", "context": "Longest-lead proof-cohort items; drafts in docs/recruiting/", "blocking": false}
   ],
   "decisions": [
-    {"decision": "Target a $50K runner-up prize on the balanced 3-criteria score", "rationale": "Education category prize is a gross-revenue race aiTA loses at $15/mo vs B2B at 3-10x ARPU; runner-up rewards AI-native edge", "phase": "A"},
-    {"decision": "Two-cohort split: trial cohort (sample essays, revenue) + DPA design-partner cohort (real essays, proof)", "rationale": "Revenue needs speed/no-PII; proof needs real student data/rigor — opposite data strategies", "phase": "A"},
-    {"decision": "Auto-finalize (confidence-thresholded On-the-Loop) is the #1 build before submission", "rationale": "Without it the AI-native Criterion B claim is narrated not true, and the video can't show unattended grading", "phase": "A"},
-    {"decision": "REDESIGN the voice-convergence proof: drop edit-rate, use GPT-judge (primary) + aggregated LUAR + holdout + OSF pre-reg", "rationale": "Borchers AIED 2026: 51.3% of teachers never edit AI feedback -> edit-rate uninterpretable; LUAR degrades on short text", "phase": "B"},
-    {"decision": "14-day full-access trial (not permanent freemium); hold $15/mo + annual + thin free floor", "rationale": "EdTech trial->paid 24.8% vs freemium 2.6% (~10x); decisive for revenue in 9 weeks", "phase": "A"},
-    {"decision": "De-identification (already shipped) is the FERPA compliance keystone", "rationale": "Standard Vertex/Gemini is NOT FERPA-covered (only Workspace-for-Edu); de-id means no education record reaches Gemini -> 5-7 day launch posture", "phase": "A"}
+    {"decision": "Auto-finalize defaults ON, threshold 0.85, hard floor 0.6; integrity flags (off_topic/possible_injection/likely_ai_generated/grade_withheld/low_confidence) ALWAYS defer to a human", "rationale": "The product thesis is unattended grading and the demo must show it; integrity concerns are never published silently", "phase": "A"},
+    {"decision": "Trial is app-managed via users.trial_ends_at (column DEFAULTS), NOT a Stripe trial", "rationale": "Zero friction — teacher starts instantly with no card; Stripe is entered only at conversion. EdTech trial->paid ~10x freemium", "phase": "A"},
+    {"decision": "Sample essays inserted client-side via the proven authed-user path with extracted_text + extraction_confidence=1.0, NOT a new edge function", "rationale": "No new deploy, no PII, no file upload; rides existing RLS + columns (proven by submissionApi/ingest-document)", "phase": "A"},
+    {"decision": "New migrations go in supabase/migrations_v2/ (NNNN_), not the legacy supabase/migrations/", "rationale": "migrations_v2/0001_baseline 'replaces migrations/' — it is the canonical applied set; first misplaced 0020 and had to relocate", "phase": "A"}
   ],
-  "uncommitted_files": [".planning/milestone-2-launch/XPRIZE-MASTER-PLAN.md (will be committed by this handoff)"],
-  "next_action": "Merge PR #14 (founder), then build confidence-thresholded auto-finalize (the #1 must-go-right). See XPRIZE-MASTER-PLAN.md 'Immediate next 7 days'.",
-  "context_notes": "This session did the strategy, not execution. Ran a full deep-research pass and wrote XPRIZE-MASTER-PLAN.md mapping it onto aiTA's code. The plan REPLACES the Phase-15 edit-rate proof bar (now invalid). Phase A (trust-live) IS Week 1 of the master plan. Most Week-1 items are founder-gated; the one big agent-doable build is auto-finalize. Full strategy + citations in ~/research/notes/final_report_aita-xprize-gtm-launch-5f2d05.md."
+  "uncommitted_files": [],
+  "next_action": "Build demo-path polish (task 5): make the dashboard/AssignmentDetail read as a monitoring/exception UI for the <3-min video — foreground the 'N auto-finalized · M need review' summary, consider an unattended-throughput indicator. Then the remaining Week-1 work is purely founder-gated (see WEEK-1-FOUNDER-RUNBOOK.md).",
+  "context_notes": "This session was pure autonomous execution (Luke flipped me into executor mode). Shipped 4 complete, tested, committed slices on aita-launch-prep — auto-finalize, trial, PQL+artifacts, sample onboarding. 114/114 vitest, vite build green, zero NEW lint errors (pre-existing tsc errors come from stale generated Supabase types; build=vite, not tsc). Nothing merged or deployed — all founder-gated activation is captured in WEEK-1-FOUNDER-RUNBOOK.md + COMPLIANCE-POSTURE.md + docs/recruiting/. GOTCHA: any src/lib test must avoid importing ./supabase (localStorage at module load crashes vitest node env) — keep pure logic supabase-free (sampleEssays.ts vs sampleEssaysApi.ts). GOTCHA: RTK caches git reads — use 'rtk proxy git' to verify state; direct push to main is denied (PR flow only)."
 }
