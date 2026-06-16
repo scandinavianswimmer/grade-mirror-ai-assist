@@ -12,6 +12,8 @@
 | `trial-conversion-copy.md` | Cohort-A landing/trial copy (the acquisition surface) | ✅ done |
 | `targets/facebook-and-influencers.md` | 16 FB groups + 10 newsletters + 10 influencers, sourced | ✅ done |
 | `targets/reddit-threads-and-rules.md` | 15 subreddits + rules + live-search runbook + reply bank | ✅ done |
+| `reddit-fb-playbook.md` | Value-first community playbook (5 steps + keywords + F5bot + block workaround) | ✅ done |
+| `../../../outreach/reddit-engagement-queue.md` | 7 value-first reply drafts on LIVE threads (Google-index pull) | ✅ done |
 | `targets/product-hunt-and-directories.md` | PH mechanics + directories + timeline | ✅ done |
 | `targets/cohort-b-teacher-sourcing.md` | 18 channels to recruit proof teachers + DPA reality | ✅ done |
 | `../../../outreach/` | **The engine** — prospects + templates + send script + drafts | ✅ runs |

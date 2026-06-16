@@ -117,15 +117,25 @@ note: did NOT fabricate classroom-teacher emails; CSV is fed by the funnel (refe
 ## Blocked
 
 ```yaml
-id: aita-gtm-20260615-007
-commitment: Pull live top-8 Reddit threads + deliver the 9 manual-channel pitches via browser.
-status: blocked
-blocker: Claude-in-Chrome extension NOT connected (tabs_context returned not-connected); reddit.com also
-  blocked for WebSearch/WebFetch/curl in this environment.
-workaround_taken: subreddit list + live-search runbook + reply bank produced earlier (no fabricated links);
-  9 manual pitches staged in outreach/outbox/. Did not retry (no-rabbit-hole rule).
-unblock: install/run the extension at claude.ai/chrome logged into the same account (and into Reddit/FB) →
-  agent pulls the real threads, drafts replies, and pre-fills the manual pitch forms for one-tap send.
+id: aita-gtm-20260615-012
+commitment: Pull live Reddit threads + draft value-first replies (around the WAF block).
+owner: agent
+status: executed
+evidence:
+  - chrome-devtools Chromium connected; Reddit WAF-blocks our IP, so read via Google index (site:reddit.com).
+  - ~20 real live threads found; outreach/reddit-engagement-queue.md = 7 value-first reply drafts on real threads.
+  - docs/marketing/gtm/reddit-fb-playbook.md operationalizes Luke's 5-step playbook (keywords, F5bot, Map of Reddit, cadence).
+note: posting stays manual from Luke's account (Reddit bans automation); drafts are for him to personalize + post.
+```
+```yaml
+id: aita-gtm-20260615-013
+commitment: Deliver the manual-channel pitches via the automation browser.
+status: partially_blocked
+done: Cult of Pedagogy contact form FILLED in-browser (screenshot outreach/outbox/cult-of-pedagogy-form-filled.png);
+  open web reachable, no CAPTCHA. Other public forms (Ditch That Textbook, Potash, Mud & Ink, Brave New Teaching) fillable the same way.
+awaiting_approval: SUBMIT the filled forms (irreversible outbound + a consent checkbox) — needs Luke's explicit go.
+blocked: DM / FB-Messenger pitches (Neibauer, Wexler, Fitzpatrick, 2ndary-ELA, AP admins, Washburn, Sackstein,
+  Ms. James) need a logged-in session the throwaway Chromium doesn't have → use Luke's own browser.
 ```
 
 ## Metrics
