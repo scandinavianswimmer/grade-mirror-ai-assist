@@ -24,6 +24,9 @@
 | 27:00–30:00 | **Your turn this week** + the free template + (soft) where to try it | One clear next step |
 | 30:00–40:00 | **Q&A** | Relationship-building; capture questions for content |
 
+> **Full presentation-ready slide copy + talk track + demo beat sheet + Q&A** is in `webinar-slides.md`.
+> The outline below is the skeleton.
+
 ## Deck outline (slide-by-slide)
 1. Title + your name + "I teach/build for ELA teachers."
 2. The weekend essay pile (one honest image). "Sound familiar?"
