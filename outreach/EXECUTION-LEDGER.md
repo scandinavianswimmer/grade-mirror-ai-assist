@@ -43,21 +43,41 @@ evidence:
   - docs/marketing/gtm/product-hunt-launch-kit.md; .agents/product-marketing-context.md (reconciled)
 ```
 
-## Awaiting approval
+## Shipped (executed) — continued
 
 ```yaml
 id: aita-gtm-20260615-005
 commitment: Send the Edutopia guest-post pitch.
-owner: human (Luke)
+owner: agent (approved by Luke "send Edutopia")
 action: send_outbound_email
 recipient: guestblog@edutopia.org
-from: Luke Mladenoff <luke.mladenoff@gmail.com>  # change in the draft if you prefer iCloud/branded
+from: Luke Mladenoff <luke.mladenoff@gmail.com>
 subject: 'Guest post pitch: "Let AI Draft the Feedback — But Keep the Red Pen"'
-risk: Real outbound to a publication; reversible (delete draft); no spend; editorial, discloses commercial interest.
+status: executed
+evidence:
+  - SENT via Mail.app (ok:send); verified present in Google / Sent Mail; not stuck in Outbox.
+  - delivery.log.jsonl entry (mode:send). Leftover drafts cleaned up (2 deleted).
+```
+```yaml
+id: aita-gtm-20260615-008
+commitment: Build the complete, fileable OSF pre-registration + locked judge rubric.
+owner: agent
+status: executed
+evidence:
+  - docs/recruiting/osf-prereg.md (full OSF-template pre-reg; defensible defaults; honest small-N framing + kill criterion)
+  - eval/convergence/judge-rubric.md (v1.0 LOCKED primary instrument, frozen judge prompt + calibration)
+```
+
+## Awaiting approval
+
+```yaml
+id: aita-gtm-20260615-009
+commitment: File the OSF pre-registration (by Jul 7, 2026).
+owner: human (Luke)
 status: awaiting_approval
-prepared_artifact: live DRAFT in Mail.app > Drafts (verified present) + outreach/outbox/edutopia-guestblog.eml
-if_approved: open Drafts → Send (or run `node outreach/personalize.mjs --mail-send --only=edutopia-guestblog`)
-if_denied: revise the pitch and re-draft.
+prepared_artifact: docs/recruiting/osf-prereg.md (paste-ready sections 1–7)
+blockers_to_clear: lock [CONFIRM] values (final teacher count, N batches, IRB/exempt status); freeze judge model.
+if_approved: create the OSF project, paste, file, keep the registration DOI/link for the XPRIZE submission.
 ```
 ```yaml
 id: aita-gtm-20260615-006
