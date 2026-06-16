@@ -90,15 +90,30 @@ if_approved: paste into each outlet's form/DM/Messenger — OR have the agent dr
 note: never self-post to FB/Reddit; pitch admins / use value-first per the strategy.
 ```
 
+## Shipped (executed) — content
+
+```yaml
+id: aita-gtm-20260615-010
+commitment: Build the free-PD webinar kit + the XPRIZE video script + judge narrative.
+owner: agent
+status: executed
+evidence:
+  - docs/marketing/gtm/webinar-kit.md (deck, 30-min run-of-show, registration landing, promo posts, soft mention)
+  - docs/marketing/gtm/xprize-video-and-narrative.md (<3-min shot-by-shot script + ~700w judge narrative)
+```
+
 ## Blocked
 
 ```yaml
 id: aita-gtm-20260615-007
-commitment: Pull the live top-8 Reddit threads to answer.
+commitment: Pull live top-8 Reddit threads + deliver the 9 manual-channel pitches via browser.
 status: blocked
-blocker: reddit.com is blocked for WebSearch/WebFetch/curl in this environment; browser extension not connected.
-workaround_taken: agent produced verified subreddit list + live-search runbook + reply bank instead (no fabricated links).
-unblock: connect the Claude-in-Chrome extension (logged into Reddit) → agent pulls + drafts replies for the real threads.
+blocker: Claude-in-Chrome extension NOT connected (tabs_context returned not-connected); reddit.com also
+  blocked for WebSearch/WebFetch/curl in this environment.
+workaround_taken: subreddit list + live-search runbook + reply bank produced earlier (no fabricated links);
+  9 manual pitches staged in outreach/outbox/. Did not retry (no-rabbit-hole rule).
+unblock: install/run the extension at claude.ai/chrome logged into the same account (and into Reddit/FB) →
+  agent pulls the real threads, drafts replies, and pre-fills the manual pitch forms for one-tap send.
 ```
 
 ## Metrics

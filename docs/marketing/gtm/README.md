@@ -18,6 +18,10 @@
 | `../../../outreach/trial-onboarding-sequence.md` | Owned-channel nurture (signup → paid) | ✅ done |
 | `../../recruiting/RECRUITING-KIT.md` | Cohort-B operating playbook (sourcing → DPA → sprint) | ✅ done |
 | `product-hunt-launch-kit.md` | Full PH listing, first comment, gallery, comment bank, timeline | ✅ done (fires Wk6) |
+| `webinar-kit.md` | Free-PD webinar (deck, run-of-show, landing, promo) — #1 ban-proof FB motion | ✅ done |
+| `xprize-video-and-narrative.md` | <3-min demo video script + ~700w judge narrative | ✅ done |
+| `../../recruiting/osf-prereg.md` | Complete fileable OSF pre-registration (file by Jul 7) | ✅ done |
+| `../../../eval/convergence/judge-rubric.md` | v1.0 LOCKED GPT-judge voice-fidelity instrument | ✅ done |
 
 ## How it's operated (agent vs human)
 **The agent does:** find targets, write + personalize every message, generate drafts (`outreach/outbox/`),
@@ -39,8 +43,11 @@ RESEND_API_KEY=… OUTREACH_FROM="Luke <luke@aita.app>" node outreach/personaliz
 ```
 
 ## What I'd do next (all agent-doable, on your go)
-- Draft the **OSF pre-registration** in full (research already scoped it; `../../recruiting/osf-prereg.md` is a stub).
-- Draft the **Reddit value-post replies** for the top-8 threads (the engine + reply bank are ready; needs the live thread list, which needs a logged-in pull).
-- Write the **free-PD webinar** deck + landing + promo (the #1 ban-proof FB motion).
+- **Reddit value-post replies** for the top-8 threads — BLOCKED on the Chrome extension (connect it logged
+  into Reddit → I pull the live threads + draft replies). Same unblock delivers the 9 staged manual pitches.
 - Expand `prospects.json` with individual teachers as lists are built; draft the **referral-loop** in-app copy.
-- Draft the **<3-min XPRIZE video script** + the 500–1000w narrative (judge-facing).
+- A **60-second cut-down** of the XPRIZE video (teaser) from `xprize-video-and-narrative.md`.
+- Full **slide copy** for the webinar deck (outline is in `webinar-kit.md`).
+
+✅ Done since first pass: OSF pre-reg + judge rubric · free-PD webinar kit · XPRIZE video script + judge
+narrative · Edutopia pitch sent.
