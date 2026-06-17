@@ -3,6 +3,12 @@
 // All queries use the user-scoped anon client, so RLS already constrains every row to the
 // signed-in teacher (user_id = auth.uid()). We never widen scope or use service_role here.
 import { supabase } from './supabase';
+import {
+  computeOnTheLoopSummary,
+  type OnTheLoopSummary,
+  type OnTheLoopSubmission,
+  type OnTheLoopGrade,
+} from './onTheLoop';
 
 // --- Tunable constants (documented assumptions) -----------------------------------------
 
@@ -125,6 +131,42 @@ export async function fetchMetricsSummary(): Promise<MetricsSummary> {
     medianTurnaroundHours,
     estimatedMinutesSaved,
   };
+}
+
+// --- On-the-Loop throughput (auto-finalize differentiator) -------------------------------
+// Aggregate, across every submission this teacher owns, how many grades aiTA published
+// unattended (high-confidence, clean) vs. routed to the teacher's exception queue. Reuses the
+// two tables we already query elsewhere — no new backend call, column-tolerant by design.
+
+export type { OnTheLoopSummary } from './onTheLoop';
+
+export async function fetchOnTheLoopSummary(): Promise<OnTheLoopSummary> {
+  // status + optional provenance columns. `auto_finalized_at`/`finalized_by` may not exist in a
+  // lagging cloud schema; select '*' so the query never 400s on a missing column, then read the
+  // fields best-effort (the pure helper tolerates absence).
+  const { data: subsData } = await supabase.from('submissions').select('*');
+  const submissions: OnTheLoopSubmission[] = ((subsData ?? []) as Record<string, unknown>[]).map((s) => ({
+    id: String(s.id),
+    status: (s.status as string | null | undefined) ?? null,
+    finalized_by: (s.finalized_by as string | null | undefined) ?? null,
+    auto_finalized_at: (s.auto_finalized_at as string | null | undefined) ?? null,
+  }));
+
+  // Latest grade per submission (re-grades happen) — match the rest of this module's convention.
+  const { data: gradesData } = await supabase
+    .from('submission_grades')
+    .select('submission_id, confidence, created_at');
+  const latestBySub = new Map<string, GradeRow>();
+  for (const g of (gradesData ?? []) as GradeRow[]) {
+    const prev = latestBySub.get(g.submission_id);
+    if (!prev || new Date(g.created_at) > new Date(prev.created_at)) latestBySub.set(g.submission_id, g);
+  }
+  const grades: OnTheLoopGrade[] = Array.from(latestBySub.values()).map((g) => ({
+    submission_id: g.submission_id,
+    confidence: g.confidence,
+  }));
+
+  return computeOnTheLoopSummary(submissions, grades);
 }
 
 // --- Edit-rate over time (METRIC-02) ----------------------------------------------------

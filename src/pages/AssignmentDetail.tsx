@@ -14,7 +14,9 @@ import Navbar from '@/components/Navbar';
 import FileUpload from '@/components/FileUpload';
 import { UpgradePaywall } from '@/components/pricing/UpgradePaywall';
 import { useGradingGate } from '@/hooks/useGradingGate';
-import { statusBadgeClass, statusLabel, statusMetaWithProvenance, effectiveStatus } from '@/lib/submissionStatus';
+import { statusBadgeClass, statusLabel, effectiveStatus } from '@/lib/submissionStatus';
+import { Bot, Inbox, CheckCircle2 } from 'lucide-react';
+import { dispositionFor, computeOnTheLoopSummary, type Disposition } from '@/lib/onTheLoop';
 
 interface Assignment {
   id: string;
@@ -31,7 +33,9 @@ interface Submission {
   status: string;
   created_at: string;
   hasGrade?: boolean;
+  confidence?: number | null;
   finalized_by?: string | null; // 'ai' = auto-finalized by aiTA; absent pre-migration
+  auto_finalized_at?: string | null;
 }
 
 const AssignmentDetail = () => {
@@ -123,18 +127,34 @@ const AssignmentDetail = () => {
       if (submissionsError) throw submissionsError;
 
       // Mark which submissions actually have a grade so the status badge can reconcile a stale
-      // value (e.g. a failed re-grade left `grade_error` while a valid grade still stands).
+      // value (e.g. a failed re-grade left `grade_error` while a valid grade still stands), and
+      // carry the latest grade's confidence so we can show aiTA's auto-finalize disposition.
       const subs = (submissionsData || []) as Submission[];
       const subIds = subs.map((s) => s.id);
       const gradedIds = new Set<string>();
+      const latestConfidence = new Map<string, number | null>();
+      const latestAt = new Map<string, number>();
       if (subIds.length) {
         const { data: gradeRows } = await supabase
           .from('submission_grades')
-          .select('submission_id')
+          .select('submission_id, confidence, created_at')
           .in('submission_id', subIds);
-        for (const g of (gradeRows ?? []) as { submission_id: string }[]) gradedIds.add(g.submission_id);
+        for (const g of (gradeRows ?? []) as { submission_id: string; confidence: number | null; created_at: string }[]) {
+          gradedIds.add(g.submission_id);
+          const t = new Date(g.created_at).getTime();
+          if (!latestAt.has(g.submission_id) || t > latestAt.get(g.submission_id)!) {
+            latestAt.set(g.submission_id, t);
+            latestConfidence.set(g.submission_id, g.confidence);
+          }
+        }
       }
-      setSubmissions(subs.map((s) => ({ ...s, hasGrade: gradedIds.has(s.id) })));
+      setSubmissions(
+        subs.map((s) => ({
+          ...s,
+          hasGrade: gradedIds.has(s.id),
+          confidence: latestConfidence.has(s.id) ? latestConfidence.get(s.id) : null,
+        })),
+      );
     } catch (error) {
       console.error('Error fetching assignment data:', error);
       toast({
@@ -231,10 +251,38 @@ const AssignmentDetail = () => {
     );
   }
 
+  // On-the-Loop disposition per submission — what aiTA published unattended vs. what it routed
+  // to the teacher. Column-tolerant (reads optional provenance off the row if present).
+  const dispositions = new Map<string, Disposition>();
+  for (const s of submissions) {
+    if (!s.hasGrade) {
+      dispositions.set(s.id, s.status === 'needs_review' || s.status === 'grade_error' ? 'needs_review' : 'pending');
+    } else {
+      dispositions.set(
+        s.id,
+        dispositionFor(
+          { id: s.id, status: s.status, finalized_by: s.finalized_by, auto_finalized_at: s.auto_finalized_at },
+          typeof s.confidence === 'number' ? s.confidence : null,
+        ),
+      );
+    }
+  }
+
+  const loopSummary = computeOnTheLoopSummary(
+    submissions.map((s) => ({ id: s.id, status: s.status, finalized_by: s.finalized_by, auto_finalized_at: s.auto_finalized_at })),
+    submissions.filter((s) => s.hasGrade).map((s) => ({ submission_id: s.id, confidence: s.confidence ?? null })),
+  );
+
+  // Exceptions first so the teacher's eye lands on what needs a human; then auto-finalized; then the rest.
+  const dispositionRank: Record<Disposition, number> = { needs_review: 0, pending: 1, auto_finalized: 2 };
+  const orderedSubmissions = [...submissions].sort(
+    (a, b) => dispositionRank[dispositions.get(a.id) ?? 'pending'] - dispositionRank[dispositions.get(b.id) ?? 'pending'],
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Navbar />
-      
+
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-4 mb-8">
@@ -308,25 +356,19 @@ const AssignmentDetail = () => {
                   </Button>
                 )}
               </div>
-              {(() => {
-                // On-the-Loop monitoring line: how many aiTA published vs. how many it routed to you.
-                const autoFinalized = submissions.filter((s) => s.finalized_by === 'ai').length;
-                const needsReview = submissions.filter(
-                  (s) => effectiveStatus(s.status, !!s.hasGrade) === 'needs_review',
-                ).length;
-                if (autoFinalized === 0 && needsReview === 0) return null;
-                return (
-                  <p className="text-sm text-gray-600">
-                    {autoFinalized > 0 && (
-                      <span className="text-praise font-medium">{autoFinalized} auto-finalized by aiTA</span>
-                    )}
-                    {autoFinalized > 0 && needsReview > 0 && ' · '}
-                    {needsReview > 0 && (
-                      <span className="text-destructive font-medium">{needsReview} need{needsReview === 1 ? 's' : ''} your review</span>
-                    )}
-                  </p>
-                );
-              })()}
+              {loopSummary.graded > 0 && (
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg bg-gray-50 px-3 py-2 text-sm">
+                  <span className="flex items-center gap-1.5 text-gray-600">
+                    <CheckCircle2 className="h-4 w-4" /> {loopSummary.graded} graded
+                  </span>
+                  <span className="flex items-center gap-1.5 font-medium text-emerald-700">
+                    <Bot className="h-4 w-4" /> {loopSummary.autoFinalized} auto-finalized by aiTA
+                  </span>
+                  <span className={`flex items-center gap-1.5 font-medium ${loopSummary.needsReview > 0 ? 'text-amber-700' : 'text-gray-400'}`}>
+                    <Inbox className="h-4 w-4" /> {loopSummary.needsReview} need your review
+                  </span>
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {showPaywall && gradingAtCap && (
@@ -340,13 +382,21 @@ const AssignmentDetail = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {submissions.map((submission) => (
+                  {orderedSubmissions.map((submission) => {
+                  const disposition = dispositions.get(submission.id) ?? 'pending';
+                  const isException = disposition === 'needs_review';
+                  const isAuto = disposition === 'auto_finalized';
+                  const rowClass = isException
+                    ? 'border-amber-300 bg-amber-50/60 hover:bg-amber-50'
+                    : 'hover:bg-gray-50';
+                  return (
                     <div
                       key={submission.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                      className={`flex items-center justify-between p-4 border rounded-lg ${rowClass}`}
+                      data-disposition={disposition}
                     >
                       <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-gray-400" />
+                        <FileText className={`w-5 h-5 ${isException ? 'text-amber-500' : 'text-gray-400'}`} />
                         <div>
                           {renamingId === submission.id ? (
                             <div className="flex items-center gap-1">
@@ -385,18 +435,24 @@ const AssignmentDetail = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {(() => {
-                          const meta = statusMetaWithProvenance(effectiveStatus(submission.status, !!submission.hasGrade), submission.finalized_by);
-                          return <span className={`px-2 py-1 rounded-full text-xs ${meta.badgeClass}`}>{meta.label}</span>;
-                        })()}
+                        {isAuto ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-800">
+                            <Bot className="h-3 w-3" /> Auto-finalized by aiTA
+                          </span>
+                        ) : (
+                          <span className={`px-2 py-1 rounded-full text-xs ${statusBadgeClass(effectiveStatus(submission.status, !!submission.hasGrade))}`}>
+                            {statusLabel(effectiveStatus(submission.status, !!submission.hasGrade))}
+                          </span>
+                        )}
                         <Link to={`/submission/${submission.id}`}>
-                          <Button variant="outline" size="sm">
-                            View
+                          <Button variant={isException ? 'default' : 'outline'} size="sm">
+                            {isException ? 'Review' : 'View'}
                           </Button>
                         </Link>
                       </div>
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               )}
             </CardContent>
