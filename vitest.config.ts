@@ -7,6 +7,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    // src/** = app/pure TS logic; eval/** = the standalone proof-harness (.mjs ports, see eval/README.md).
+    include: ['src/**/*.{test,spec}.{ts,tsx}', 'eval/**/*.{test,spec}.{mjs,ts}'],
   },
 });
