@@ -110,7 +110,12 @@ the safety-critical off-topic/injection failures do.
 
 ---
 
-## Convergence mode (Phase 15 — PROOF-01, EVAL-03/04)
+## Convergence mode (Phase 15 — PROOF-01, EVAL-03/04) — DEPRECATED AS PRIMARY
+
+> **⚠️ Edit-rate decline is no longer the PRIMARY proof metric.** Deep research (Borchers et al.,
+> AIED 2026, n=117) found **51.3% of teachers never edit AI feedback**, so an edit-rate "decline" is
+> uninterpretable as a headline claim. This mode is retained only as a **deprecated corroborator**.
+> The PRIMARY proof is now the **GPT-judge voice-fidelity harness** — see _Judge mode_ below.
 
 `node eval/run.mjs --convergence` answers a different question: **does aiTA learn an individual
 teacher's feedback voice over successive grading batches?** It replays a teacher's ordered batches,
@@ -145,6 +150,40 @@ closer to the teacher's voice. The run prints the per-batch edit-rate, the batch
   kill criterion from `15-CONTEXT.md`: an honest disproof, not a hidden one. FAIL ⇒ `process.exit(1)`.
 - Fixtures are **synthetic** (no real student PII); the production de-identification transform lives in
   `rebuild-exemplars`, not in the eval.
+
+## Judge mode (Phase 15 v2 — PRIMARY voice-fidelity proof)
+
+`node eval/run.mjs --judge` runs the **pre-registered PRIMARY proof** (`docs/recruiting/osf-prereg.md`):
+a **blinded GPT-judge** scores each piece of aiTA feedback against the teacher's reference-voice corpus
+on the **LOCKED 5-dimension rubric** (`eval/convergence/judge-rubric.md` v1.0 — frozen prompt, model,
+and 0–100 scale), then a **within-teacher holdout** (with-profile vs without-profile) and the
+**pre-registered kill criterion** decide the verdict.
+
+```bash
+# Validate the judge contract + holdout + kill-criterion wiring WITHOUT any LLM (deterministic mock):
+EVAL_DRY_RUN=1 node eval/run.mjs --judge
+
+# Live judge (FOUNDER-GATED — needs a real Gemini key; not runnable in CI without one):
+GEMINI_API_KEY=... LUAR_FLAT_THRESHOLD_PCT=<pre-registered X> node eval/run.mjs --judge
+```
+
+- **Pure logic** lives in `eval/convergence/judge-score.mjs` (rubric aggregation, holdout delta,
+  fidelity trajectory, the kill-criterion decision rule, mock scorer, LUAR/LZ77 corroborator stubs) and
+  `eval/convergence/judge-fixture.mjs` (fixture parsing). Both are covered by vitest
+  (`*.test.mjs`, run by `npm test`).
+- **Pluggable scorer seam:** the judge LLM call is an injected async `scorer`. The dry-run + tests use a
+  deterministic stylometric **mock**; the **live** path wires Gemini through the same REST client as the
+  grader (`makeGeminiJudgeScorer`). `total` is always recomputed from the five dimensions, so a judge
+  returning an inconsistent total can't corrupt the measurement.
+- **Kill criterion (pre-registered, AND of two clauses):** DISPROVEN (KILL) **iff** the judge shows **no
+  significant** with-profile gain over holdout **AND** the aggregated LUAR trend is **flat** (`< X%`
+  relative gain, where `X` = `LUAR_FLAT_THRESHOLD_PCT`, the founder-filed `{X}` brace). If judge
+  significance is unknown or LUAR is unwired, the verdict is honestly **INCONCLUSIVE** — never a silent
+  PROVEN/DISPROVEN. The harness **throws** rather than guess `X`.
+- **Honest gaps (founder-gated):** there is no reachable Gemini key and no LUAR-MUD model here, so the
+  live judge run, the in-domain LUAR calibration, and the fitted significance test are NOT performed. The
+  LUAR/LZ77 corroborators are pluggable **stubs** clearly labelled as not-calibrated — do not report stub
+  numbers as evidence. Without a key the live path exits `2` and refuses to fabricate a verdict.
 
 ## Using this to gate future changes (CI)
 
