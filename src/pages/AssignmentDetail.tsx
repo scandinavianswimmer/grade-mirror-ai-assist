@@ -14,7 +14,7 @@ import Navbar from '@/components/Navbar';
 import FileUpload from '@/components/FileUpload';
 import { UpgradePaywall } from '@/components/pricing/UpgradePaywall';
 import { useGradingGate } from '@/hooks/useGradingGate';
-import { statusBadgeClass, statusLabel, effectiveStatus } from '@/lib/submissionStatus';
+import { statusBadgeClass, statusLabel, statusMetaWithProvenance, effectiveStatus } from '@/lib/submissionStatus';
 
 interface Assignment {
   id: string;
@@ -31,6 +31,7 @@ interface Submission {
   status: string;
   created_at: string;
   hasGrade?: boolean;
+  finalized_by?: string | null; // 'ai' = auto-finalized by aiTA; absent pre-migration
 }
 
 const AssignmentDetail = () => {
@@ -307,6 +308,25 @@ const AssignmentDetail = () => {
                   </Button>
                 )}
               </div>
+              {(() => {
+                // On-the-Loop monitoring line: how many aiTA published vs. how many it routed to you.
+                const autoFinalized = submissions.filter((s) => s.finalized_by === 'ai').length;
+                const needsReview = submissions.filter(
+                  (s) => effectiveStatus(s.status, !!s.hasGrade) === 'needs_review',
+                ).length;
+                if (autoFinalized === 0 && needsReview === 0) return null;
+                return (
+                  <p className="text-sm text-gray-600">
+                    {autoFinalized > 0 && (
+                      <span className="text-praise font-medium">{autoFinalized} auto-finalized by aiTA</span>
+                    )}
+                    {autoFinalized > 0 && needsReview > 0 && ' · '}
+                    {needsReview > 0 && (
+                      <span className="text-destructive font-medium">{needsReview} need{needsReview === 1 ? 's' : ''} your review</span>
+                    )}
+                  </p>
+                );
+              })()}
             </CardHeader>
             <CardContent>
               {showPaywall && gradingAtCap && (
@@ -365,9 +385,10 @@ const AssignmentDetail = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 rounded-full text-xs ${statusBadgeClass(effectiveStatus(submission.status, !!submission.hasGrade))}`}>
-                          {statusLabel(effectiveStatus(submission.status, !!submission.hasGrade))}
-                        </span>
+                        {(() => {
+                          const meta = statusMetaWithProvenance(effectiveStatus(submission.status, !!submission.hasGrade), submission.finalized_by);
+                          return <span className={`px-2 py-1 rounded-full text-xs ${meta.badgeClass}`}>{meta.label}</span>;
+                        })()}
                         <Link to={`/submission/${submission.id}`}>
                           <Button variant="outline" size="sm">
                             View

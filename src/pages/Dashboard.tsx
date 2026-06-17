@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, FileText, Calendar, Clock, Users, SortAsc, Trash2, MoreVertical, Edit, BookOpen } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Plus, FileText, Calendar, Clock, Users, SortAsc, Trash2, MoreVertical, Edit, BookOpen, Sparkles, Loader2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { deleteClass, deleteAssignment } from '@/lib/api';
@@ -12,6 +12,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
+import TrialBanner from '@/components/TrialBanner';
+import { loadSampleEssays } from '@/lib/sampleEssaysApi';
+import { analytics } from '@/lib/analytics';
 import CreateClassModal from '@/components/CreateClassModal';
 import EditClassModal from '@/components/EditClassModal';
 
@@ -64,9 +67,11 @@ const CACHE_DURATION = 5 * 60 * 1000;
 const Dashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingSample, setLoadingSample] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [classToEdit, setClassToEdit] = useState<EditableClass | null>(null);
@@ -231,6 +236,34 @@ const Dashboard = () => {
     }
   };
 
+  // Sample-essay onboarding: pre-load one assignment + 5 essays so a new teacher can grade (and see
+  // auto-finalize) within a minute, then drop them straight onto the assignment to hit "Grade all".
+  const handleLoadSamples = async () => {
+    if (!user) return;
+    setLoadingSample(true);
+    analytics.capture('submission_uploaded', { source: 'sample_onboarding' });
+    try {
+      const { assignmentId, created } = await loadSampleEssays(user.id);
+      toast({
+        title: created ? 'Sample essays loaded' : 'Opening your sample set',
+        description: created
+          ? '5 student essays are ready — hit “Grade all” and watch aiTA auto-finalize the strong ones.'
+          : 'You already have the sample assignment — taking you to it.',
+      });
+      dashboardCache = null;
+      navigate(`/assignment/${assignmentId}`);
+    } catch (err) {
+      console.error('Error loading sample essays:', err);
+      toast({
+        title: 'Could not load samples',
+        description: err instanceof Error ? err.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingSample(false);
+    }
+  };
+
   const reveal = (extra = '') => `transition-all duration-700 ${extra} ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`;
 
   return (
@@ -238,6 +271,7 @@ const Dashboard = () => {
       <Navbar />
 
       <div className="container mx-auto px-4 py-10" data-tour="dashboard-overview">
+        <TrialBanner />
         <div className={`mb-8 flex flex-wrap items-end justify-between gap-4 ${reveal()}`}>
           <div>
             <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">Your workspace</p>
@@ -289,11 +323,19 @@ const Dashboard = () => {
             </div>
             <h2 className="font-display text-2xl font-semibold">Start your first class</h2>
             <p className="mx-auto mt-2 max-w-sm text-muted-foreground">
-              Group your assignments by class, then upload student work to grade it in your voice.
+              Group your assignments by class, then upload student work to grade it in your voice — or
+              try aiTA right now on a set of sample essays.
             </p>
-            <Button className="mt-6 gap-2" onClick={() => setShowCreateModal(true)}>
-              <Plus className="h-4 w-4" /> Create a class
-            </Button>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <Button className="gap-2" onClick={handleLoadSamples} disabled={loadingSample}>
+                {loadingSample
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Loading…</>
+                  : <><Sparkles className="h-4 w-4" /> Try it with 5 sample essays</>}
+              </Button>
+              <Button variant="outline" className="gap-2" onClick={() => setShowCreateModal(true)}>
+                <Plus className="h-4 w-4" /> Create a class
+              </Button>
+            </div>
           </Card>
         ) : (
           <div className="space-y-8">

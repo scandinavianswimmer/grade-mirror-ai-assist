@@ -13,7 +13,7 @@ import { analytics } from '@/lib/analytics';
 import AgentPipeline from '@/components/AgentPipeline';
 import { UpgradePaywall } from '@/components/pricing/UpgradePaywall';
 import { useGradingGate } from '@/hooks/useGradingGate';
-import { statusBadgeClass, statusLabel, isFinalized, effectiveStatus, hasStaleGradingError } from '@/lib/submissionStatus';
+import { statusBadgeClass, statusLabel, isFinalized, isAutoFinalized, statusMetaWithProvenance, effectiveStatus, hasStaleGradingError } from '@/lib/submissionStatus';
 import { normalizedEditDistance } from '@/lib/convergenceMetrics';
 
 type AnnoType = 'praise' | 'suggestion' | 'error' | 'question';
@@ -28,6 +28,9 @@ interface SubmissionRow {
   essay: string | null;
   extracted_text: string | null;
   status: string;
+  // 'ai' when aiTA auto-finalized this grade; 'teacher' when approved by hand. Optional/absent
+  // until migration 0020 (migrations_v2) lands — fetched best-effort so a missing column never blocks load.
+  finalized_by?: string | null;
 }
 interface Criterion {
   name: string; weight: number; maxScore: number; score: number;
@@ -69,7 +72,18 @@ const SubmissionDetail = () => {
       .select('id, assignment_id, student_name, essay, extracted_text, status')
       .eq('id', id)
       .single();
-    setSubmission(sub as SubmissionRow | null);
+    // Best-effort provenance: read finalized_by in a separate query so a missing column (pre-migration)
+    // never blocks the page. Merge it onto the submission when present.
+    let finalizedBy: string | null | undefined;
+    {
+      const { data: prov } = await supabase
+        .from('submissions')
+        .select('finalized_by')
+        .eq('id', id)
+        .maybeSingle();
+      finalizedBy = (prov as { finalized_by?: string | null } | null)?.finalized_by ?? undefined;
+    }
+    setSubmission(sub ? ({ ...(sub as SubmissionRow), finalized_by: finalizedBy } as SubmissionRow) : null);
 
     const { data: g } = await supabase
       .from('submission_grades')
@@ -103,15 +117,18 @@ const SubmissionDetail = () => {
     const startedAt = Date.now();
     analytics.capture('grade_started', { submission_id: id, is_regrade: Boolean(grade) });
     try {
-      const { error } = await supabase.functions.invoke('grade-submission', { body: { submissionId: id } });
+      const { data, error } = await supabase.functions.invoke('grade-submission', { body: { submissionId: id } });
       if (error) {
         let msg = 'Grading failed';
         try { const body = await (error as any).context?.json?.(); if (body?.error) msg = `${body.error}${body.stage ? ` (${body.stage})` : ''}`; } catch { /* ignore */ }
         analytics.capture('grade_completed', { submission_id: id, ok: false, duration_ms: Date.now() - startedAt });
         toast({ title: 'Could not grade', description: msg, variant: 'destructive' });
       } else {
-        analytics.capture('grade_completed', { submission_id: id, ok: true, duration_ms: Date.now() - startedAt });
-        toast({ title: 'Graded', description: 'Review the AI’s notes — you have the final say.' });
+        const autoFinalized = Boolean((data as { autoFinalized?: boolean } | null)?.autoFinalized);
+        analytics.capture('grade_completed', { submission_id: id, ok: true, duration_ms: Date.now() - startedAt, auto_finalized: autoFinalized });
+        toast(autoFinalized
+          ? { title: 'Auto-finalized', description: 'aiTA was confident — this grade is published. Open it to review or adjust any time.' }
+          : { title: 'Graded', description: 'Review the AI’s notes — you have the final say.' });
         await load();
       }
     } catch (e: any) {
@@ -297,7 +314,10 @@ const SubmissionDetail = () => {
             </Link>
             <div className="flex items-center gap-2">
               <h1 className="font-display text-3xl font-semibold tracking-tight">{submission.student_name || 'Student submission'}</h1>
-              <span className={`rounded-full px-2 py-0.5 text-xs ${statusBadgeClass(effectiveStatus(submission.status, !!grade))}`}>{statusLabel(effectiveStatus(submission.status, !!grade))}</span>
+              {(() => {
+                const meta = statusMetaWithProvenance(effectiveStatus(submission.status, !!grade), submission.finalized_by);
+                return <span className={`rounded-full px-2 py-0.5 text-xs ${meta.badgeClass}`}>{meta.label}</span>;
+              })()}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -311,6 +331,12 @@ const SubmissionDetail = () => {
             </Button>
           </div>
         </div>
+
+        {grade && isAutoFinalized(submission.finalized_by) && (
+          <Card className="mb-6 border-praise/40 bg-praise-soft/40 p-4 text-sm">
+            <span className="flex items-center gap-2 text-foreground/80"><ShieldCheck className="h-4 w-4 text-praise" /> aiTA auto-finalized this grade — it was high-confidence and on-topic. Review the notes or re-grade any time; you stay on the loop.</span>
+          </Card>
+        )}
 
         {!essay && (
           <Card className="mb-6 border-suggestion/40 bg-suggestion-soft/40 p-4 text-sm">

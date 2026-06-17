@@ -18,7 +18,11 @@ export type AnalyticsEvent =
   | 'pricing_page_viewed'
   | 'paywall_viewed'
   | 'upgrade_clicked'
-  | 'checkout_started';
+  | 'checkout_started'
+  // 14-day full-access trial → conversion (BILL-03) and the grade-12 PQL signal.
+  | 'trial_banner_viewed'
+  | 'trial_banner_upgrade_clicked'
+  | 'pql_grade_12';
 
 type AnalyticsProps = Record<string, unknown>;
 
