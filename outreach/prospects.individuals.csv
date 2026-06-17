@@ -1,0 +1,8 @@
+id,contact_name,outlet,to,channel,template,related_party,audience,angle,source,notes
+# HOW TO USE: drop real individual teachers here (one per row) and run `node outreach/personalize.mjs --mail-drafts`.
+# personalize.mjs auto-merges this file. Rows with id starting "example-" are IGNORED (templates, won't send).
+# channel: email = Mail.app draft/send | dm/form/fb = manual. template: cold-teacher | influencer-collab | cohort-b-warm | cohort-b-cold.
+# related_party: TRUE for anyone in the founder network (revenue cannot count them) | false for strangers.
+# LEGITIMATE SOURCES (not cold-harvested PII): referrals, webinar registrants, trial signups, your warm list, opt-ins.
+example-jane-doe,Jane Doe,Lincoln HS (English),jane.doe@example.com,email,cold-teacher,FALSE,gr11 AP Lang teacher,grade a set faster while staying the final grader,webinar-signup,EXAMPLE ROW — delete or it is skipped
+example-referral,Referred Teacher,(referral from a colleague),,email,cohort-b-warm,TRUE,gr9-12 ELA,proof-cohort study invite,referral,EXAMPLE ROW — warm/related-party OK for proof cohort
