@@ -26,6 +26,8 @@
 | `video-teaser-60s.md` | 60-sec teaser (PH/social/landing) — 16:9 + 9:16 cuts, muted-safe captions | ✅ done |
 | `../../recruiting/osf-prereg.md` | Complete fileable OSF pre-registration (file by Jul 7) | ✅ done |
 | `../../../eval/convergence/judge-rubric.md` | v1.0 LOCKED GPT-judge voice-fidelity instrument | ✅ done |
+| `referral-share-loop.md` | In-app teacher-to-teacher referral loop — copy + mechanics spec (rides convergence + time-saved moments; src owned by app agent) | ✅ done (fires Wk4) |
+| `launch-run-of-show.md` | Consolidated 9-week conductor's score — sequences every asset onto the back-to-school timeline w/ 🤖 vs 🧑 markers | ✅ done |
 
 ## How it's operated (agent vs human)
 **The agent does:** find targets, write + personalize every message, generate drafts (`outreach/outbox/`),
@@ -49,9 +51,10 @@ RESEND_API_KEY=… OUTREACH_FROM="Luke <luke@aita.app>" node outreach/personaliz
 ## What I'd do next (all agent-doable, on your go)
 - **Reddit value-post replies** for the top-8 threads — BLOCKED on the Chrome extension (connect it logged
   into Reddit → I pull the live threads + draft replies). Same unblock delivers the 9 staged manual pitches.
-- Expand `prospects.json` with individual teachers as lists are built; draft the **referral-loop** in-app copy.
+- Expand `prospects.json` with individual teachers as lists are built. (Referral-loop in-app copy + spec → ✅ `referral-share-loop.md`.)
 - A **60-second cut-down** of the XPRIZE video (teaser) from `xprize-video-and-narrative.md`.
 - Full **slide copy** for the webinar deck (outline is in `webinar-kit.md`).
 
 ✅ Done since first pass: OSF pre-reg + judge rubric · free-PD webinar kit · XPRIZE video script + judge
-narrative · Edutopia pitch sent.
+narrative · Edutopia pitch sent · in-app referral/share loop (`referral-share-loop.md`) · consolidated
+launch run-of-show (`launch-run-of-show.md`).
