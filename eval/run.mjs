@@ -20,6 +20,25 @@ import { readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
+import {
+  JUDGE_RUBRIC_VERSION,
+  JUDGE_MODEL,
+  JUDGE_SYSTEM_PROMPT,
+  JUDGE_RESPONSE_SCHEMA,
+  JUDGE_TEMPERATURE,
+  JUDGE_DIMENSIONS,
+  TOTAL_MAX,
+  scoreCandidate,
+  aggregateFidelity,
+  holdoutComparison,
+  fidelityTrajectory,
+  evaluateKillCriterion,
+  VERDICT,
+  makeMockScorer,
+  lz77NormalizedDistance,
+} from "./convergence/judge-score.mjs";
+import { parseJudgeFixture } from "./convergence/judge-fixture.mjs";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATASET_DIR = path.join(__dirname, "dataset");
 
@@ -32,7 +51,8 @@ const PRIMARY_GRADING_MODEL = process.env.GEMINI_GRADING_MODEL || "gemini-2.5-pr
 const RELEVANCE_MODEL = "gemini-2.5-flash"; // engine.ts RELEVANCE_MODEL
 const RELEVANCE_THRESHOLD = 0.5; // engine.ts RELEVANCE_THRESHOLD
 const DRY_RUN = process.env.EVAL_DRY_RUN === "1";
-const CONVERGENCE = process.argv.includes("--convergence"); // Phase 15 Task 3A
+const CONVERGENCE = process.argv.includes("--convergence"); // Phase 15 Task 3A (edit-rate — DEPRECATED as PRIMARY)
+const JUDGE = process.argv.includes("--judge"); // Phase 15 v2 — GPT-judge voice-fidelity (PRIMARY proof)
 
 // Phase 15 (PROOF-02): top-K binary-signal few-shot exemplars injected per batch. Mirrors
 // grade-submission's STYLE_EXEMPLAR_K=6, newest-first selection (engine.ts buildCachedSystem).
@@ -560,6 +580,13 @@ function printReport(results) {
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  CONVERGENCE MODE (Phase 15 Task 3A — PROOF-01/EVAL-03/04)
+//
+//  ⚠️ DEPRECATED AS THE PRIMARY PROOF METRIC. Edit-rate decline is no longer the headline claim:
+//  deep research (Borchers et al., AIED 2026, n=117) found 51.3% of teachers NEVER edit AI feedback,
+//  so an edit-rate "decline" is uninterpretable as a primary metric. It is RETAINED here only as a
+//  DEPRECATED CORROBORATOR. The PRIMARY proof is now the blinded GPT-judge voice-fidelity harness
+//  (`--judge` mode below + eval/convergence/judge-score.mjs, against the LOCKED judge-rubric.md v1.0).
+//
 //  Replays a teacher's ordered grading batches, rebuilding the binary-signal exemplar store between
 //  batches, and measures whether the per-batch edit-rate declines past the ≥40% bar. Also grades a
 //  held-out batch with-vs-without the learned store. PASS iff the curve converges AND the store does
@@ -883,8 +910,160 @@ async function mainConvergence() {
   process.exit(0);
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+//  JUDGE MODE (Phase 15 v2 — PRIMARY voice-fidelity proof)
+//
+//  Implements the pre-registered (docs/recruiting/osf-prereg.md) PRIMARY measurement:
+//    • A blinded GPT-judge scores each piece of aiTA feedback against the teacher's reference voice
+//      corpus on the LOCKED 5-dimension rubric (eval/convergence/judge-rubric.md v1.0).
+//    • Within-teacher holdout: with-profile vs without-profile fidelity on held-out essays.
+//    • The pre-registered KILL CRITERION decides PROVEN / DISPROVEN / INCONCLUSIVE.
+//
+//  All judge LLM calls go through the PLUGGABLE `scorer` seam (judge-score.mjs). The LIVE scorer wires
+//  Gemini via the same REST client the rest of this file uses; a deterministic MOCK scorer drives the
+//  dry-run + tests. There is NO reachable Gemini key here, so the live path is provided but NOT run.
+// ══════════════════════════════════════════════════════════════════════════════
+
+// LIVE Gemini judge scorer — wired through the same key-pool REST client as the grader. NOT RUN in
+// this env (no GEMINI_API_KEY). Returns the frozen judge JSON shape; scoreCandidate normalizes it.
+function makeGeminiJudgeScorer() {
+  return async function geminiJudgeScorer({ systemPrompt, userContent, model, schema }) {
+    const { json } = await geminiGenerateJSON({
+      modelId: model || JUDGE_MODEL,
+      systemText: systemPrompt || JUDGE_SYSTEM_PROMPT,
+      userContent,
+      jsonSchema: schema || JUDGE_RESPONSE_SCHEMA,
+      maxOutputTokens: 512,
+    });
+    return json;
+  };
+}
+
+// The pre-registered LUAR "flat" relative-gain threshold {X%}. The founder MUST set this before
+// filing (it's a {brace} in osf-prereg.md). We read it from env so the harness never silently guesses;
+// when unset, the kill-criterion call is fed luarRelativeGainPct=null ⇒ honest INCONCLUSIVE, not a KILL.
+const LUAR_FLAT_THRESHOLD_PCT = process.env.LUAR_FLAT_THRESHOLD_PCT
+  ? Number(process.env.LUAR_FLAT_THRESHOLD_PCT)
+  : null;
+
+async function loadJudgeFixtures() {
+  let files;
+  try {
+    files = (await readdir(CONVERGENCE_DIR)).filter((f) => f.endsWith(".json")).sort();
+  } catch {
+    throw new Error(`No convergence/judge fixtures directory at ${CONVERGENCE_DIR}`);
+  }
+  const fixtures = [];
+  for (const f of files) {
+    let parsed;
+    try {
+      parsed = JSON.parse(await readFile(path.join(CONVERGENCE_DIR, f), "utf8"));
+    } catch (e) {
+      throw new Error(`Judge fixture ${f} is not valid JSON: ${e.message}`);
+    }
+    fixtures.push({ ...parseJudgeFixture(parsed, f), _file: f });
+  }
+  if (fixtures.length === 0) throw new Error(`No judge fixtures found in ${CONVERGENCE_DIR}`);
+  return fixtures;
+}
+
+async function mainJudge() {
+  console.log("\n============================================================");
+  console.log(`  aiTA GPT-JUDGE VOICE-FIDELITY HARNESS  (rubric v${JUDGE_RUBRIC_VERSION})`);
+  console.log(`  judge model : ${JUDGE_MODEL}  (temp ${JUDGE_TEMPERATURE}, 0–${TOTAL_MAX} scale)`);
+  console.log(`  PRIMARY proof metric (edit-rate is now a DEPRECATED corroborator)`);
+  console.log("============================================================\n");
+
+  const fixtures = await loadJudgeFixtures();
+  console.log(`Loaded ${fixtures.length} judge fixture(s) from eval/convergence.\n`);
+
+  if (!DRY_RUN && !JUDGE_LIVE_OK()) {
+    // No reachable key here. Refuse to fabricate a verdict — exit cleanly with guidance.
+    console.log("No GEMINI_API_KEY set — cannot run the LIVE judge. Re-run with EVAL_DRY_RUN=1 to validate");
+    console.log("the plumbing + decision logic, or provide a key (founder-gated) to score for real.\n");
+    process.exit(2);
+  }
+
+  // The scorer seam: deterministic mock for the dry-run, live Gemini otherwise.
+  const scorer = DRY_RUN ? makeMockScorer() : makeGeminiJudgeScorer();
+  const runsPerSample = DRY_RUN ? 1 : undefined; // dry-run is deterministic; live uses the rubric default (3)
+
+  if (DRY_RUN) {
+    console.log("EVAL_DRY_RUN=1 — validating fixtures + judge contract + holdout + kill-criterion wiring");
+    console.log("with the DETERMINISTIC MOCK scorer (NOT the real judge; numbers are plumbing proof only).\n");
+  }
+
+  let anyError = false;
+  for (const fx of fixtures) {
+    console.log(`── ${fx.teacher}  (${fx._file}) ──`);
+    console.log(`   reference corpus: ${fx.referenceCorpus.length} voice samples | held-out: ${fx.heldOut.length} essays | batches: ${fx.batchCount}`);
+
+    // In a LIVE run, with-profile and holdout CANDIDATES come from the grading engine (grade each
+    // held-out essay with vs without the learned profile). The fixture ships no AI drafts, so for the
+    // dry-run we exercise the contract by scoring the held-out teacher text as a near-ceiling candidate
+    // and a deliberately off-voice candidate as the holdout floor — enough to prove the plumbing.
+    const refCorpus = fx.referenceCorpus;
+    const withProfileCandidates = fx.heldOut.map((h) => h.referenceComments[0] || h.text);
+    const withoutProfileCandidates = fx.heldOut.map(
+      () => "wow!!! amazing job!!! perfect!!! great work!!! incredible!!!",
+    );
+
+    try {
+      const withScored = [];
+      for (const c of withProfileCandidates) withScored.push(await scoreCandidate(scorer, refCorpus, c, runsPerSample));
+      const withoutScored = [];
+      for (const c of withoutProfileCandidates) withoutScored.push(await scoreCandidate(scorer, refCorpus, c, runsPerSample));
+
+      const cmp = holdoutComparison(withScored, withoutScored);
+      console.log(`   fidelity (0–${TOTAL_MAX}):  with-profile ${fmt(cmp.withProfile.meanTotal)}  vs  holdout ${fmt(cmp.withoutProfile.meanTotal)}  (Δ ${fmt(cmp.delta)})`);
+
+      // Trajectory across batches — in dry-run we only have one synthetic point, so it's illustrative.
+      const traj = fidelityTrajectory(withScored.map((s) => s.total));
+      console.log(`   trajectory: ${traj.batchCount} point(s), batch1→N gain ${fmt(traj.firstToLastGain)}`);
+
+      // LZ77 corroborator (deterministic, runnable): held-out candidate vs reference text.
+      const lz = lz77NormalizedDistance(refCorpus.join(" "), withProfileCandidates.join(" "));
+      console.log(`   LZ77 compression distance (with-profile vs ref): ${lz.toFixed(3)}  [corroborator]`);
+      console.log(`   LUAR-MUD cosine: NOT WIRED in this env (founder-gated real model). [corroborator]`);
+
+      // Pre-registered kill-criterion. In dry-run we DO NOT have a fitted significance test or a real
+      // LUAR trend, so we feed nulls ⇒ honest INCONCLUSIVE (never a fabricated PROVEN/DISPROVEN).
+      const decision = evaluateKillCriterion({
+        judgeSignificantGainOverHoldout: DRY_RUN ? null : undefined, // live path computes this from the model fit
+        luarRelativeGainPct: null, // LUAR not wired
+        luarFlatThresholdPct: Number.isFinite(LUAR_FLAT_THRESHOLD_PCT) ? LUAR_FLAT_THRESHOLD_PCT : 5, // placeholder for dry-run plumbing only
+      });
+      console.log(`   PRE-REG VERDICT: ${decision.verdict}`);
+      for (const r of decision.reasons) console.log(`     - ${r}`);
+      console.log("");
+    } catch (e) {
+      anyError = true;
+      console.log(`   ERROR: ${e.message}\n`);
+    }
+  }
+
+  if (DRY_RUN) {
+    console.log("Dry run complete — judge contract, holdout comparison, and kill-criterion wiring validated.");
+    console.log("FOUNDER-GATED to produce a real verdict: a live GEMINI_API_KEY (judge) + the real LUAR-MUD");
+    console.log("model + a fitted significance test + the pre-registered {X%} LUAR threshold.\n");
+    process.exit(anyError ? 1 : 0);
+  }
+
+  // A real confirmatory run would aggregate across teachers + batches, fit the mixed-effects model,
+  // and pass judgeSignificantGainOverHoldout + the calibrated LUAR trend into evaluateKillCriterion.
+  // That requires founder-gated inputs that are not present here.
+  console.log("LIVE judge run finished. (Confirmatory verdict requires the fitted model + calibrated LUAR.)\n");
+  process.exit(anyError ? 1 : 0);
+}
+
+const fmt = (n) => (n == null || !Number.isFinite(n) ? "n/a" : n.toFixed(1));
+function JUDGE_LIVE_OK() {
+  return Boolean(process.env.GEMINI_API_KEY);
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
+  if (JUDGE) return mainJudge();
   if (CONVERGENCE) return mainConvergence();
   const cases = await loadDataset();
   console.log(`Loaded ${cases.length} reference case(s) from eval/dataset (v${DATASET_VERSION}).`);
