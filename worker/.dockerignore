@@ -1,0 +1,10 @@
+# Keep the Cloud Run build context tiny + reproducible: ship only package.json + index.mjs.
+node_modules
+npm-debug.log
+.env
+.env.*
+*.log
+.git
+.gitignore
+.DS_Store
+README.md

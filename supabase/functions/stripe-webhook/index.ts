@@ -18,10 +18,15 @@ import { ENV } from "../_shared/env.ts";
 import { verifyWebhook } from "../_shared/stripe.ts";
 
 // Map a Stripe Price ID back to our app plan. Configured as secrets, so this is data-driven.
+// Checks every price-id env name a plan may carry — interval-aware (monthly/annual) plus the
+// legacy single name — so an annual subscription resolves to the same plan as its monthly twin.
 function planForPrice(priceId: string | undefined): string | null {
   if (!priceId) return null;
   for (const plan of ["pro", "enterprise"]) {
-    if (Deno.env.get(`STRIPE_PRICE_${plan.toUpperCase()}`) === priceId) return plan;
+    const base = `STRIPE_PRICE_${plan.toUpperCase()}`;
+    for (const key of [`${base}_MONTHLY`, `${base}_ANNUAL`, base]) {
+      if (Deno.env.get(key) === priceId) return plan;
+    }
   }
   return null;
 }

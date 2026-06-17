@@ -15,8 +15,8 @@ export interface PlanLimits {
 // the SAME numbers server-side (see the integration hook documented in PHASE-12-NOTES.md);
 // the client copy is for UX only and is NOT a security boundary.
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
-  free: { monthlyGradingLimit: 25, maxClasses: 1, label: 'Free' },
-  pro: { monthlyGradingLimit: 1000, maxClasses: null, label: 'Pro' },
+  free: { monthlyGradingLimit: 15, maxClasses: 1, label: 'Free' },
+  pro: { monthlyGradingLimit: 500, maxClasses: null, label: 'Pro' },
   enterprise: { monthlyGradingLimit: null, maxClasses: null, label: 'Enterprise' },
 };
 
@@ -44,10 +44,20 @@ export const getSubscription = async (): Promise<Subscription | null> => {
   return (data as Subscription) ?? null;
 };
 
+// Pro billing cadence. The edge function maps the plan → a Stripe price id server-side
+// (see stripe-checkout's ENV.stripePriceId), so the client only needs to name the cadence.
+export type BillingInterval = 'monthly' | 'annual';
+
 // Start Stripe Checkout for a plan; returns a URL the caller should redirect to.
-export const startCheckout = async (plan: Plan = 'pro'): Promise<string> => {
+// `interval` is forwarded so the edge function can pick the monthly vs annual Stripe price.
+// The function ignores unknown body fields, so passing it is safe even before the founder
+// wires the annual price id (see VITE_STRIPE_PRICE_PRO_* in pricingPlans.ts).
+export const startCheckout = async (
+  plan: Plan = 'pro',
+  interval: BillingInterval = 'monthly',
+): Promise<string> => {
   const { data, error } = await supabase.functions.invoke('stripe-checkout', {
-    body: { plan },
+    body: { plan, interval },
   });
   if (error) throw error;
   if (!data?.url) throw new Error('Checkout session did not return a URL');

@@ -8,6 +8,7 @@ import { getUserFromJWT, timingSafeEqual } from "../_shared/auth.ts";
 import { userClient, adminClient } from "../_shared/db.ts";
 import { gradeSubmission, type AgentStep } from "../_shared/grading/engine.ts";
 import { synthesizeRubric, toRubricInput } from "../_shared/grading/rubric-synth.ts";
+import { resolveAssignmentContext, MISSING_CONTEXT_REASON } from "../_shared/grading/assignment-context.ts";
 import { maskNamesPreservingOffsets } from "../_shared/deid.ts";
 import { enforceGradingQuota } from "../_shared/quota.ts";
 import type { RubricInput } from "../_shared/grading-schema.ts";
@@ -65,33 +66,36 @@ Deno.serve((req) => {
     }
 
     // Assignment + class context: the relevance gate needs the task; calibration needs the level.
-    // Essential prompt: `instructions` is present on both v1 and v2 schemas (the relevance gate +
-    // rubric synthesis depend on it). Other columns are loaded best-effort below so a missing v2
-    // column on the not-yet-migrated cloud schema can't break grading.
+    // `instructions` is present on both v1 and v2 schemas. CRITICALLY, the assignment-creation UI writes
+    // the teacher's PROMPT to `description` and their RUBRIC to `rubric_text` (v1/Lovable columns) — so
+    // the grader MUST read those too, or an app-created assignment is graded against its title alone,
+    // with the teacher's real prompt + rubric silently dropped (Sleuth F-001/F-002). The resolution +
+    // trust decision happens after the canonical-rubric load below (it needs hasCanonicalRubric).
     const { data: asg } = await db
       .from("assignments")
-      .select("instructions")
+      .select("instructions, title, course_name, class_id")
       .eq("id", submission.assignment_id)
       .maybeSingle();
-    let assignmentPrompt = (asg?.instructions ?? "").trim();
-
-    // Title + class context for calibration — best-effort (may be absent on older schemas).
-    let classContext: string | undefined;
-    const { data: asgMeta } = await db
+    // Best-effort: the v1/app columns the grader must honor. A 400 on the v2 schema yields null (the
+    // supabase client surfaces REST errors in the result, never throws), so this can't break grading.
+    const { data: asgV1 } = await db
       .from("assignments")
-      .select("title, course_name, class_id")
+      .select("description, rubric_text")
       .eq("id", submission.assignment_id)
       .maybeSingle();
-    if (asgMeta?.title) assignmentPrompt = [asgMeta.title, assignmentPrompt].filter(Boolean).join("\n\n").trim();
-    if (asgMeta?.class_id) {
+    const asgFreeText = asgV1 as { description?: string | null; rubric_text?: string | null } | null;
+
+    // Class context for calibration — best-effort (may be absent on older schemas).
+    let classContext: string | undefined;
+    if (asg?.class_id) {
       const { data: cls } = await db
         .from("classes")
         .select("name, details")
-        .eq("id", asgMeta.class_id)
+        .eq("id", asg.class_id)
         .maybeSingle();
       if (cls) {
         const details = typeof cls.details === "object" && cls.details ? JSON.stringify(cls.details) : "";
-        classContext = [cls.name, asgMeta.course_name, details].filter(Boolean).join(" · ").slice(0, 600);
+        classContext = [cls.name, asg.course_name, details].filter(Boolean).join(" · ").slice(0, 600);
       }
     }
 
@@ -168,10 +172,28 @@ Deno.serve((req) => {
       }
     }
 
+    // Resolve the real grading context + decide trust (Sleuth F-001/F-002). The app UI writes the
+    // teacher's prompt/rubric to description/rubric_text; coalesce them and refuse to grade against
+    // nothing. hasCanonicalRubric reflects whether a structured rubric was actually loaded above.
+    const ctx = resolveAssignmentContext({
+      title: asg?.title,
+      instructions: asg?.instructions,
+      description: asgFreeText?.description,
+      rubricText: asgFreeText?.rubric_text,
+      hasCanonicalRubric: rubric !== null,
+    });
+    if (!ctx.sufficient) {
+      // Fail closed BEFORE any paid synthesis/grading call — never award marks from missing context.
+      await db.from("submissions").update({ status: "grade_error" }).eq("id", submissionId);
+      throw new AppError(422, "missing_context", ctx.reason ?? MISSING_CONTEXT_REASON);
+    }
+    const assignmentPrompt = ctx.assignmentPrompt;
+
     if (!rubric) {
       await db.from("submissions").update({ status: "grading" }).eq("id", submissionId);
       try {
-        const synth = await synthesizeRubric(assignmentPrompt, classContext);
+        // The teacher's own rubric_text (when present) is authoritative for synthesis (Sleuth F-001).
+        const synth = await synthesizeRubric(assignmentPrompt, classContext, ctx.rubricText);
         rubric = toRubricInput(synth);
         rubricSynthesized = true;
         // Persist so the teacher can review/edit and grading is reproducible (best-effort).
@@ -217,7 +239,8 @@ Deno.serve((req) => {
         rubric = {
           totalPoints: 100,
           criteria: [],
-          freeText: assignmentPrompt || "Grade the submission holistically for quality and relevance to the assignment.",
+          // Prefer the teacher's own rubric text as the holistic guide; fall back to the prompt.
+          freeText: ctx.rubricText || assignmentPrompt || "Grade the submission holistically for quality and relevance to the assignment.",
         };
         rubricSynthesized = false;
       }

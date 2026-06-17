@@ -13,13 +13,10 @@ import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 // Route-level code splitting — keep the initial bundle small (M39). Heavy pages load on demand.
-const Index = lazy(() => import("./pages/Index"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const CreateAssignment = lazy(() => import("./pages/CreateAssignment"));
 const AssignmentDetail = lazy(() => import("./pages/AssignmentDetail"));
 const SubmissionDetail = lazy(() => import("./pages/SubmissionDetail"));
-const Upload = lazy(() => import("./pages/Upload"));
-const GradingPreview = lazy(() => import("./pages/GradingPreview"));
 const Training = lazy(() => import("./pages/Training"));
 const LMSIntegration = lazy(() => import("./pages/LMSIntegration"));
 const LMSCallback = lazy(() => import("./pages/LMSCallback"));
@@ -27,12 +24,9 @@ const Profile = lazy(() => import("./pages/Profile"));
 const FreemiumDashboard = lazy(() => import("./pages/FreemiumDashboard"));
 const UploadTraining = lazy(() => import("./pages/UploadTraining"));
 const SubmitAssignment = lazy(() => import("./pages/SubmitAssignment"));
-const Onboarding = lazy(() => import("./pages/Onboarding"));
-const OnboardingFlow = lazy(() => import("./pages/OnboardingFlow"));
-const PodcastGenerator = lazy(() => import("./pages/PodcastGenerator"));
-const PodcastDetail = lazy(() => import("./pages/PodcastDetail"));
 const PdfSubmission = lazy(() => import("./pages/PdfSubmission").then((m) => ({ default: m.PdfSubmission })));
 const Pitch = lazy(() => import("./pages/Pitch"));
+const Pricing = lazy(() => import("./pages/Pricing"));
 const Billing = lazy(() => import("./pages/Billing"));
 const Metrics = lazy(() => import("./pages/Metrics"));
 const History = lazy(() => import("./pages/History"));
@@ -130,11 +124,12 @@ const AppContent = () => {
     );
   }
 
-  // Allow /pitch page to be viewed without authentication
-  if (location.pathname === '/pitch') {
+  // Allow public marketing pages to be viewed without authentication.
+  if (location.pathname === '/pitch' || location.pathname === '/pricing') {
     return (
       <Routes>
         <Route path="/pitch" element={<Pitch />} />
+        <Route path="/pricing" element={<Pricing />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     );
@@ -146,6 +141,14 @@ const AppContent = () => {
     return (
       <Routes>
         <Route path="/auth/callback" element={<AuthCallback />} />
+      </Routes>
+    );
+  }
+
+  if (location.pathname === '/auth') {
+    return (
+      <Routes>
+        <Route path="/auth" element={<Auth />} />
       </Routes>
     );
   }
@@ -203,18 +206,6 @@ const AppContent = () => {
         </AuthGuard>
       } />
       
-      <Route path="/onboarding" element={
-        <AuthGuard>
-          <Onboarding />
-        </AuthGuard>
-      } />
-      
-      <Route path="/onboarding-flow" element={
-        <AuthGuard>
-          <OnboardingFlow />
-        </AuthGuard>
-      } />
-      
       <Route path="/upload-training" element={
         <AuthGuard>
           <UploadTraining />
@@ -224,18 +215,6 @@ const AppContent = () => {
       <Route path="/submit-assignment" element={
         <AuthGuard>
           <SubmitAssignment />
-        </AuthGuard>
-      } />
-      
-      <Route path="/upload" element={
-        <AuthGuard>
-          <Upload />
-        </AuthGuard>
-      } />
-      
-      <Route path="/grading/preview" element={
-        <AuthGuard>
-          <GradingPreview />
         </AuthGuard>
       } />
       
@@ -281,20 +260,13 @@ const AppContent = () => {
         </AuthGuard>
       } />
       
-      <Route path="/podcast-generator" element={
+      <Route path="/pdf/submission/:id" element={
         <AuthGuard>
-          <PodcastGenerator />
+          <PdfSubmission />
         </AuthGuard>
       } />
-      
-      <Route path="/podcast/:id" element={
-        <AuthGuard>
-          <PodcastDetail />
-        </AuthGuard>
-      } />
-      
-      <Route path="/pdf/submission/:id" element={<PdfSubmission />} />
       <Route path="/pitch" element={<Pitch />} />
+      <Route path="/pricing" element={<Pricing />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="*" element={<NotFound />} />

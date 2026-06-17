@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { analytics } from '@/lib/analytics';
 import AgentPipeline from '@/components/AgentPipeline';
+import { UpgradePaywall } from '@/components/pricing/UpgradePaywall';
+import { useGradingGate } from '@/hooks/useGradingGate';
 import { statusBadgeClass, statusLabel, isFinalized, effectiveStatus, hasStaleGradingError } from '@/lib/submissionStatus';
 import { normalizedEditDistance } from '@/lib/convergenceMetrics';
 
@@ -55,6 +57,10 @@ const SubmissionDetail = () => {
   const [draft, setDraft] = useState('');
   // Phase 15: capture the teacher's "how much did you change it?" rating at finalize.
   const [pendingFinalize, setPendingFinalize] = useState(false);
+  // Free-plan grading cap gate (fail-open). When a capped Free teacher tries to grade we surface
+  // the upgrade paywall instead of starting a run.
+  const { atCap: gradingAtCap } = useGradingGate();
+  const [showPaywall, setShowPaywall] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -87,6 +93,12 @@ const SubmissionDetail = () => {
 
   const runGrading = async () => {
     if (!id) return;
+    // Free teacher at/over their monthly cap: show the paywall instead of grading (fail-open —
+    // within-limit and Pro/Enterprise teachers fall straight through to grading).
+    if (gradingAtCap) {
+      setShowPaywall(true);
+      return;
+    }
     setGrading(true);
     const startedAt = Date.now();
     analytics.capture('grade_started', { submission_id: id, is_regrade: Boolean(grade) });
@@ -321,6 +333,9 @@ const SubmissionDetail = () => {
 
           {/* Review rail */}
           <div className="space-y-4">
+            {showPaywall && gradingAtCap && (
+              <UpgradePaywall source="submission_detail" />
+            )}
             {pendingFinalize && (
               <Card className="border-primary/40 bg-primary/5 p-4" role="dialog" aria-label="Finalize rating">
                 <p className="text-sm font-semibold text-foreground">How much did you change aiTA's feedback?</p>

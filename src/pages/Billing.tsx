@@ -18,6 +18,10 @@ function limitText(limit: number | null, noun: string): string {
   return limit === null ? `Unlimited ${noun}` : `Up to ${limit.toLocaleString()} ${noun} / month`;
 }
 
+// Display-only Pro price. The actual charge is set by the Stripe Price (STRIPE_PRICE_PRO_MONTHLY).
+// FOUNDER: set this to match the real Stripe Pro monthly price before launch.
+const PRO_PRICE_DISPLAY = '$12';
+
 const Billing = () => {
   const { plan, status, isPaid, loading } = usePlan();
   const [searchParams] = useSearchParams();
@@ -70,13 +74,14 @@ const Billing = () => {
             Choose the plan that fits how much you grade. You can change or cancel anytime.
           </p>
           {!loading && (
-            <p className="mt-3 text-sm">
+            // div (not p): Badge renders a <div>, which is invalid inside <p> (React validateDOMNesting).
+            <div className="mt-3 text-sm">
               Current plan:{' '}
               <Badge variant={isPaid ? 'default' : 'secondary'}>
                 {PLAN_LIMITS[plan].label}
                 {isPaid && status && status !== 'active' ? ` · ${status}` : ''}
               </Badge>
-            </p>
+            </div>
           )}
         </div>
 
@@ -116,7 +121,7 @@ const Billing = () => {
               <CardDescription>For teachers grading at full load.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="text-3xl font-semibold">Pro</div>
+              <div className="text-3xl font-semibold">{PRO_PRICE_DISPLAY}<span className="text-base font-normal text-muted-foreground">/mo</span></div>
               <ul className="space-y-2 text-sm">
                 <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" />{limitText(pro.monthlyGradingLimit, 'grading runs')}</li>
                 <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" />Unlimited classes</li>

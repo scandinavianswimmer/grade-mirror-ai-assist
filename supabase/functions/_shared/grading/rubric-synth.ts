@@ -35,8 +35,10 @@ const SYNTH_SCHEMA = {
 const SYNTH_SYSTEM = `You design strict, fair grading rubrics for teachers. Given an assignment's
 instructions and the class level, produce concrete, weighted criteria that map to what the assignment
 EXPLICITLY requires (e.g. a thesis, a specific number of body paragraphs, required quotations, on-topic
-analysis). Reward only meeting those requirements — do not create vague criteria that fluent-but-empty
-work could pass. Calibrate expectations to the class level. Return ONLY JSON matching the schema.`;
+analysis). If the teacher provided their own rubric, that rubric is AUTHORITATIVE: faithfully convert
+it into structured weighted criteria rather than inventing your own. Reward only meeting those
+requirements — do not create vague criteria that fluent-but-empty work could pass. Calibrate
+expectations to the class level. Return ONLY JSON matching the schema.`;
 
 interface SynthCriterion {
   name: string;
@@ -55,13 +57,23 @@ export interface SynthesizedRubric {
 export async function synthesizeRubric(
   assignmentPrompt: string,
   classContext: string | undefined,
+  rubricText?: string | null,
 ): Promise<SynthesizedRubric> {
+  // If the teacher authored a free-text rubric, it is the authoritative source — structure THAT.
+  // Otherwise derive criteria from the assignment instructions.
+  const teacherRubric = (rubricText ?? "").trim();
+  const rubricBlock = teacherRubric
+    ? `TEACHER'S RUBRIC (authoritative — convert this into structured weighted criteria):
+${teacherRubric}
+
+`
+    : "";
   const userContent = `CLASS: ${classContext ?? "unspecified level"}
 
 ASSIGNMENT INSTRUCTIONS:
 ${assignmentPrompt || "(no instructions provided — grade for a coherent, on-topic, well-supported response)"}
 
-Design the rubric now.`;
+${rubricBlock}Design the rubric now.`;
   const { json } = await geminiGenerateJSON({
     modelId: SYNTH_MODEL,
     systemText: SYNTH_SYSTEM,
