@@ -17,6 +17,8 @@ import { loadSampleEssays } from '@/lib/sampleEssaysApi';
 import { analytics } from '@/lib/analytics';
 import CreateClassModal from '@/components/CreateClassModal';
 import EditClassModal from '@/components/EditClassModal';
+import OnTheLoopSummary from '@/components/OnTheLoopSummary';
+import { fetchOnTheLoopSummary, type OnTheLoopSummary as OnTheLoopSummaryData } from '@/lib/metricsApi';
 
 interface Assignment {
   id: string;
@@ -77,6 +79,8 @@ const Dashboard = () => {
   const [classToEdit, setClassToEdit] = useState<EditableClass | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('time');
   const [hasAnimated, setHasAnimated] = useState(false);
+  const [onTheLoop, setOnTheLoop] = useState<OnTheLoopSummaryData | null>(null);
+  const [onTheLoopLoading, setOnTheLoopLoading] = useState(true);
   const hasInitiallyLoaded = useRef(false);
 
   useEffect(() => {
@@ -93,6 +97,13 @@ const Dashboard = () => {
         }
       }
       fetchData();
+      // Best-effort On-the-Loop throughput — degrades to hidden if it can't load (never blocks
+      // the dashboard, and column-tolerant for lagging cloud schemas).
+      setOnTheLoopLoading(true);
+      fetchOnTheLoopSummary()
+        .then(setOnTheLoop)
+        .catch(() => setOnTheLoop(null))
+        .finally(() => setOnTheLoopLoading(false));
     }
   }, [user]);
 
@@ -288,6 +299,14 @@ const Dashboard = () => {
             </Link>
           </div>
         </div>
+
+        {(onTheLoopLoading || (onTheLoop && onTheLoop.graded > 0)) && (
+          <OnTheLoopSummary
+            summary={onTheLoop}
+            loading={onTheLoopLoading && !onTheLoop}
+            className={`mb-8 ${reveal('delay-75')}`}
+          />
+        )}
 
         {classes.length > 0 && (
           <div className={`mb-6 flex items-center gap-3 ${reveal('delay-100')}`}>
