@@ -108,12 +108,7 @@ const AppContent = () => {
     setShowOnboarding(false);
     setIsNewUser(false);
     setOnboardingComplete(true);
-    
-    // Refresh the user session to get updated metadata
-    const { data: { session: refreshedSession } } = await supabase.auth.getSession();
-    if (refreshedSession) {
-      // The auth state will be updated automatically via the auth state listener
-    }
+    // The auth state (and any updated metadata) is refreshed automatically via the auth state listener.
   };
 
   if (loading || checkingOnboarding) {
