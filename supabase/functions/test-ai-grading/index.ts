@@ -5,8 +5,7 @@ import { handlePreflight } from "../_shared/cors.ts";
 import { withErrors, ok, AppError } from "../_shared/http.ts";
 import { getUserFromJWT } from "../_shared/auth.ts";
 import { userClient } from "../_shared/db.ts";
-import { geminiGenerateText } from "../_shared/ai/gemini.ts";
-import { getHealthyGradingModels, recordModelResult } from "../_shared/ai/router.ts";
+import { AIRouter } from "../_shared/ai-router.ts";
 
 const MAX_ESSAY_CHARS = 100_000;
 
@@ -46,33 +45,23 @@ Deno.serve((req) => {
       `${DELIM}\n${essay}\n${DELIM}\n\n` +
       "Please provide: 1) strengths, 2) areas for improvement, 3) suggestions, 4) overall assessment and suggested grade.";
 
-    // Health-aware model selection with priority fallback (pro -> flash), mirroring
-    // grade-submission/build-style-profile. Record each attempt's result so model health stays current.
-    const models = await getHealthyGradingModels();
-    let feedback = "";
-    let modelUsed = "";
-    let wasFallback = false;
-    let lastErr: unknown = null;
-    const startTime = Date.now();
-    for (let i = 0; i < models.length; i++) {
-      const modelId = models[i].id;
-      const attemptStart = Date.now();
-      try {
-        const { text } = await geminiGenerateText(modelId, systemPrompt, userPrompt, 1024);
-        await recordModelResult(modelId, true, Date.now() - attemptStart);
-        feedback = text;
-        modelUsed = modelId;
-        wasFallback = i > 0;
-        break;
-      } catch (err) {
-        await recordModelResult(modelId, false, Date.now() - attemptStart, "generate");
-        lastErr = err;
-      }
-    }
-    if (!feedback.trim()) {
-      throw new AppError(502, "ai", `Failed to grade essay: ${lastErr instanceof Error ? lastErr.message : "no models available"}`);
-    }
+    const aiRouter = new AIRouter(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      req.headers.get("Authorization")!,
+    );
 
+    const aiResponse = await aiRouter.generate({
+      prompt: userPrompt,
+      systemPrompt,
+      temperature: 0.6,
+      maxTokens: 1024,
+      userId,
+      functionName: "test-ai-grading",
+      requestType: "essay-grading",
+    });
+
+    const feedback = aiResponse.content;
     const gradeMatch = feedback.match(/grade[:\s]*([A-F][+-]?)/i);
     const grade = gradeMatch ? gradeMatch[1] : ""; // no fabricated default
 
@@ -80,10 +69,10 @@ Deno.serve((req) => {
       feedback,
       grade,
       metadata: {
-        modelUsed,
-        provider: "gemini",
-        responseTimeMs: Date.now() - startTime,
-        wasFallback,
+        modelUsed: aiResponse.modelUsed,
+        provider: aiResponse.provider,
+        responseTimeMs: aiResponse.responseTimeMs,
+        wasFallback: aiResponse.wasFallback,
       },
     });
   });
