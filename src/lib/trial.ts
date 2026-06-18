@@ -33,10 +33,3 @@ export function trialDaysLeft(trialEndsAt: string | Date | null | undefined, now
   if (remainingMs <= 0) return 0;
   return Math.ceil(remainingMs / MS_PER_DAY);
 }
-
-/** Short human label for the trial banner. Empty string when not on an active trial. */
-export function trialBadgeLabel(trialEndsAt: string | Date | null | undefined, now: Date = new Date()): string {
-  if (!isTrialActive(trialEndsAt, now)) return '';
-  const days = trialDaysLeft(trialEndsAt, now);
-  return days === 1 ? '1 day left in trial' : `${days} days left in trial`;
-}

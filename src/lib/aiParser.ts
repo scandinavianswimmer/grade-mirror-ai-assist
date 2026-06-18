@@ -76,19 +76,3 @@ export const parseAIFeedback = (feedbackString: string): ParsedAIFeedback | null
     };
   }
 };
-
-/**
- * Extracts clean text for display purposes, removing JSON artifacts
- */
-export const extractCleanFeedback = (feedbackString: string): string => {
-  const parsed = parseAIFeedback(feedbackString);
-  return parsed?.overallFeedback || feedbackString;
-};
-
-/**
- * Extracts clean grade for display purposes
- */
-export const extractCleanGrade = (gradeString: string): string => {
-  const parsed = parseAIFeedback(gradeString);
-  return parsed?.suggestedGrade || gradeString;
-};

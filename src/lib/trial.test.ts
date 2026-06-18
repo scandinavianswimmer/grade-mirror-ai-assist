@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { isTrialActive, trialDaysLeft, trialBadgeLabel, TRIAL_LENGTH_DAYS } from './trial';
+import { isTrialActive, trialDaysLeft, TRIAL_LENGTH_DAYS } from './trial';
 
 const NOW = new Date('2026-06-15T12:00:00Z');
 const inDays = (d: number) => new Date(NOW.getTime() + d * 24 * 60 * 60 * 1000).toISOString();
@@ -42,21 +42,5 @@ describe('trialDaysLeft', () => {
   it('is 0 for an expired or missing trial', () => {
     expect(trialDaysLeft(inDays(-2), NOW)).toBe(0);
     expect(trialDaysLeft(null, NOW)).toBe(0);
-  });
-});
-
-describe('trialBadgeLabel', () => {
-  it('uses singular for the last day', () => {
-    const tenHoursLeft = new Date(NOW.getTime() + 10 * 60 * 60 * 1000).toISOString();
-    expect(trialBadgeLabel(tenHoursLeft, NOW)).toBe('1 day left in trial');
-  });
-
-  it('uses plural otherwise', () => {
-    expect(trialBadgeLabel(inDays(7), NOW)).toBe('7 days left in trial');
-  });
-
-  it('is empty when not on an active trial', () => {
-    expect(trialBadgeLabel(inDays(-1), NOW)).toBe('');
-    expect(trialBadgeLabel(null, NOW)).toBe('');
   });
 });

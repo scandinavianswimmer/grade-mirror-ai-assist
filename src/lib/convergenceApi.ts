@@ -12,9 +12,6 @@ import {
   type AnnotationRow,
 } from './convergenceSignals';
 
-export type { BatchRow, SubmissionRow, AnnotationRow } from './convergenceSignals';
-export { buildBatchSignals } from './convergenceSignals';
-
 /** Fetch + compute the signed-in teacher's convergence series (RLS-scoped). */
 export async function fetchConvergenceSeries(): Promise<ConvergenceSeries> {
   const [{ data: batchData }, { data: subData }, { data: annData }] = await Promise.all([
