@@ -505,25 +505,28 @@ const Profile = () => {
               <Card className="p-6">
                 <h3 className="text-lg font-semibold mb-1">Grading Automation</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  aiTA grades on its own. With auto-finalize on, high-confidence, on-topic grades are
-                  published for you — and only low-confidence or off-topic essays land in your review
-                  queue. You stay on the loop, not in it.
+                  aiTA always drafts a grade for you to review — that's the default, and you stay in
+                  control. Auto-finalize is <span className="font-medium">off until you turn it on</span>.
+                  Once enabled, the clearest high-confidence, on-topic grades publish for you while you
+                  stay On-the-Loop: low-confidence, off-topic, or integrity-flagged essays still come
+                  to your review queue, always.
                 </p>
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <Label htmlFor="auto-finalize" className="text-base font-medium">
-                        Auto-finalize high-confidence grades
+                        Auto-finalize high-confidence grades (opt-in)
                       </Label>
                       <p className="text-sm text-gray-600">
-                        Publish confident, rubric-aligned grades without manual approval. Essays with
-                        integrity flags (possible AI-generated, off-topic, prompt injection) always
-                        come to you regardless of this setting.
+                        Off by default. Turn this on to let aiTA publish confident, rubric-aligned
+                        grades without manual approval. You stay On-the-Loop: low-confidence or
+                        off-topic essays, and anything with an integrity flag (possible AI-generated,
+                        off-topic, prompt injection), always come to you regardless of this setting.
                       </p>
                     </div>
                     <Switch
                       id="auto-finalize"
-                      checked={privacySettings?.auto_finalize_enabled ?? true}
+                      checked={privacySettings?.auto_finalize_enabled ?? false}
                       onCheckedChange={(checked) => handlePrivacySettingChange('auto_finalize_enabled', checked)}
                       disabled={isSaving}
                     />
@@ -540,7 +543,7 @@ const Profile = () => {
                     <Select
                       value={String(privacySettings?.auto_finalize_threshold ?? 0.85)}
                       onValueChange={(value) => saveSettings({ auto_finalize_threshold: parseFloat(value) })}
-                      disabled={isSaving || !(privacySettings?.auto_finalize_enabled ?? true)}
+                      disabled={isSaving || !(privacySettings?.auto_finalize_enabled ?? false)}
                     >
                       <SelectTrigger id="auto-finalize-threshold" className="w-full max-w-xs">
                         <SelectValue />

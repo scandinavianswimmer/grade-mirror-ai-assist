@@ -8,7 +8,9 @@ import {
   decideFinalization,
   normalizeThreshold,
   AUTO_FINALIZE_DEFAULT_THRESHOLD,
+  AUTO_FINALIZE_DEFAULT_ENABLED,
   AUTO_FINALIZE_MIN_THRESHOLD,
+  BLOCKING_FLAGS,
   type FinalizationInput,
 } from '../../supabase/functions/_shared/grading/auto-finalize';
 
@@ -19,6 +21,43 @@ const base: FinalizationInput = {
   enabled: true,
   threshold: AUTO_FINALIZE_DEFAULT_THRESHOLD,
 };
+
+describe('safety defaults — unattended publishing is OFF until a teacher opts in (GOAL #1 HITL)', () => {
+  it('defaults auto-finalize OFF (opt-in, never silently on)', () => {
+    expect(AUTO_FINALIZE_DEFAULT_ENABLED).toBe(false);
+  });
+
+  it('does NOT auto-finalize a perfect grade when the product default (disabled) applies', () => {
+    // Mirrors the edge function falling back to AUTO_FINALIZE_DEFAULT_ENABLED when the teacher has
+    // not opted in. Even a 0.99-confidence, flag-free grade stays an "AI draft ready" for the teacher.
+    const d = decideFinalization({ ...base, enabled: AUTO_FINALIZE_DEFAULT_ENABLED, confidence: 0.99 });
+    expect(d.autoFinalize).toBe(false);
+    expect(d.reason).toBe('disabled');
+  });
+
+  it('reaches the unattended-publish path ONLY when a teacher has explicitly enabled it', () => {
+    expect(decideFinalization({ ...base, enabled: false }).autoFinalize).toBe(false);
+    expect(decideFinalization({ ...base, enabled: true }).autoFinalize).toBe(true);
+  });
+
+  it('never auto-finalizes a flagged or low-confidence grade even with auto-finalize opted in', () => {
+    // Integrity-flagged cases always defer to the human, regardless of the opt-in.
+    for (const flag of BLOCKING_FLAGS) {
+      const d = decideFinalization({ ...base, enabled: true, confidence: 0.99, flags: [flag] });
+      expect(d.autoFinalize).toBe(false);
+      expect(d.reason).toBe('blocking_flag');
+    }
+    // Low confidence below the (clamped) threshold also defers, even at the hard floor.
+    const lowConf = decideFinalization({ ...base, enabled: true, threshold: 0.2, confidence: 0.55 });
+    expect(lowConf.appliedThreshold).toBe(AUTO_FINALIZE_MIN_THRESHOLD);
+    expect(lowConf.autoFinalize).toBe(false);
+    expect(lowConf.reason).toBe('below_threshold');
+    // The needs_review disposition (off-topic / very-low-confidence) defers too.
+    const exception = decideFinalization({ ...base, enabled: true, disposition: 'needs_review' });
+    expect(exception.autoFinalize).toBe(false);
+    expect(exception.reason).toBe('needs_review_disposition');
+  });
+});
 
 describe('decideFinalization — the On-the-Loop unattended-publish gate', () => {
   it('auto-finalizes a high-confidence, on-topic, flag-free grade', () => {

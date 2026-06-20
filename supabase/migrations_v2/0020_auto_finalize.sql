@@ -1,9 +1,11 @@
 -- BILL/GRADE: Auto-Finalize (XPRIZE Master Plan Week 1, must-go-right #1).
 -- Additive + idempotent only. No data dropped.
 --
--- Lets aiTA PUBLISH high-confidence, on-topic, rubric-aligned grades UNATTENDED ("On-the-Loop":
--- the teacher monitors the needs_review exception queue instead of approving every grade). This is
--- what makes the AI-native operating claim TRUE rather than narrated, and what the demo video shows.
+-- Lets a teacher who OPTS IN have aiTA publish high-confidence, on-topic, rubric-aligned grades
+-- UNATTENDED ("On-the-Loop": the teacher monitors the needs_review exception queue instead of
+-- approving every grade). Human-in-the-loop is the #1 non-negotiable, so this is DEFAULT OFF: out
+-- of the box aiTA produces "AI draft ready" grades the teacher reviews; unattended publishing turns
+-- on only when the teacher explicitly enables it in Settings.
 --
 -- The grade-submission edge function tolerates the absence of these columns (best-effort writes), so
 -- grading keeps working before this migration is applied. Applying it turns on the auto-finalize
@@ -14,10 +16,11 @@
 -- grading behaves exactly as before (the function falls back to the in-code defaults but cannot
 -- persist provenance, so nothing auto-finalizes).
 
--- 1) Per-teacher auto-finalize preference (opt-out: default ON; the product thesis is unattended
---    grading). The confidence floor is additionally clamped to >= 0.6 in code.
+-- 1) Per-teacher auto-finalize preference (OPT-IN: default OFF; human-in-the-loop is the #1
+--    non-negotiable). A teacher turns this on explicitly in Settings. The confidence floor is
+--    additionally clamped to >= 0.6 in code, and integrity-flagged grades always defer to the human.
 alter table public.privacy_settings
-  add column if not exists auto_finalize_enabled boolean not null default true;
+  add column if not exists auto_finalize_enabled boolean not null default false;
 
 alter table public.privacy_settings
   add column if not exists auto_finalize_threshold numeric not null default 0.85;
@@ -65,4 +68,5 @@ update public.submissions
    and status = 'finalized';
 
 -- handle_new_user (0001/0016) inserts privacy_settings(user_id) and relies on column defaults, so
--- new teachers pick up auto_finalize_enabled=true / threshold=0.85 automatically — no trigger change.
+-- new teachers pick up auto_finalize_enabled=false (opt-in) / threshold=0.85 automatically — no
+-- trigger change. Unattended publishing stays off until the teacher turns it on in Settings.

@@ -185,6 +185,35 @@ GEMINI_API_KEY=... LUAR_FLAT_THRESHOLD_PCT=<pre-registered X> node eval/run.mjs 
   LUAR/LZ77 corroborators are pluggable **stubs** clearly labelled as not-calibrated — do not report stub
   numbers as evidence. Without a key the live path exits `2` and refuses to fabricate a verdict.
 
+## Auto-finalize calibration (safety gate for unattended publishing)
+
+Auto-finalize is **default OFF and opt-in** (GOAL #1: human-in-the-loop). Before recommending it as a
+default-on setting — i.e. before claiming "the AI operates the business" — the **false-auto-finalize
+rate** on a real holdout must be **< 5%**. That is the share of grades aiTA *would have published
+unattended* that the teacher then changed beyond a points tolerance.
+
+```bash
+# Pure + mock-tested (no model, no key): run the calibration unit tests.
+npm test -- eval/calibration
+
+# Real holdout: pairs.json is an array of
+#   { autoGrade, teacherGrade, confidence, disposition?, flags?, id? }
+# collected from graded submissions a teacher subsequently finalized/edited.
+node eval/calibration/false-finalize.mjs pairs.json --threshold 0.85 --tolerance 2
+```
+
+- **Pure logic** lives in `eval/calibration/false-finalize.mjs` (`computeFalseFinalizeRate`,
+  `wouldAutoFinalize`), covered by `false-finalize.test.mjs` (run by `npm test`). The eligibility check
+  mirrors `supabase/functions/_shared/grading/auto-finalize.ts`: only graded, flag-free grades at or
+  above the clamped threshold are eligible — flagged / low-confidence / `needs_review` pairs can never
+  be a false auto-finalize because they never reach the unattended-publish path.
+- **The bar** is `FALSE_FINALIZE_BAR = 0.05` (strict `<`). The CLI exits **non-zero** when the bar is
+  exceeded, and also when the result is **INCONCLUSIVE** (no eligible pairs) — you can't certify a bar
+  with no evidence.
+- **No live model here.** There is no Gemini key in this environment, so the tool takes
+  already-collected (auto-grade, teacher-final-grade) pairs rather than re-grading. Wire it to real
+  holdout data once a cohort of teacher-finalized grades exists.
+
 ## Using this to gate future changes (CI)
 
 Treat the harness as a required check before any grading prompt, schema, or model change ships:

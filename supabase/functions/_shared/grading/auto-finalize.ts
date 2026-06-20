@@ -1,10 +1,20 @@
 // Auto-finalize decision — the "On-the-Loop" gate that lets aiTA publish high-confidence,
 // on-topic, rubric-aligned grades UNATTENDED, routing only exceptions to the teacher.
 //
-// This is the core of the AI-native operating claim: the agent grades and finalizes itself; the
-// teacher monitors the exception queue (needs_review) rather than approving every grade. Keep this
-// module PURE TypeScript (no Deno/Supabase imports) so the same logic the edge function runs is
-// unit-tested by vitest under src/ — mirrors plan-limits.ts.
+// The agent grades every submission and produces an "AI draft ready" by default; a teacher who has
+// EXPLICITLY opted in can additionally let aiTA publish the clearest grades without manual approval,
+// while still monitoring the exception queue (needs_review). Keep this module PURE TypeScript (no
+// Deno/Supabase imports) so the same logic the edge function runs is unit-tested by vitest under
+// src/ — mirrors plan-limits.ts.
+//
+// NON-NEGOTIABLES this gate enforces (GOAL #1 human-in-the-loop, #5 trust > speed):
+//   - Unattended publishing is DEFAULT OFF and opt-in per teacher (AUTO_FINALIZE_DEFAULT_ENABLED).
+//   - Any signal-bearing case (off-topic / injection / likely-AI / withheld / low-confidence) is
+//     ALWAYS routed to the human, even when the teacher has opted in (BLOCKING_FLAGS).
+//   - A hard confidence floor applies regardless of the teacher's configured threshold.
+// The self-reported model confidence is a weak, poorly-calibrated signal; before claiming "the AI
+// operates the business," the holdout calibration tool (eval/calibration/false-finalize.mjs) must
+// show a false-auto-finalize rate < 5% at the configured threshold.
 //
 // Lifecycle context: the grading engine already routes off-topic and confidence<0.5 grades to
 // disposition "needs_review". This gate is a SECOND, stricter bar on top of the "graded" outcome:
@@ -14,9 +24,11 @@
 /** Default confidence floor for unattended finalize. Conservative: a grade must be clearly settled. */
 export const AUTO_FINALIZE_DEFAULT_THRESHOLD = 0.85;
 
-/** Auto-finalize is opt-out (default ON): the product thesis is unattended grading, and the demo
- *  must SHOW it. Cautious teachers disable it in Settings; the toggle is per-teacher. */
-export const AUTO_FINALIZE_DEFAULT_ENABLED = true;
+/** Auto-finalize is OPT-IN (default OFF). Human-in-the-loop is the product's #1 non-negotiable:
+ *  aiTA always produces an "AI draft ready" the teacher reviews. Only a teacher who has explicitly
+ *  enabled this setting lets the clearest grades publish unattended ("On-the-Loop"). The toggle is
+ *  per-teacher and never silently flips on. */
+export const AUTO_FINALIZE_DEFAULT_ENABLED = false;
 
 /** Hard floor regardless of a teacher's configured threshold — never auto-publish a coin-flip grade. */
 export const AUTO_FINALIZE_MIN_THRESHOLD = 0.6;
