@@ -1,11 +1,19 @@
-// Phase 15 (Voice-Convergence Proof) — pure metric functions for the convergence curve.
+// Phase 15 (Voice-Convergence Proof) — pure metric functions for the edit-rate CORROBORATOR curve.
+//
+// ⚠️ Edit-rate is a DEPRECATED CORROBORATOR, NOT the pre-registered primary verdict. The pre-registered
+// proof is the blinded GPT-judge voice-fidelity score (+ aggregated LUAR-MUD cosine + within-teacher
+// holdout) — see docs/recruiting/osf-prereg.md and eval/convergence/judge-rubric.md. Edit-rate decline
+// is uninterpretable as proof on its own: Borchers et al. (AIED 2026, n=117) found 51.3% of teachers
+// never edit AI feedback, so a flat edit-rate does not disprove convergence. This module is kept as the
+// in-app corroborator signal (the app can't run the live GPT-judge without a Gemini key).
 //
 // No I/O. Given per-batch edit signals (accept/edit/dismiss counts, edit-distances, self-ratings),
 // computes the per-batch edit-rate + mean edit-distance + mean self-rating, and the batch-1→batch-N
-// decline that decides whether aiTA's voice learning is converging. Shared by the eval harness
-// (eval/run.mjs --convergence) and the in-app trend so the math is defined exactly once.
+// decline. Shared by the eval harness (eval/run.mjs --convergence, the deprecated-corroborator mode)
+// and the in-app trend so the math is defined exactly once.
 
-// The falsifiable bar (CONTEXT.md): ≥40% edit-rate decline = converging; <15% = flat (kill criterion).
+// Corroborator thresholds (CONTEXT.md, edit-rate terms): ≥40% decline = corroborating signal;
+// <15% = flat. These bound the edit-rate CORROBORATOR only — they are NOT the pre-registered verdict bar.
 export const CONVERGENCE_DECLINE_PCT = 40;
 export const FLAT_DECLINE_PCT = 15;
 
@@ -32,8 +40,10 @@ export interface ConvergenceSeries {
   batches: BatchMetric[];
   batchCount: number;
   editRateDeltaPct: number | null;  // (firstEditRate - lastEditRate)/firstEditRate * 100; positive = improving
-  converged: boolean;               // delta >= CONVERGENCE_DECLINE_PCT
-  flat: boolean;                    // delta < FLAT_DECLINE_PCT (kill criterion); null delta is NOT flat
+  // NOTE: `converged`/`flat` describe the edit-rate CORROBORATOR only — NOT the pre-registered verdict
+  // (which is the GPT-judge proof). UI must not present these as PROVEN/DISPROVEN.
+  converged: boolean;               // corroborator: delta >= CONVERGENCE_DECLINE_PCT
+  flat: boolean;                    // corroborator: delta < FLAT_DECLINE_PCT; null delta is NOT flat
 }
 
 const mean = (xs: number[]): number | null =>

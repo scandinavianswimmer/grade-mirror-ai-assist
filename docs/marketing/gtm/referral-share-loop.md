@@ -21,8 +21,11 @@ our landing page. The loop's whole job is to **catch that teacher at the moment 
 sharing the path of least resistance.
 
 The two believable moments, straight from the product:
-- **The convergence verdict** — the `ConvergencePanel` ("Is aiTA learning you?") prints *"aiTA is learning
-  your voice — edit rate down N%."* That's a teacher seeing the core promise *measured on their own work*.
+- **The "it sounds like me" moment** — a teacher finalizes a batch and the feedback already reads in their
+  own voice ("it sounded like me and I barely touched it"). This is the felt version of the voice-fidelity
+  promise. (The *pre-registered* proof of that promise is the blinded GPT-judge voice-fidelity study, not
+  the in-app edit-rate panel — so the believe-moment copy leans on the felt experience + time saved, never
+  on an edit-rate "verdict" claim.)
 - **The time-saved moment** — the day-9 "weekend back" beat (≈5.9 hrs/week), already in the email sequence.
 
 We do NOT trigger off a raw signup or a single first grade — sharing before belief produces low-quality
@@ -36,8 +39,8 @@ invites and burns the colleague's first impression. **Belief precedes the ask.**
 
 | # | Trigger | Event (in-app) | Why it's a believe-moment | Surface |
 |---|---|---|---|---|
-| T1 | **Convergence verdict turns positive** — panel shows the "learning your voice — edit rate down N%" headline (tone=`good`) | first `convergence_verdict_good` per assignment | The promise, measured on their own grading | Inline card under the ConvergencePanel verdict |
-| T2 | **First "barely edited" set** — a finalized batch with low edit distance | `low_edit_batch` | "It sounded like me and I barely touched it" | Toast after finalize + persistent banner on the batch summary |
+| T1 | **First "barely edited" set** — a finalized batch the teacher barely touched (the felt "it sounds like me" moment) | `low_edit_batch` | "It sounded like me and I barely touched it" — the voice promise, felt | Toast after finalize + persistent banner on the batch summary |
+| T2 | **Edit-rate corroborator trends down** — the ConvergencePanel edit-rate signal turns positive (tone=`good`) | first `convergence_signal_good` per assignment | A supporting signal on their own grading (corroborator, not a "proven" claim) | Inline card under the ConvergencePanel signal — copy says "signal", never "proven" |
 | T3 | **Time-saved milestone** — cumulative hours saved crosses a round number (first ≥5 hrs) | `time_saved_milestone` | The relief payoff, quantified | The day-9 "weekend back" email CTA + an in-app dashboard tile |
 | T4 | **PQL reached** — ≥12 grades in a month | `pql_grade_12` (already fires, commit `656c6ca`) | Established habit; high intent | Soft prompt in the upgrade/settings area |
 
@@ -61,9 +64,11 @@ No auto-posting to social platforms (same ban-risk + value-first stance as the r
 A teacher's belief is most contagious when it's **visible and theirs**. The artifact is a small, no-PII
 "voice card":
 
-- **What it shows:** the `ConvergencePanel` verdict line — *"aiTA is learning my voice — edit rate down N%"* —
-  plus an anonymized, opt-in **side-by-side voice toggle** snippet (generic AI draft vs. *their* voice) on a
-  sample/their-own essay with all student identifiers stripped. A small "Made with aiTA" mark + the invite link.
+- **What it shows:** a *"it sounds like me"* / time-saved headline (e.g. *"aiTA wrote feedback in my voice —
+  got my weekend back"*), plus an anonymized, opt-in **side-by-side voice toggle** snippet (generic AI draft
+  vs. *their* voice) on a sample/their-own essay with all student identifiers stripped. A small "Made with
+  aiTA" mark + the invite link. **Do not** put an edit-rate "verdict"/"proven" number on the card — the
+  edit-rate panel is a corroborator, and the pre-registered proof is the GPT-judge study, not a shareable stat.
 - **Privacy gate (hard requirement):** the artifact is **off by default and never auto-generated.** The teacher
   explicitly opts in, and the only essay content that can appear is a **pre-loaded sample essay** or a snippet the
   teacher hand-selects — student work is de-identified before display and excluded unless the teacher affirmatively
@@ -100,22 +105,23 @@ which keeps invite quality high and the loop honest.
 ## The copy
 
 > All copy is teacher-facing. Lead with voice/time, "you stay the teacher," never "bias," never a
-> student-outcome claim. `{first_name}`, `{delta}`, `{hours}`, `{invite_link}` are merge fields.
+> student-outcome claim, and never an edit-rate "proven"/verdict claim (that panel is a corroborator; the
+> pre-registered proof is the GPT-judge study). `{first_name}`, `{hours}`, `{invite_link}` are merge fields.
 
-### T1 — convergence-verdict share card (the hero moment)
+### T1 — "barely edited" share card (the hero moment)
 
-**Heading:** It's learning your voice. Know a teacher who'd want that?
-**Body:** aiTA's editing your feedback **{delta}% less** than when you started — it's writing in *your*
-voice now. That's the part every teacher you know is still doing by hand at 9pm.
+**Heading:** It sounded like you. Know a teacher who'd want that?
+**Body:** You just finalized a set you barely had to touch — aiTA drafted that feedback in *your* voice.
+That's the part every teacher you know is still doing by hand at 9pm.
 **Primary CTA:** `Send a colleague a friend-pass →`
 **Secondary:** `Copy my invite link`
 **Microcopy:** They get a 21-day trial; you get a free month of Pro when they grade their first set.
 
-### T2 — "barely edited" toast + banner
+### T2 — edit-rate corroborator toast + banner (supporting signal, not a verdict)
 
-**Toast:** That set barely needed you — aiTA's sounding like you. **Share the friend-pass →**
-**Banner:** You just finalized a set you hardly edited. That's the whole promise, working. Know a teacher
-buried in essays this week? `Send them a 21-day pass →`
+**Toast:** aiTA's sounding more like you batch over batch. **Share the friend-pass →**
+**Banner:** Your feedback is reading more like you over time — a nice supporting signal on your own
+grading. Know a teacher buried in essays this week? `Send them a 21-day pass →`
 
 ### T3 — time-saved milestone (in-app tile + email CTA)
 
@@ -141,7 +147,7 @@ next month of Pro is on us.
 >
 > You know how I've been buried in essay feedback? I've been using aiTA — it drafts comments to my rubric
 > *in my voice*, refuses to score the off-topic stuff, and I stay the final grader. It's genuinely sounding
-> like me now (it told me my edit rate is down {delta}%).
+> like me now — last set, I barely had to change a thing.
 >
 > I've got you a 21-day friend-pass — no card, and you can try it on sample essays before touching any of
 > your own. Here's the link: {invite_link}
