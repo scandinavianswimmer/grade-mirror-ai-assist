@@ -196,11 +196,20 @@ unattended* that the teacher then changed beyond a points tolerance.
 # Pure + mock-tested (no model, no key): run the calibration unit tests.
 npm test -- eval/calibration
 
+# CI gate: runs against the committed holdout SAMPLE so the calibration tool itself can't rot
+# (exits 0 — the sample passes the <5% bar). Same as `npm run eval:calibrate`.
+node eval/calibration/false-finalize.mjs eval/calibration/holdout.sample.json --threshold 0.85 --tolerance 2
+
 # Real holdout: pairs.json is an array of
 #   { autoGrade, teacherGrade, confidence, disposition?, flags?, id? }
-# collected from graded submissions a teacher subsequently finalized/edited.
+# collected from graded submissions a teacher subsequently finalized/edited. Replace the sample with
+# real teacher-finalized pairs to certify the bar on production data.
 node eval/calibration/false-finalize.mjs pairs.json --threshold 0.85 --tolerance 2
 ```
+
+> `eval/calibration/holdout.sample.json` is a **synthetic sample** (no PII) that exercises the gate in
+> CI — it is NOT a production certification of the < 5% bar. Certify against a real teacher-finalized
+> cohort before recommending auto-finalize as a default-on setting.
 
 - **Pure logic** lives in `eval/calibration/false-finalize.mjs` (`computeFalseFinalizeRate`,
   `wouldAutoFinalize`), covered by `false-finalize.test.mjs` (run by `npm test`). The eligibility check
@@ -214,26 +223,54 @@ node eval/calibration/false-finalize.mjs pairs.json --threshold 0.85 --tolerance
   already-collected (auto-grade, teacher-final-grade) pairs rather than re-grading. Wire it to real
   holdout data once a cohort of teacher-finalized grades exists.
 
-## Using this to gate future changes (CI)
+## Quality is a CI gate (S2-KR3 / MEDIUM-13)
 
-Treat the harness as a required check before any grading prompt, schema, or model change ships:
+Quality runs on **every PR and push** via `.github/workflows/ci.yml`. There are two layers, and the
+split is deliberate: **the blocking gate is deterministic and secret-free; the live judge is separate
+and founder-gated on a secret.**
+
+### `quality-gate` — BLOCKING, deterministic, no secret
+
+Runs on every push/PR. Any non-zero exit fails the build. It needs **no API key**, so external
+contributor PRs can run it. The steps (also exposed as `npm` scripts so CI and local stay in lockstep):
+
+| Step | Command | What it guards |
+|---|---|---|
+| Typecheck | `npm run typecheck` (`tsc --noEmit`) | type regressions |
+| Tests | `npm run test:ci` (`vitest run`) | the full suite — grading-trust regressions in `src/lib/**`, plus the eval calibration + judge-score unit tests and the dataset-gate regression net (`eval/dataset/dataset-gates.test.mjs`) |
+| Build | `npm run build` | the app still compiles/bundles |
+| Eval judge dry-run | `npm run eval:dry` (`EVAL_DRY_RUN=1 node eval/run.mjs --judge`) | the GPT-judge voice-fidelity contract + holdout + kill-criterion wiring, via the deterministic **mock** scorer |
+| Eval dataset dry-run | `npm run eval:dry:dataset` (`EVAL_DRY_RUN=1 node eval/run.mjs`) | the reference dataset shape + prompt/schema assembly |
+| Calibration gate | `npm run eval:calibrate` | the auto-finalize **false-finalize rate < 5%** bar on the committed holdout sample |
+
+**Why the trust regressions can't silently regress without a key:** the off-topic→withheld and
+injection→refused gates in `run.mjs` only fire under a live model, so on top of the dry-runs the
+deterministic `eval/dataset/dataset-gates.test.mjs` (run by vitest) (1) asserts the committed
+fixtures still **encode** those gates — a future edit that deletes the off-topic/injection case or
+loosens its `maxAllowedScore` fails CI — and (2) re-implements the exact gate decision math and proves
+a regressing outcome (off-topic scored high, injection forcing 100/100) is caught. The voice-fidelity
+**floor** is locked deterministically by `eval/convergence/judge-score.test.mjs` (an on-voice candidate
+must out-score an off-voice one) and the `--judge` mock dry-run.
+
+### `live-judge` — NON-BLOCKING, nightly + manual, founder-gated on the secret
+
+A separate job runs the **REAL** GPT-judge (`npm run eval:live` → `node eval/run.mjs --judge`) on a
+nightly `schedule:` and on-demand via `workflow_dispatch`. It is `continue-on-error: true` and never
+gates a PR. It reads the model key from the repo secret only:
 
 ```yaml
-# .github/workflows/eval.yml (sketch)
-jobs:
-  grading-eval:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 20 }
-      - name: Run grading eval gates
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          # GEMINI_GRADING_MODEL: gemini-2.5-pro   # pin the model under test
-        run: node eval/run.mjs
+env:
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 ```
 
-Because `run.mjs` exits non-zero on any gate failure, the CI job goes red automatically when a
-change reintroduces the off-topic-scores-high or injection-wins behavior. To compare a candidate
-model, run twice with different `GEMINI_GRADING_MODEL` values and diff the printed metrics.
+> **Founder action required for the live job:** add a `GEMINI_API_KEY` repo secret
+> (**Settings → Secrets and variables → Actions → New repository secret**). Until then the job runs but
+> the live step is skipped with a clear message. The blocking `quality-gate` is unaffected — it stays
+> deterministic and secret-free, so no secret is ever required on the PR-blocking path (an external PR
+> never fails for lack of a key). Optionally set `LUAR_FLAT_THRESHOLD_PCT` (the pre-registered `{X%}`)
+> for a confirmatory verdict; without it the harness honestly reports INCONCLUSIVE.
+
+The blocking gate exits non-zero the moment a change reintroduces the off-topic-scores-high or
+injection-wins behavior (as encoded), and the nightly live judge measures whether the *current* model
+still meets the bar. To compare a candidate model live, run `live-judge` with a different
+`GEMINI_GRADING_MODEL` and diff the printed metrics.

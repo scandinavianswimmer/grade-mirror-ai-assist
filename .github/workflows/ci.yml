@@ -1,15 +1,31 @@
-# Phase 14 (DEPLOY-02): CI builds every push/PR; the deploy job ships edge functions on merge to a
-# release branch when the Supabase token is present. Frontend hosting (DEPLOY-01) + custom domain are
-# configured on the host (Netlify/Cloudflare Pages read public/_headers automatically).
+# Phase 14 (DEPLOY-02) + S2-KR3 / MEDIUM-13: quality is a CI gate.
+#
+# `quality-gate` is the BLOCKING, DETERMINISTIC, SECRET-FREE proof/regression suite that runs on every
+# push and PR: typecheck → full vitest (incl. the grading-trust regressions + eval calibration/judge
+# unit tests) → production build → the eval DRY-RUNS (mock judge + dataset/prompt assembly) → the
+# auto-finalize calibration gate. Any non-zero exit fails the build. No secret is referenced here, so
+# external-contributor PRs can run it.
+#
+# `live-judge` is a SEPARATE, NON-BLOCKING job (nightly schedule + manual dispatch) that runs the REAL
+# GPT-judge against the GEMINI_API_KEY repo secret. It never gates a PR. The founder must add the
+# secret for it to run (see eval/README.md).
+#
+# `deploy-functions` ships edge functions on merge to main when the Supabase token is present.
 name: ci
 
 on:
   push:
     branches: [main, aita-production-build]
   pull_request:
+  schedule:
+    # Nightly live-judge run (UTC). Non-blocking; only runs if GEMINI_API_KEY is configured.
+    - cron: "0 7 * * *"
+  workflow_dispatch:
 
 jobs:
-  build:
+  # ── BLOCKING quality gate (deterministic, no secrets) ──────────────────────────────────────────
+  quality-gate:
+    if: ${{ github.event_name != 'schedule' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,16 +34,29 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm run build
-      - name: Eval gate (only when a Gemini key is configured)
-        if: ${{ secrets.GEMINI_API_KEY != '' }}
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: node eval/run.mjs
 
+      - name: Typecheck (tsc --noEmit)
+        run: npm run typecheck
+
+      - name: Unit + regression tests (vitest — grading-trust + eval suites)
+        run: npm run test:ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Eval dry-run — GPT-judge voice-fidelity contract (mock scorer, no key)
+        run: npm run eval:dry
+
+      - name: Eval dry-run — reference dataset + prompt assembly
+        run: npm run eval:dry:dataset
+
+      - name: Auto-finalize calibration gate (<5% false-finalize on holdout)
+        run: npm run eval:calibrate
+
+  # ── Edge-function deploy (unchanged; gated on Supabase token + merge to main) ───────────────────
   deploy-functions:
-    needs: build
-    if: ${{ github.ref == 'refs/heads/main' && secrets.SUPABASE_ACCESS_TOKEN != '' }}
+    needs: quality-gate
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.SUPABASE_ACCESS_TOKEN != '' }}
     runs-on: ubuntu-latest
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -44,3 +73,29 @@ jobs:
                     generate-style-summary record-feedback-usage stripe-checkout stripe-portal stripe-webhook; do
             supabase functions deploy "$fn" || echo "skip $fn"
           done
+
+  # ── NON-BLOCKING live judge (nightly schedule + manual dispatch; founder-gated on the secret) ───
+  # Runs the REAL GPT-judge. NEVER gates a PR. Skips cleanly when GEMINI_API_KEY is not configured.
+  live-judge:
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Live GPT-judge voice-fidelity run (requires GEMINI_API_KEY secret)
+        if: ${{ secrets.GEMINI_API_KEY != '' }}
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # LUAR_FLAT_THRESHOLD_PCT: "5"   # founder sets the pre-registered {X%} before a confirmatory verdict
+        run: npm run eval:live
+      - name: No key configured — skipping live judge
+        if: ${{ secrets.GEMINI_API_KEY == '' }}
+        run: |
+          echo "GEMINI_API_KEY is not set; the live judge cannot run."
+          echo "Add the repo secret (Settings → Secrets → Actions) to enable the nightly/dispatch live judge."
+          echo "The blocking PR gate (quality-gate) stays deterministic and secret-free regardless."
