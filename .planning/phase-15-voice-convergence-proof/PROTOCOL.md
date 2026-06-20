@@ -1,15 +1,21 @@
-# Phase 15 Wave 4A — Voice-Convergence Proof Protocol
+# Phase 15 — Voice-Convergence Proof Protocol (pre-registered pilot)
 
-**Status:** Ready to run · **Owner:** founder (coordinates a real teacher) · **Created:** 2026-06-04
+**Status:** Ready to run · **Owner:** founder (coordinates the teacher cohort) · **Created:** 2026-06-04 ·
+**Reconciled to judge+LUAR+holdout:** 2026-06-17
 
 This is the experiment that decides whether aiTA's wedge is real. It is designed to be **falsifiable**:
 run exactly as written, then read the result against the pre-registered bar in
-[`VERDICT.md`](./VERDICT.md). A flat curve is a valid, publishable outcome — **do not tune the
-protocol to force a pass.**
+[`VERDICT.md`](./VERDICT.md) §1 (which mirrors [`docs/recruiting/osf-prereg.md`](../../docs/recruiting/osf-prereg.md)).
+A null result is a valid, publishable outcome — **do not tune the protocol to force a pass.** This is a
+**PILOT** (n = 4–6 teachers, within-teacher / each-teacher-their-own-control via holdout); it makes no
+population-level claim and states its n/power limits honestly.
 
-> The single question: across ≥4 grading batches with one real teacher, does the teacher's per-essay
-> **edit-rate decline ≥40%**, with at least one late batch rated **"barely had to edit" (≥4/5)**, and a
-> **with-profile vs without-profile** gap on held-out essays? (Full bar: `15-CONTEXT.md` §Success Criteria.)
+> The single question: across ≥4 grading batches per teacher (cohort of 4–6 real teachers), does the
+> **blinded GPT-judge voice-fidelity** of aiTA's *with-profile* feedback rise across batches (H1) and
+> **exceed the matched no-profile holdout** (H2), corroborated by a positive **aggregated LUAR-MUD
+> cosine** trend? (Full bar: `VERDICT.md` §1 / `osf-prereg.md`.) Edit-rate decline and the self-rating
+> are **DEPRECATED corroborators / context only** — uninterpretable as proof (Borchers AIED 2026: 51.3%
+> of teachers never edit).
 
 ---
 
@@ -33,19 +39,24 @@ edit session, not a synthetic one.**
 
 ---
 
-## 1. Participant + materials
+## 1. Participants + materials
 
-- **Teacher:** one real teacher (ideally the ICP — a burned-out-but-high-integrity ELA teacher). The
-  `docs/DEMO-SARAH-MARTINEZ.md` harness may seed the roster/essays for a clean account, **but the edits
-  and the testimonial must be a real teacher's**, not seeded.
-- **Assignment + rubric:** **ONE** assignment type with a **FIXED structured rubric**, held constant for
-  all batches (changing the rubric changes the target voice and invalidates the curve). A literary-
+- **Cohort:** **4–6 real teachers** (ideally the ICP — burned-out-but-high-integrity grades 9–12 ELA
+  teachers). The pilot is **within-teacher**: each teacher is their own control via the no-profile
+  holdout arm. The `docs/DEMO-SARAH-MARTINEZ.md` harness may seed a clean account's roster/essays, **but
+  the edits, reference corpus, and testimonials must be real teachers'**, not seeded.
+- **Reference voice corpus (per teacher, collected BEFORE any analysis):** each teacher contributes
+  **10 of their own prior feedback samples** (minimum 8 to qualify), de-identified. This is the baseline
+  the GPT-judge scores candidates against. Freeze it before Batch 1.
+- **Assignment + rubric:** **ONE** assignment type with a **FIXED structured rubric** per teacher, held
+  constant for all that teacher's batches (changing the rubric changes the target voice). A literary-
   analysis assignment with a 3-criterion rubric (as in `eval/dataset/03-strong-essay-holes.json`) works.
-- **Essays:** **≥4 batches × 10–15 essays** each, same assignment, comparable ability mix per batch
-  (don't stack all the strong essays in batch 4 — that manufactures a decline). Randomize or
-  block-balance ability across batches.
-- **Held-out set:** reserve **~8–10 essays** that are graded **only** in the with/without comparison
-  (Step 4), never used to build the store.
+- **Essays:** **≥4 batches × ~20 essays** each, same assignment, comparable ability mix per batch
+  (don't stack all the strong essays late — confounds the trend). Randomize or block-balance ability.
+- **Holdout arm (within each batch):** a fixed **20% of essays (≥3/batch)**, randomly assigned via a
+  **seeded RNG (seed logged per teacher per batch)**, are graded with the profile + exemplars
+  **suppressed** (identical model/rubric/temperature). This yields matched with/without pairs inside each
+  batch — the H2 specificity contrast. (Batches with < 15 essays are excluded from the confirmatory test.)
 
 ---
 
@@ -73,12 +84,28 @@ For each batch, in order:
 
 ## 3. Data capture (per batch + cumulative)
 
+**PRIMARY — GPT-judge voice-fidelity (the pre-registered proof).** For each batch, collect every piece of
+aiTA-drafted feedback (with-profile and holdout, condition/batch labels stripped) plus the teacher's
+frozen reference corpus, and score with the blinded judge:
+
+```bash
+GEMINI_API_KEY=… node eval/run.mjs --judge      # blinded GPT-judge, LOCKED rubric v1.0, 3× per sample
+```
+
+Save the full stdout to `artifacts/eval-judge-<date>.txt` and the per-sample scores to
+`artifacts/judge-scores-<date>.csv`. The judge is blinded to condition, batch, and teacher (samples
+shuffled). This is what `VERDICT.md` §1 decides on. Also compute the **aggregated LUAR-MUD cosine**
+(8-sample windows) and **LZ77** corroborators over the same samples, calibrating the LUAR floor/ceiling
+in-domain on reference-corpus pairs (record thresholds).
+
+**CORROBORATOR / CONTEXT — edit-rate (DEPRECATED, not a verdict input):**
+
 - **In-app:** open **Metrics → "Is aiTA learning you?"** after each batch. It renders the per-batch
-  edit-rate trend + verdict directly from the teacher's real data (`convergenceApi.ts`). **Screenshot it
-  after each batch** and again at the end. Save screenshots to
-  `.planning/phase-15-voice-convergence-proof/artifacts/` (create the dir).
+  edit-rate **corroborator** trend directly from the teacher's real data (`convergenceApi.ts`) — the
+  panel itself labels this a corroborator, not the verdict. **Screenshot it after each batch** and again
+  at the end. Save screenshots to `.planning/phase-15-voice-convergence-proof/artifacts/` (create the dir).
 - **Raw export** (run as the teacher or via `psql`, owner-scoped). Save the output as
-  `artifacts/convergence-raw-<date>.csv`:
+  `artifacts/convergence-raw-<date>.csv` (corroborator + context only):
 
   ```sql
   -- Per-batch edit-rate / mean edit-distance / mean self-rating for one teacher.
@@ -102,43 +129,44 @@ For each batch, in order:
 
 ---
 
-## 4. Held-out with-profile vs without-profile comparison
+## 4. Held-out with-profile vs without-profile (the H2 specificity contrast)
 
-Two ways, run **both** if possible:
+The holdout arm is built **into each batch** (Step 1: 20%, seeded RNG) — every batch already produces
+matched with/without pairs on the same essays, same model/rubric/temperature. Score both arms with the
+**blinded GPT-judge** (Step 3, `--judge`) so the primary contrast is judge fidelity, with-profile vs
+holdout, on matched essays. The aggregated LUAR cosine is computed the same way (corroborator).
 
-- **Reproducible (CLI):** build a convergence fixture from the teacher's real batches (same shape as
-  `eval/convergence/holes-voice.json` — essays + the teacher's final annotations as `reference`) and run:
-
-  ```bash
-  GEMINI_API_KEY=… node eval/run.mjs --convergence
-  ```
-
-  It prints the per-batch curve, the batch-1→N decline, and the **held-out with-profile vs
-  without-profile** edit-rates, and exits non-zero if the ≥40% bar isn't met. This is the on-demand,
-  re-runnable proof (EVAL-04). Save the full stdout to `artifacts/eval-convergence-<date>.txt`.
-
-- **In-app (qualitative):** grade the held-out essays once with the learned store active and once for a
-  teacher whose store is empty (or temporarily cleared), and compare edit-rates in the panel.
+- **DEPRECATED corroborator (CLI):** `eval/run.mjs --convergence` still replays a teacher's batches and
+  prints the per-batch edit-rate plus a held-out with/without edit-rate, exiting non-zero on a flat
+  curve. It is now a **CI-gateable corroborator only** — its banner and gate explicitly say so. The
+  pre-registered proof is `--judge`, not this. Save its stdout to `artifacts/eval-convergence-<date>.txt`
+  if you want the corroborator on record.
 
 ---
 
 ## 5. Analysis → hand to the verdict
 
-Collect: the per-batch `edit_rate` series, the late-batch `mean_self_rating`, the held-out with/without
-numbers, and the testimonial. Drop them into the pre-registered decision rule in
-[`VERDICT.md`](./VERDICT.md) **without modifying the rule.** The verdict writes itself from the numbers:
+Collect: the **per-batch with-profile vs holdout GPT-judge fidelity series** (primary), the **mixed-model
+fit** (`fidelity ~ batch * condition + (batch | teacher)`), the **aggregated LUAR cosine + LZ77 trends**
+(corroborators), per-teacher trajectories, and the testimonials. Edit-rate decline + self-rating are
+**context only**. Drop them into the pre-registered decision rule in [`VERDICT.md`](./VERDICT.md) §1
+**without modifying the rule.** The verdict writes itself from the numbers:
 
-- **≥40% edit-rate decline** batch-1→N **AND** a late batch **≥4/5** self-rating **AND** held-out
-  with-profile materially better → **PROVEN.**
-- **<15% decline** OR **no batch ≥4/5** → **DISPROVEN (KILL)** → recommend KTO/DPO escalation or pivot.
-- **In between** → **INCONCLUSIVE** → report honestly; extend to more batches or call it.
+- **H1 significant positive with-profile batch slope (α=0.05) AND H2 (with-profile > holdout, late
+  batches) AND a positive aggregated-LUAR trend** → **PROVEN.**
+- **H1 fails (no significant positive slope)** OR **(H2 fails AND LUAR flat, < 10% rel. gain
+  batch1→4)** → **DISPROVEN (KILL)** → recommend the honest time-savings pivot or KTO/DPO escalation.
+- **In between (directional but not significant at pilot n, or mixed judge/LUAR)** → **INCONCLUSIVE** →
+  report honestly; extend the cohort/batches or call it. State pilot n/power limits either way.
 
 ---
 
 ## Artifacts checklist (saved in `artifacts/`)
 
-- [ ] `convergence-raw-<date>.csv` — per-batch metrics export
-- [ ] `eval-convergence-<date>.txt` — `eval/run.mjs --convergence` stdout (with/without comparison)
-- [ ] Per-batch + final screenshots of the "Is aiTA learning you?" panel
-- [ ] The verbatim teacher testimonial (with batch number + attribution)
-- [ ] `VERDICT.md` filled in from the above (Wave 4B)
+- [ ] `judge-scores-<date>.csv` — per-sample blinded GPT-judge fidelity (PRIMARY), with-profile vs holdout
+- [ ] `eval-judge-<date>.txt` — `eval/run.mjs --judge` stdout (PRIMARY proof)
+- [ ] Mixed-model fit output + per-teacher trajectories; LUAR calibration thresholds + aggregated trend
+- [ ] `convergence-raw-<date>.csv` / `eval-convergence-<date>.txt` — edit-rate **corroborator** (context only)
+- [ ] Per-batch + final screenshots of the "Is aiTA learning you?" corroborator panel
+- [ ] The verbatim teacher testimonials (with batch number + attribution)
+- [ ] `VERDICT.md` filled in from the above

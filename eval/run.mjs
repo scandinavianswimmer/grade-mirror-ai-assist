@@ -850,20 +850,29 @@ function printConvergenceReport(fixture, run) {
 
   const heldOk = heldWith.editRate <= heldWithout.editRate;
   const passed = series.converged && heldOk;
+  // NOTE: this is a DEPRECATED-CORROBORATOR signal, NOT the pre-registered verdict. The pre-registered
+  // PROVEN/DISPROVEN decision is the blinded GPT-judge proof (`--judge`). Edit-rate is uninterpretable
+  // as a primary metric (Borchers AIED 2026: 51.3% of teachers never edit). Labels say "signal", not
+  // "verdict", on purpose.
   if (passed) {
-    console.log(`  VERDICT: PASS — voice convergence demonstrated (≥${CONVERGENCE_DECLINE_PCT}% decline, held-out not harmed).`);
+    console.log(`  CORROBORATOR SIGNAL: edit-rate declined ≥${CONVERGENCE_DECLINE_PCT}% and held-out not harmed (supports, does not prove).`);
   } else if (series.flat) {
-    console.log(`  VERDICT: FAIL (KILL) — edit-rate is flat (<${FLAT_DECLINE_PCT}% decline). Wedge disproven on this fixture.`);
+    console.log(`  CORROBORATOR SIGNAL: edit-rate is flat (<${FLAT_DECLINE_PCT}% decline) on this fixture (does not by itself disprove — see --judge).`);
   } else if (!series.converged) {
-    console.log(`  VERDICT: FAIL — decline did not reach the ≥${CONVERGENCE_DECLINE_PCT}% bar.`);
+    console.log(`  CORROBORATOR SIGNAL: edit-rate decline did not reach the ≥${CONVERGENCE_DECLINE_PCT}% bar.`);
   } else {
-    console.log(`  VERDICT: FAIL — the learned store made held-out essays WORSE (regression).`);
+    console.log(`  CORROBORATOR SIGNAL: the learned store made held-out essays WORSE (regression) on this fixture.`);
   }
   console.log("------------------------------------------------------------\n");
   return passed;
 }
 
 async function mainConvergence() {
+  console.log("\n============================================================");
+  console.log("  aiTA EDIT-RATE CONVERGENCE  (DEPRECATED CORROBORATOR)");
+  console.log("  NOT the pre-registered proof. Edit-rate is uninterpretable as a primary");
+  console.log("  metric (Borchers AIED 2026). PRIMARY verdict = `--judge` (GPT-judge + LUAR + holdout).");
+  console.log("============================================================\n");
   const fixtures = await loadConvergenceFixtures();
   console.log(`Loaded ${fixtures.length} convergence fixture(s) from eval/convergence.`);
 
@@ -903,10 +912,11 @@ async function mainConvergence() {
   }
 
   if (anyFail) {
-    console.log("CONVERGENCE GATE: FAIL — at least one fixture did not meet the decline bar.\n");
-    process.exit(1); // EVAL-03/04 — CI-gateable.
+    console.log("CONVERGENCE CORROBORATOR GATE: FAIL — at least one fixture did not meet the edit-rate decline bar.");
+    console.log("(This is the DEPRECATED corroborator, not the pre-registered proof — run --judge for the primary verdict.)\n");
+    process.exit(1); // EVAL-03/04 — CI-gateable (corroborator only).
   }
-  console.log("CONVERGENCE GATE: PASS — every fixture converged.\n");
+  console.log("CONVERGENCE CORROBORATOR GATE: PASS — every fixture's edit-rate corroborates (primary proof = --judge).\n");
   process.exit(0);
 }
 

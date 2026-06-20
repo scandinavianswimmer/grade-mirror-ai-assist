@@ -9,9 +9,14 @@ import { useAuth } from '@/components/AuthProvider';
 import { fetchConvergenceSeries } from '@/lib/convergenceApi';
 import { CONVERGENCE_DECLINE_PCT, type ConvergenceSeries } from '@/lib/convergenceMetrics';
 
-// Phase 15 Task 3B (PROOF-01) — "Is aiTA learning you?" The honest convergence trend a teacher/judge
-// sees: per-batch edit-rate for the signed-in teacher. If the line is flat, it shows flat — the whole
-// point of the proof is that disproof is visible, not hidden.
+// Phase 15 Task 3B (PROOF-01) — "Is aiTA learning you?" The honest per-batch edit-rate trend a
+// teacher sees. If the line is flat, it shows flat — disproof is visible, not hidden.
+//
+// ⚠️ This panel is an edit-rate CORROBORATOR, NOT the pre-registered primary verdict. The pre-registered
+// proof is the blinded GPT-judge voice-fidelity study (+ aggregated LUAR cosine + within-teacher
+// holdout) in docs/recruiting/osf-prereg.md — which needs a live judge model the app can't run client-
+// side. Edit-rate is uninterpretable as proof on its own (Borchers AIED 2026: 51.3% of teachers never
+// edit AI feedback). So this UI never claims "PROVEN" — it presents an edit-rate signal only.
 
 interface Verdict {
   tone: 'good' | 'flat' | 'neutral' | 'empty';
@@ -46,21 +51,21 @@ function verdictFor(series: ConvergenceSeries): Verdict {
   if (converged) {
     return {
       tone: 'good',
-      headline: `aiTA is learning your voice — edit rate down ${delta}%`,
-      sub: `Across ${batchCount} batches you're editing aiTA's feedback ${delta}% less (bar: ≥${CONVERGENCE_DECLINE_PCT}%).`,
+      headline: `Edit-rate signal: down ${delta}% — looks like aiTA is matching your voice`,
+      sub: `Across ${batchCount} batches you're editing aiTA's feedback ${delta}% less (corroborator threshold: ≥${CONVERGENCE_DECLINE_PCT}%). Corroborator only — the pre-registered verdict is the GPT-judge voice-fidelity proof.`,
     };
   }
   if (flat) {
     return {
       tone: 'flat',
-      headline: `Holding steady — edit rate down only ${delta}%`,
-      sub: `Across ${batchCount} batches your edit rate hasn't really moved. aiTA isn't matching your voice on this assignment yet.`,
+      headline: `Edit-rate signal: down only ${delta}% — holding steady`,
+      sub: `Across ${batchCount} batches your edit rate hasn't really moved. That alone doesn't disprove convergence (many teachers rarely edit) — the pre-registered verdict is the GPT-judge proof.`,
     };
   }
   return {
     tone: 'neutral',
-    headline: `Trending down ${delta}%`,
-    sub: `Edit rate is falling but hasn't reached the ≥${CONVERGENCE_DECLINE_PCT}% convergence bar across ${batchCount} batches.`,
+    headline: `Edit-rate signal: trending down ${delta}%`,
+    sub: `Edit rate is falling but hasn't reached the ≥${CONVERGENCE_DECLINE_PCT}% corroborator threshold across ${batchCount} batches. Corroborator only — the pre-registered verdict is the GPT-judge proof.`,
   };
 }
 
@@ -103,8 +108,9 @@ const ConvergencePanel = () => {
           <CardTitle className="font-display text-lg">Is aiTA learning you?</CardTitle>
         </div>
         <p className="text-sm text-muted-foreground">
-          How often you edit or dismiss aiTA's notes, batch over batch. A downward line means aiTA is
-          starting to write feedback in your voice.
+          How often you edit or dismiss aiTA's notes, batch over batch. A downward line is a
+          corroborating signal that aiTA is starting to write in your voice — it is <em>not</em> the
+          pre-registered proof, which is a blinded GPT-judge voice-fidelity study.
         </p>
       </CardHeader>
       <CardContent className="pt-6">

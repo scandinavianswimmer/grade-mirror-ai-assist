@@ -46,9 +46,13 @@ detection) is commodity. For 30 days, **ignore almost everything else.**
 - **Preserve teacher authorship (HITL).** Every grade is still teacher-reviewed/edited/signed-off.
   The learning signal IS the teacher's edits — the loop and the authorship are the same mechanism.
 
-### Measurement (the heart of the phase)
-- **Edit-rate** = fraction of AI-suggested annotations/feedback the teacher changes or dismisses per
-  submission, aggregated per batch.
+### Measurement
+> **Reconciled (2026-06-17):** the pre-registered PRIMARY metric is the blinded **GPT-judge
+> voice-fidelity** score (+ aggregated LUAR cosine, within-teacher holdout) — see §Success Criteria and
+> `VERDICT.md` §1. The edit-rate / edit-distance / self-rating signals below are **DEPRECATED
+> corroborators / context**, kept because the in-app loop already instruments them, but never the verdict.
+- **Edit-rate** _(corroborator)_ = fraction of AI-suggested annotations/feedback the teacher changes or
+  dismisses per submission, aggregated per batch.
 - **Edit-distance** = normalized Levenshtein (or token) distance between AI-original feedback text and
   the teacher's final text, per accepted-but-edited item, averaged per batch.
 - **"Barely edited" self-rating** = a one-tap post-finalize prompt ("How much did you change aiTA's
@@ -93,21 +97,36 @@ detection) is commodity. For 30 days, **ignore almost everything else.**
 <success_criteria>
 ## Success Criteria (FALSIFIABLE — this is the whole point)
 
-**PRIMARY (the wedge is proven if ALL hold):**
-1. With ≥1 real teacher across ≥4 batches (~10-15 essays each, same teacher, fixed rubric/assignment
-   type), mean per-essay **edit-rate declines ≥40%** from batch 1 to batch 4.
-2. The same teacher rates ≥1 late batch as **"barely had to edit"** (≥4/5 on the self-rating).
-3. A held-out **with-profile vs without-profile** comparison on the same essays shows materially lower
-   edit-distance / edit-rate with the learned profile (clear margin given small n).
+> **Single pre-registered primary: the blinded GPT-judge voice-fidelity proof** (+ aggregated LUAR-MUD
+> cosine corroborator, decided within a within-teacher holdout). Full locked rule:
+> [`VERDICT.md`](./VERDICT.md) §1, mirroring `docs/recruiting/osf-prereg.md` and the LOCKED rubric
+> `eval/convergence/judge-rubric.md` v1.0. This is a **PILOT** (n = 4–6 teachers, each their own control
+> via holdout); no population/student-outcome claim; n/power limits stated honestly. **Edit-rate decline
+> and the self-rating are DEPRECATED corroborators / context only** — uninterpretable as proof (Borchers
+> et al., AIED 2026, n=117: 51.3% of teachers never edit AI feedback).
+
+**PRIMARY (the wedge is proven if ALL hold; confirmatory α = 0.05, two-sided):**
+1. **H1 (convergence):** across ≥4 batches per teacher (cohort of 4–6 real teachers, ~20 essays/batch,
+   fixed rubric/assignment per teacher), the *with-profile* arm shows a **statistically significant
+   positive batch slope** in blinded GPT-judge voice-fidelity (mixed model
+   `fidelity ~ batch * condition + (batch | teacher)`).
+2. **H2 (specificity):** *with-profile* fidelity **exceeds the matched no-profile holdout** on the same
+   essays (the within-batch 20% holdout arm) — the gain is the learned profile, not generic drift.
+3. **Corroboration:** a **positive aggregated LUAR-MUD cosine** trend (8-sample windows, in-domain
+   calibrated floor/ceiling) in the same direction (LZ77 a further Borchers-robust corroborator).
 
 **KILL CRITERION (the wedge is DISPROVEN — say so plainly, per the founder's instruction):**
-- If edit-rate is **flat (<15% decline)** across batches OR no batch earns a "barely edited" rating,
-  declare voice-convergence unproven for aiTA's current approach and recommend either (a) escalate to
-  real KTO/DPO training, or (b) accept the market is commodity and pivot. No ego-boosting.
+- If the with-profile arm shows **no significant positive GPT-judge batch slope** (H1 fails), OR
+  **with-profile does not exceed the holdout (H2 fails) AND the aggregated LUAR trend is flat** (< 10%
+  relative gain batch1→4), declare voice-convergence unproven for aiTA's current approach. Pivot honestly
+  to a **measured time-savings claim**, or escalate to real **KTO/DPO** training (documented next step).
+  No ego-boosting.
 
 **REPRODUCIBILITY:**
-- `eval/run.mjs --convergence` (or equivalent) replays a teacher's batches and prints the curve;
-  runnable on demand; the without-profile baseline is computed the same way (EVAL-04).
+- `eval/run.mjs --judge` replays a teacher's batches, scores each feedback sample (blinded, LOCKED rubric)
+  against the reference corpus, runs the with/without holdout contrast, and applies the pre-registered
+  kill criterion; runnable on demand (the PRIMARY proof). `eval/run.mjs --convergence` remains as the
+  **DEPRECATED edit-rate corroborator** (CI-gateable, labeled as such), not the verdict (EVAL-04).
 </success_criteria>
 
 <specifics>
