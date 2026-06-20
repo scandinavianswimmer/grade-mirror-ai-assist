@@ -13,24 +13,44 @@ Workspace for Education is), so the answer is not "trust the vendor" — it is "
 **Confirmed in code.** In `supabase/functions/grade-submission/index.ts`, immediately before the
 essay is sent to the model, the grader calls `maskNamesPreservingOffsets()`
 (`supabase/functions/_shared/deid.ts`) when the teacher's `privacy_settings.anonymize_student_names`
-is on — which **defaults to ON** (set at signup; least-permissive default). The student's name is
-replaced with an opaque, length-preserving token so the text that leaves for Gemini carries no
-student name, while the teacher still sees the real name locally (annotation offsets still anchor
-because length is preserved). The retention cron uses the sibling `scrubNames()` to scrub stored
-text + annotations together.
+is on — which **defaults to ON** (set at signup; least-permissive default). Each matched identifier is
+replaced with an opaque, length-preserving redaction block so the text that leaves for Gemini carries
+no name, while the teacher still sees the real names locally (annotation offsets still anchor because
+length is preserved). The retention cron uses the sibling `scrubNames()` to scrub stored text +
+annotations together.
+
+**What is masked (HIGH-7 expansion).** The de-id call masks two explicit lists:
+1. **Roster** — the submission's `student_name`.
+2. **Extra identifiers** — caller-supplied terms from the teacher context: the teacher's
+   `users.full_name` and `users.school`. These are proper nouns with low collision risk against essay
+   vocabulary, so exact-match redaction won't corrupt grading. Course/class names are **deliberately
+   excluded** — they are often generic words ("English", "Period 1", "World History") whose redaction
+   would over-mask essay content, a worse failure for a grading product than the residual leak.
 
 **De-identification flow (send-time):**
 ```
-essay text  →  maskNamesPreservingOffsets(text, [studentName])  →  Gemini
+essay text  →  maskNamesPreservingOffsets(text, [studentName], [teacherName, school])  →  Gemini
               (only when anonymize_student_names = true, default true)
 ```
 
-**Residual risk — state it honestly:**
-- De-id masks the **student's own name** (and, via the retention cron, stored copies). It does **not**
-  guarantee removal of *other* in-body identifiers a student might write (a classmate's name, a
-  school, an address). For Cohort A (revenue) this is mitigated by grading **sample essays with no
-  real student PII**. For Cohort B (proof, real essays) it is mitigated by **signed school DPAs** +
-  de-id, not de-id alone.
+**Residual risk — state it honestly (do NOT claim fully compliant):**
+- De-id masks ONLY terms the system explicitly knows: the roster student name + the extra-identifiers
+  list above (and, via the retention cron, stored copies). It performs **NO heuristic / NER name
+  detection**. Therefore **other free-text PII written inside an essay body is NOT masked** — a
+  classmate's or sibling's name, a parent's name, a hometown, a street address, a phone number, an
+  employer. All of that still reaches Gemini in cleartext today.
+- Aggressive heuristic masking was **deliberately rejected**: redacting capitalized tokens or
+  "name-like" words mid-essay corrupts the very content being graded (over-masking shifts the meaning
+  the model scores against), which is a worse failure for a grading product than the residual leak.
+- **Documented follow-up (the real fix):** add an NER / model-based de-id **pre-pass** that detects and
+  redacts arbitrary PERSON / ORG / LOC / contact entities before transmission, length-preserving to
+  keep offsets valid. Until that ships, the claim is "explicitly-known identifiers are masked," **not**
+  "all student PII is removed."
+- **Mitigations in place meanwhile:** For **Cohort A (revenue)** the residual leak is structurally
+  avoided — new teachers are steered to grade **synthetic sample essays with no real student PII**
+  (the dashboard empty state makes "Try it with 5 sample essays — no student data" the primary action;
+  `src/lib/sampleEssays.ts` contains only fabricated names/content). For **Cohort B (proof, real
+  essays)** it is covered by **signed school DPAs** + de-id, not de-id alone.
 - A teacher who explicitly disables anonymization sends names. The default-on posture + UI copy keep
   this an informed opt-out, not a silent default.
 

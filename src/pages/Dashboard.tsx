@@ -342,8 +342,8 @@ const Dashboard = () => {
             </div>
             <h2 className="font-display text-2xl font-semibold">Start your first class</h2>
             <p className="mx-auto mt-2 max-w-sm text-muted-foreground">
-              Group your assignments by class, then upload student work to grade it in your voice — or
-              try aiTA right now on a set of sample essays.
+              The fastest way to see aiTA work is our sample essays — no student data, no upload. Or
+              group your assignments by class and grade real student work in your voice.
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <Button className="gap-2" onClick={handleLoadSamples} disabled={loadingSample}>
