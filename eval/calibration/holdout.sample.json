@@ -1,0 +1,178 @@
+[
+  {
+    "id": "agree-high-conf-1",
+    "autoGrade": 88,
+    "teacherGrade": 88,
+    "confidence": 0.92,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-2",
+    "autoGrade": 74,
+    "teacherGrade": 75,
+    "confidence": 0.9,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-3",
+    "autoGrade": 61,
+    "teacherGrade": 60,
+    "confidence": 0.87,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-4",
+    "autoGrade": 95,
+    "teacherGrade": 94,
+    "confidence": 0.96,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-5",
+    "autoGrade": 52,
+    "teacherGrade": 53,
+    "confidence": 0.85,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-6",
+    "autoGrade": 80,
+    "teacherGrade": 80,
+    "confidence": 0.91,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-7",
+    "autoGrade": 67,
+    "teacherGrade": 66,
+    "confidence": 0.88,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-8",
+    "autoGrade": 90,
+    "teacherGrade": 91,
+    "confidence": 0.93,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-9",
+    "autoGrade": 45,
+    "teacherGrade": 44,
+    "confidence": 0.86,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-10",
+    "autoGrade": 78,
+    "teacherGrade": 78,
+    "confidence": 0.9,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-11",
+    "autoGrade": 83,
+    "teacherGrade": 84,
+    "confidence": 0.89,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-12",
+    "autoGrade": 70,
+    "teacherGrade": 71,
+    "confidence": 0.88,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-13",
+    "autoGrade": 58,
+    "teacherGrade": 58,
+    "confidence": 0.85,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-14",
+    "autoGrade": 99,
+    "teacherGrade": 98,
+    "confidence": 0.97,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-15",
+    "autoGrade": 64,
+    "teacherGrade": 65,
+    "confidence": 0.87,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-16",
+    "autoGrade": 72,
+    "teacherGrade": 73,
+    "confidence": 0.9,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-17",
+    "autoGrade": 86,
+    "teacherGrade": 86,
+    "confidence": 0.94,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-18",
+    "autoGrade": 49,
+    "teacherGrade": 48,
+    "confidence": 0.85,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-19",
+    "autoGrade": 77,
+    "teacherGrade": 76,
+    "confidence": 0.91,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "agree-high-conf-20",
+    "autoGrade": 92,
+    "teacherGrade": 92,
+    "confidence": 0.95,
+    "disposition": "graded",
+    "flags": []
+  },
+  {
+    "id": "withheld-not-eligible",
+    "autoGrade": 100,
+    "teacherGrade": 40,
+    "confidence": 0.99,
+    "disposition": "needs_review",
+    "flags": ["off_topic", "grade_withheld"]
+  },
+  {
+    "id": "low-conf-not-eligible",
+    "autoGrade": 88,
+    "teacherGrade": 30,
+    "confidence": 0.55,
+    "disposition": "graded",
+    "flags": ["low_confidence"]
+  }
+]

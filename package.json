@@ -10,7 +10,13 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:ci": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "eval:dry": "EVAL_DRY_RUN=1 node eval/run.mjs --judge",
+    "eval:dry:dataset": "EVAL_DRY_RUN=1 node eval/run.mjs",
+    "eval:calibrate": "node eval/calibration/false-finalize.mjs eval/calibration/holdout.sample.json --threshold 0.85 --tolerance 2",
+    "eval:live": "node eval/run.mjs --judge"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
