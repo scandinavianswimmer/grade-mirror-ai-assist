@@ -263,14 +263,36 @@ Deno.serve((req) => {
 
     await db.from("submissions").update({ status: "grading" }).eq("id", submissionId);
 
-    // FERPA de-identification (H1): strip the student's own name from the essay BEFORE it is sent to
-    // the third-party LLM, when the teacher has anonymization enabled (default ON). Length-preserving
-    // so annotation offsets still anchor onto the original text shown in the UI. The teacher still
-    // sees the real name locally; only the text leaving for Gemini is redacted.
+    // FERPA de-identification (H1 + HIGH-7): strip FERPA-relevant identifiers from the essay BEFORE it
+    // is sent to the third-party LLM, when the teacher has anonymization enabled (default ON).
+    // Length-preserving so annotation offsets still anchor onto the original text shown in the UI. The
+    // teacher still sees the real names locally; only the text leaving for Gemini is redacted.
+    //
+    // Masked: the student's own name (roster) PLUS an EXTRA-IDENTIFIERS list the caller knows from the
+    // teacher context — the teacher's name + school. These are high-value, low-false-positive: they
+    // are proper nouns unlikely to collide with essay vocabulary, so masking exact matches won't
+    // corrupt grading. Course/class names are DELIBERATELY excluded — they are often generic words
+    // ("English", "Period 1", "World History") whose exact-match redaction would over-mask essay
+    // content, a worse failure for a grading product than the residual leak. It does NOT remove
+    // arbitrary free-text PII (other students, parents, addresses) — that needs an NER/model de-id
+    // pre-pass (documented residual risk in docs/COMPLIANCE-POSTURE.md).
     let essayForGrading = submission.extracted_text as string;
     {
       const studentName = ((submission as { student_name?: string }).student_name ?? "").trim();
-      if (studentName.length >= 2) {
+      const anonymizableRoster = studentName.length >= 2 ? [studentName] : [];
+      // Build the extra-identifiers list from teacher context. Best-effort: the users table may lack
+      // full_name/school on older schemas (a REST 400 surfaces as null in the result, never throws).
+      const { data: teacher } = await db
+        .from("users")
+        .select("full_name, school")
+        .eq("id", userId)
+        .maybeSingle();
+      const extraIdentifiers = [
+        (teacher as { full_name?: string } | null)?.full_name,
+        (teacher as { school?: string } | null)?.school,
+      ].filter((v): v is string => typeof v === "string" && v.trim().length >= 2);
+
+      if (anonymizableRoster.length > 0 || extraIdentifiers.length > 0) {
         const { data: ps } = await db
           .from("privacy_settings")
           .select("anonymize_student_names")
@@ -278,7 +300,9 @@ Deno.serve((req) => {
           .maybeSingle();
         const anonymize = ps?.anonymize_student_names ?? true; // default-on if no row
         if (anonymize) {
-          essayForGrading = maskNamesPreservingOffsets(submission.extracted_text, [studentName]) ?? submission.extracted_text;
+          essayForGrading =
+            maskNamesPreservingOffsets(submission.extracted_text, anonymizableRoster, extraIdentifiers) ??
+            submission.extracted_text;
         }
       }
     }
