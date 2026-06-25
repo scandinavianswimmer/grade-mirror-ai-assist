@@ -10,6 +10,7 @@ import { gradeSubmission, type AgentStep } from "../_shared/grading/engine.ts";
 import { synthesizeRubric, toRubricInput } from "../_shared/grading/rubric-synth.ts";
 import { resolveAssignmentContext, MISSING_CONTEXT_REASON } from "../_shared/grading/assignment-context.ts";
 import { maskNamesPreservingOffsets } from "../_shared/deid.ts";
+import { runDeidPrepass, buildGeminiPrepassScorer, prepassEnabledFromEnv } from "../_shared/deid-prepass.ts";
 import { enforceGradingQuota } from "../_shared/quota.ts";
 import {
   decideFinalization,
@@ -292,17 +293,43 @@ Deno.serve((req) => {
         (teacher as { school?: string } | null)?.school,
       ].filter((v): v is string => typeof v === "string" && v.trim().length >= 2);
 
-      if (anonymizableRoster.length > 0 || extraIdentifiers.length > 0) {
-        const { data: ps } = await db
-          .from("privacy_settings")
-          .select("anonymize_student_names")
-          .eq("user_id", userId)
-          .maybeSingle();
-        const anonymize = ps?.anonymize_student_names ?? true; // default-on if no row
-        if (anonymize) {
-          essayForGrading =
-            maskNamesPreservingOffsets(submission.extracted_text, anonymizableRoster, extraIdentifiers) ??
-            submission.extracted_text;
+      // privacy_settings may lack the deid_prepass column on older schemas — select() that 400s
+      // surfaces as null (never throws), so we read it defensively below.
+      const { data: ps } = await db
+        .from("privacy_settings")
+        .select("anonymize_student_names, deid_prepass")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const anonymize = ps?.anonymize_student_names ?? true; // default-on if no row
+
+      if (anonymize && (anonymizableRoster.length > 0 || extraIdentifiers.length > 0)) {
+        essayForGrading =
+          maskNamesPreservingOffsets(submission.extracted_text, anonymizableRoster, extraIdentifiers) ??
+          submission.extracted_text;
+      }
+
+      // De-id PRE-PASS (HIGH-7 real fix) — OPTIONAL model pass over the (base-masked) essay that catches
+      // residual free-text PII the explicit lists can't (other students, parents, hometowns, addresses,
+      // contact info). OFF by default: gated on the env flag AND a per-teacher privacy_settings.deid_prepass
+      // column (default false), and only runs when anonymization itself is on. Length-preserving so
+      // annotation offsets still anchor; FAIL-OPEN so a model error/timeout never blocks grading.
+      const prepassEnabled =
+        anonymize && prepassEnabledFromEnv() && ((ps as { deid_prepass?: boolean } | null)?.deid_prepass ?? false);
+      if (prepassEnabled) {
+        try {
+          const scorer = await buildGeminiPrepassScorer();
+          const pre = await runDeidPrepass(essayForGrading, scorer, {
+            enabled: true,
+            log: (msg, detail) =>
+              console.log(msg, { submissionId, ...detail }),
+          });
+          essayForGrading = pre.text;
+        } catch (err) {
+          // Belt-and-suspenders fail-open: even if building the scorer throws, never block grading.
+          console.error("[grade-submission] de-id pre-pass setup failed; using base-masked text", {
+            submissionId,
+            error: err instanceof Error ? err.message : String(err),
+          });
         }
       }
     }

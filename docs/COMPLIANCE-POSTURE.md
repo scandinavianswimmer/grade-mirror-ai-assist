@@ -29,8 +29,12 @@ annotations together.
 
 **De-identification flow (send-time):**
 ```
-essay text  →  maskNamesPreservingOffsets(text, [studentName], [teacherName, school])  →  Gemini
+essay text  →  maskNamesPreservingOffsets(text, [studentName], [teacherName, school])
               (only when anonymize_student_names = true, default true)
+            →  [optional] runDeidPrepass(baseMasked, geminiScorer)   ← OFF by default
+              (only when DEID_PREPASS_ENABLED env + privacy_settings.deid_prepass are BOTH on;
+               masks residual free-text PII length-preservingly; FAIL-OPEN to base-masked text)
+            →  Gemini
 ```
 
 **Residual risk — state it honestly (do NOT claim fully compliant):**
@@ -42,10 +46,22 @@ essay text  →  maskNamesPreservingOffsets(text, [studentName], [teacherName, s
 - Aggressive heuristic masking was **deliberately rejected**: redacting capitalized tokens or
   "name-like" words mid-essay corrupts the very content being graded (over-masking shifts the meaning
   the model scores against), which is a worse failure for a grading product than the residual leak.
-- **Documented follow-up (the real fix):** add an NER / model-based de-id **pre-pass** that detects and
-  redacts arbitrary PERSON / ORG / LOC / contact entities before transmission, length-preserving to
-  keep offsets valid. Until that ships, the claim is "explicitly-known identifiers are masked," **not**
-  "all student PII is removed."
+- **The real fix — de-id PRE-PASS (now built, OFF by default):** `_shared/deid-prepass.ts` adds a
+  model-based pre-pass that runs over the *base-masked* essay BEFORE grading, asks Gemini to return
+  spans of residual PII it doesn't already know (PERSON other than the author, LOCATION, ORG-school,
+  CONTACT), and masks them with the SAME offset-preserving primitive so annotation anchors still hold.
+  When enabled it closes **most** of the residual free-text leak above (other students, parents,
+  hometowns, addresses, contact info). It is **OFF by default** and double-gated: the global
+  `DEID_PREPASS_ENABLED` env flag AND a per-teacher `privacy_settings.deid_prepass` column (default
+  false) must BOTH be on, and it runs only when anonymization is on. It is **FAIL-OPEN**: if the model
+  errors or times out, grading falls back to the base-masked text and logs — a de-id step must never
+  block grading. Cost/latency: one extra model call per grade (the reason it is flag-gated; intended
+  for **Cohort B** real essays once enabled). Activation requires an edge-fn deploy + both flags on.
+- **Still not "fully compliant," even with the pre-pass on.** Model NER is probabilistic: it can miss a
+  span or over-redact, so the claim remains "FERPA-aware, residual leak substantially reduced when the
+  pre-pass is enabled," **not** "all student PII is provably removed." With the pre-pass OFF (the
+  default), the claim is unchanged: "explicitly-known identifiers are masked," not "all student PII is
+  removed."
 - **Mitigations in place meanwhile:** For **Cohort A (revenue)** the residual leak is structurally
   avoided — new teachers are steered to grade **synthetic sample essays with no real student PII**
   (the dashboard empty state makes "Try it with 5 sample essays — no student data" the primary action;
