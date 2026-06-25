@@ -32,6 +32,15 @@ evaluation with their own key.
 
 Exit code: **0 = all gates pass**, **1 = a gate failed** (the report names every failing case).
 
+> **Backend / Vertex AI (M1, OFF by default).** The full env var reference — including the
+> additive **Vertex AI** backend — lives in [`eval/.env.example`](.env.example). The default
+> `studio` backend (generativelanguage.googleapis.com + `GEMINI_API_KEY`) is unchanged. To route
+> grading through Google Cloud Vertex AI instead, set `GEMINI_BACKEND=vertex` (or `VERTEX_AI=true`)
+> **and** provide `VERTEX_PROJECT`, `VERTEX_LOCATION`, and a Google credential
+> (`GOOGLE_OAUTH_TOKEN` or `GOOGLE_SERVICE_ACCOUNT_JSON`). If any prerequisite is missing the
+> client stays on the studio path, so the flag is safe to flip before GCP is fully configured.
+> This Vertex path is **code-prepped but UNVERIFIED against a live endpoint** (no GCP creds yet).
+
 ---
 
 ## What it does (and why it mirrors production)

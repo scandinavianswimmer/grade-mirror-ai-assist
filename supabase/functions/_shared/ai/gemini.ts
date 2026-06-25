@@ -7,8 +7,7 @@ import { ENV } from "../env.ts";
 import { withinGlobalGeminiBudget, paceUpstreamCall } from "../ratelimit.ts";
 import { AppError } from "../http.ts";
 import { getGoogleAccessToken, hasGoogleCredential } from "./google-auth.ts";
-
-const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+import { selectVertex, studioEndpointUrl, vertexEndpointUrl } from "./vertex-endpoint.ts";
 
 type AnyObj = Record<string, unknown>;
 
@@ -77,15 +76,17 @@ function isQuotaError(status: number, body: string): boolean {
 // those is missing we return false so call() stays on the default generativelanguage key path — the
 // flag can be set without breaking grading before the project/credential are configured.
 function vertexSelected(): boolean {
-  const wantsVertex = ENV.geminiBackend() === "vertex" || ENV.vertexAiEnabled();
-  if (!wantsVertex) return false;
-  return Boolean(ENV.vertexProject() && ENV.vertexLocation() && hasGoogleCredential());
+  return selectVertex({
+    geminiBackend: ENV.geminiBackend(),
+    vertexAiEnabled: ENV.vertexAiEnabled(),
+    vertexProject: ENV.vertexProject(),
+    vertexLocation: ENV.vertexLocation(),
+    hasGoogleCredential: hasGoogleCredential(),
+  });
 }
 
 function vertexUrl(modelId: string): string {
-  const project = ENV.vertexProject();
-  const location = ENV.vertexLocation();
-  return `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/publishers/google/models/${modelId}:generateContent`;
+  return vertexEndpointUrl(ENV.vertexProject(), ENV.vertexLocation(), modelId);
 }
 
 // Vertex transport: same request body + same response shape as the generativelanguage path, but
@@ -137,7 +138,7 @@ async function call(modelId: string, body: AnyObj): Promise<AnyObj> {
         `Gemini global rate ceiling reached (${budget.count}/${budget.ceiling} per min) — backing off to protect the key pool`,
       );
     }
-    const res = await fetch(`${BASE}/${modelId}:generateContent?key=${keys[idx]}`, {
+    const res = await fetch(studioEndpointUrl(modelId, keys[idx]), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: payload,
