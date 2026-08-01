@@ -2,11 +2,22 @@
 
 > Product: **aiTA**, an AI grading co-pilot for teachers (repo name: `grade-mirror-ai-assist`).
 > Stack: Vite + React 18 + TS + shadcn/ui + Tailwind · Supabase (Postgres + Edge Functions) · **Google Gemini** for grading.
-> Last updated: 2026-05-21. Full plan in `docs/v2-planning/` (start with `GOAL.md`, then `00-PLANNING-REPORT.md`).
+> Last verified: 2026-08-01. Full competition gate: `docs/launch/XPRIZE-SUBMISSION.md`.
 
 ---
 
-## Current State
+## Current verified release state — 2026-08-01
+
+- The isolated candidate is on branch `codex/xprize-submission-sprint-20260801` in draft [PR #30](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/pull/30).
+- [GitHub Actions run 30717852981](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30717852981) passed lint, typecheck, all 224 tests, the production build, and deterministic eval gates.
+- The Firebase URL configured in this repository currently returns HTTP 404. There is no verified live frontend release.
+- The backend target is unresolved: `supabase/config.toml` names inactive project `rwiqwuohbcvhuvtlxlvh`, while the May deployment notes below name `yhdobsmmhdvqswjpousc`, which is not visible to the currently authenticated CLI account. Do **not** restore, link, migrate, or deploy until the founder confirms which ref is canonical.
+- The authenticated Vercel scope contains only an unrelated project. Do **not** deploy aiTA into that scope.
+- The existing aiTA project predates the XPRIZE eligibility cutoff. Do not submit it without a written organizer ruling; see the competition gate for the official-source evidence and pivot options.
+
+Everything below this point is historical May 2026 context. It is useful for recovery, but its claims of a live deployment are **not current production evidence**.
+
+## Historical May state
 - v2 grading pipeline deployed
 - SubmissionDetail rewritten
 - Gemini grading live
@@ -48,7 +59,7 @@ Worked the full dev audit in priority order (committed in logical batches; `tsc`
 
 ---
 
-## Environment & connections (no secrets stored here)
+## Historical May environment & connections (unverified; no secrets stored here)
 - **Cloud Supabase project:** ref `yhdobsmmhdvqswjpousc`, region **us-west-2 (Oregon)**, URL `https://yhdobsmmhdvqswjpousc.supabase.co`.
 - **DB access:** the direct host `db.<ref>.supabase.co` does NOT resolve (new-project behavior). Use the **Session pooler** (port 5432): `aws-1-us-west-2.pooler.supabase.com`, user `postgres.yhdobsmmhdvqswjpousc`. DB password is held by Luke (was shared in chat — **rotate it**).
 - **CLI:** linked (`supabase link --project-ref yhdobsmmhdvqswjpousc`); login via `supabase login` (done in Luke's terminal). Deploys need a personal access token / interactive login.

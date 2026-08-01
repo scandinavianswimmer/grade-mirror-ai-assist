@@ -34,10 +34,10 @@ Suggested organizer message:
 | Public code repository | Ready | `scandinavianswimmer/grade-mirror-ai-assist` is public |
 | License | Open | All rights reserved; founder must choose whether to add a license |
 | Public live application | **NO-GO** | Configured Firebase URL returns HTTP 404 |
-| Working backend | **NO-GO** | Legacy Grade Mirror Supabase project is inactive |
+| Working backend | **NO-GO** | `supabase/config.toml` points to inactive `rwiqwuohbcvhuvtlxlvh`, while historical deployment notes point to inaccessible `yhdobsmmhdvqswjpousc`; confirm the canonical project before any restore, migration, or function deployment |
 | Google Cloud product in deployed app | **UNPROVEN** | Cloud Run/Firebase/Vertex paths exist in code; no live deployment evidence |
 | Gemini API call in deployed app | **UNPROVEN** | Gemini integration exists in code; no production request/log proof |
-| CI quality gate | Ready locally | `npm run verify` and `actionlint` pass; branch is not pushed, so GitHub has not run this workflow yet |
+| CI quality gate | **Ready remotely** | Draft [PR #30](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/pull/30) is mergeable; [GitHub Actions run 30717852981](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30717852981) passed lint, typecheck, 224 tests, production build, and deterministic eval gates |
 | Test credentials / judge instructions | Missing | Create only against the exact live release; never include secrets in the repo |
 | Real users and testimonials | Unverified | Export timestamped, privacy-safe evidence; do not use seed/demo personas as users |
 | Real revenue and P&L | Unverified | Export Stripe revenue by month, costs excluding marketing, CAC, and related-party split |
@@ -106,7 +106,9 @@ Tonight can produce a reviewed release candidate and a complete evidence map. It
 - [x] Validate GitHub Actions syntax and remove masked deployment failures.
 - [x] Smoke-test public routes from a production build with local, non-production configuration.
 - [x] Scan the current tree and targeted historical credential patterns; document the remaining public client identifiers.
+- [x] Push the isolated release-candidate branch and open draft PR #30.
+- [x] Pass the remote GitHub Actions quality gate on the pushed candidate.
 - [ ] Send the organizer eligibility question.
 - [ ] Decide whether to seek a ruling, pivot to a genuinely new eligible project, or ship aiTA outside this competition.
-- [ ] If continuing: provision Google Cloud/Firebase, activate a backend, configure secrets, deploy, and re-run the release gate against the live URLs.
+- [ ] If continuing: confirm the canonical Supabase ref, restore/provision only that backend, configure Google Cloud/Firebase and secrets, deploy, and re-run the release gate against the live URLs.
 - [ ] Only then collect real evidence, record the video, finish the narrative, and submit.
