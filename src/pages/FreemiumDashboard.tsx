@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,13 +19,7 @@ const FreemiumDashboard = () => {
   const [trainingExamples, setTrainingExamples] = useState<TrainingExample[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      loadDashboardData();
-    }
-  }, [user]);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     if (!user) return;
     
     console.log('FreemiumDashboard: Loading data for user', user.id);
@@ -56,7 +50,13 @@ const FreemiumDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast, user]);
+
+  useEffect(() => {
+    if (user) {
+      loadDashboardData();
+    }
+  }, [loadDashboardData, user]);
 
   if (loading) {
     return (

@@ -9,23 +9,38 @@
 import { AppError } from "./http.ts";
 
 // Minimal structural type — both userClient and adminClient satisfy it.
-// deno-lint-ignore no-explicit-any
-type RpcCapable = { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: any; error: any }> };
+type RpcCapable = {
+  rpc: (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: unknown }>;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object";
+}
+
+function errorDetail(error: unknown): string {
+  if (!isRecord(error)) return "unknown";
+  if (typeof error.message === "string") return error.message;
+  if (typeof error.code === "string") return error.code;
+  return "unknown";
+}
 
 export async function enforceGradingQuota(db: RpcCapable, units = 1): Promise<void> {
   const { data, error } = await db.rpc("consume_grading_quota", { p_units: units });
   if (error) {
     console.error(
-      `[quota] consume_grading_quota unavailable; allowing (fail-open): ${error.message ?? error.code ?? "unknown"}`,
+      `[quota] consume_grading_quota unavailable; allowing (fail-open): ${errorDetail(error)}`,
     );
     return;
   }
   const row = Array.isArray(data) ? data[0] : data;
-  if (row && row.allowed === false) {
+  if (isRecord(row) && row.allowed === false) {
     throw new AppError(
       429,
       "quota_exceeded",
-      `Weekly grading limit reached (${row.used}/${row.max_weekly} on the ${row.plan} plan). Upgrade your plan or wait for the weekly reset.`,
+      `Monthly grading limit reached (${String(row.used)}/${String(row.max_weekly)} on the ${String(row.plan)} plan). Upgrade your plan or wait for the monthly reset.`,
     );
   }
 }

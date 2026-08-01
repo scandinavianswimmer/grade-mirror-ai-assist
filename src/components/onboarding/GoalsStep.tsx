@@ -4,9 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 
+export interface GoalsData {
+  goals?: string[];
+}
+
 interface GoalsStepProps {
-  data: any;
-  onNext: (data: any) => void;
+  data?: GoalsData;
+  onNext: (data: GoalsData) => void;
   onBack?: () => void;
 }
 

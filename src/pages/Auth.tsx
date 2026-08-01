@@ -9,6 +9,23 @@ import { useToast } from '@/hooks/use-toast'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import GoogleIcon from '@/components/icons/GoogleIcon'
 
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return error.message
+  }
+
+  return fallback
+}
+
 const Auth = () => {
   const [searchParams] = useSearchParams()
   const [isLogin, setIsLogin] = useState(searchParams.get('mode') !== 'signup')
@@ -37,8 +54,12 @@ const Auth = () => {
         await signUp(email, password, name)
         toast({ title: 'Account created', description: 'Check your email to verify your account.' })
       }
-    } catch (error: any) {
-      toast({ title: 'Something went wrong', description: error.message, variant: 'destructive' })
+    } catch (error: unknown) {
+      toast({
+        title: 'Something went wrong',
+        description: getErrorMessage(error, 'Please try again.'),
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
@@ -50,8 +71,12 @@ const Auth = () => {
     setGoogleLoading(true)
     try {
       await signInWithGoogle()
-    } catch (error: any) {
-      toast({ title: 'Google sign-in failed', description: error.message, variant: 'destructive' })
+    } catch (error: unknown) {
+      toast({
+        title: 'Google sign-in failed',
+        description: getErrorMessage(error, 'Could not sign in with Google. Please try again.'),
+        variant: 'destructive',
+      })
       setGoogleLoading(false)
     }
   }
@@ -81,7 +106,7 @@ const Auth = () => {
         </div>
         <div className="relative flex items-center gap-2 text-sm text-primary-foreground/70">
           <ShieldCheck className="h-4 w-4" />
-          Human-in-the-loop by design — never automated grading.
+          Human-controlled by design — unattended publication is opt-in.
         </div>
       </aside>
 

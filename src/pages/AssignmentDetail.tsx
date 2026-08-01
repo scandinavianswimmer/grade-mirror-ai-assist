@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, FileText, Download, Pencil, Check, X } from 'lucide-react';
@@ -98,13 +98,7 @@ const AssignmentDetail = () => {
     setRenamingId(null);
   };
 
-  useEffect(() => {
-    if (id && user) {
-      fetchAssignmentData();
-    }
-  }, [id, user]);
-
-  const fetchAssignmentData = async () => {
+  const fetchAssignmentData = useCallback(async () => {
     try {
       // Fetch assignment details
       const { data: assignmentData, error: assignmentError } = await supabase
@@ -165,7 +159,13 @@ const AssignmentDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, toast, user]);
+
+  useEffect(() => {
+    if (id && user) {
+      fetchAssignmentData();
+    }
+  }, [fetchAssignmentData, id, user]);
 
   const handleFileSelect = async (file: File, content: string) => {
     if (!assignment || !user) return;
@@ -262,7 +262,6 @@ const AssignmentDetail = () => {
         s.id,
         dispositionFor(
           { id: s.id, status: s.status, finalized_by: s.finalized_by, auto_finalized_at: s.auto_finalized_at },
-          typeof s.confidence === 'number' ? s.confidence : null,
         ),
       );
     }

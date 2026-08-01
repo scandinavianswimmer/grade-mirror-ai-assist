@@ -5,9 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
+export interface ReferralData {
+  referralSource?: string;
+  otherReferral?: string;
+}
+
 interface ReferralStepProps {
-  data: any;
-  onNext: (data: any) => void;
+  data?: ReferralData;
+  onNext: (data: ReferralData) => void;
   onBack?: () => void;
 }
 

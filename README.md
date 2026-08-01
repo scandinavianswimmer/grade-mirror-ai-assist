@@ -24,18 +24,18 @@ Paste a rubric, upload student work, and aiTA returns rubric-aligned scores and 
 
 ## Tech stack
 
-- **Frontend:** Vite · React 18 · TypeScript · shadcn/ui · Tailwind · **Firebase Hosting**
-- **Backend:** Supabase (Postgres + Edge Functions) → migrating to Google Cloud (Cloud Run · Cloud SQL · Cloud Storage · Firebase)
-- **AI:** Google **Gemini** (via Vertex AI) — rubric-aligned grading with structured JSON output, evidence verification, and teacher-style injection
+- **Frontend:** Vite · React 18 · TypeScript · shadcn/ui · Tailwind; Firebase Hosting configuration is included but not yet live
+- **Backend:** Supabase Postgres + Edge Functions; Cloud Run and Cloud Storage adapters are implemented but not yet deployed
+- **AI:** Google **Gemini** with an optional Vertex AI transport; rubric-aligned grading, evidence verification, and teacher-style injection
 - **Payments:** Stripe · **Analytics:** PostHog
 
 ## Local development
 
 ```sh
-npm install
+nvm use
+npm ci
 npm run dev        # → http://localhost:8080
-npm run build      # production build
-npm test           # vitest
+npm run verify     # lint, types, tests, build, and deterministic eval gates
 ```
 
 Copy `.env.example` → `.env` and fill in the public values. Server secrets are never committed — they live in Supabase function secrets (and, post-migration, Google Cloud Secret Manager).
@@ -54,11 +54,13 @@ docs/                        Concepts, guides, references
 
 ## Status
 
-Active build toward a public launch and the **Build with Gemini XPRIZE** (Education & Human Potential). See `.planning/LAUNCH-PLAN.md` for the roadmap.
+The application is in pre-launch hardening. Core product flows are implemented and covered by automated tests, but the configured production hosting, backend, billing, and Vertex deployment are not currently verified live.
+
+The existing project predates the **Build with Gemini XPRIZE** eligibility window. Do not present this repository as an eligible entry without a written organizer ruling; see [`docs/launch/XPRIZE-SUBMISSION.md`](docs/launch/XPRIZE-SUBMISSION.md) for the evidence gate and conditional submission checklist.
 
 ## Screenshots
 
-_Real images go here once the app is deployed. Placeholders for now:_
+No production screenshots are claimed yet. Replace this section with timestamped captures from the exact deployed release before launch:
 
 - **Dashboard** — classes, assignments, and grading queue at a glance.
 - **Grading workspace** — rubric-aligned scores with voice feedback.

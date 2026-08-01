@@ -45,6 +45,38 @@ interface AnnotationRow {
   comment: string; ai_comment: string | null; type: AnnoType; matched: boolean; status: string;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  value !== null && typeof value === 'object'
+);
+
+const hasJsonMethod = (value: unknown): value is { json: () => Promise<unknown> } => (
+  isRecord(value) && typeof value.json === 'function'
+);
+
+const readFunctionErrorMessage = async (error: unknown, fallback: string): Promise<string> => {
+  try {
+    const context = isRecord(error) ? error.context : null;
+    if (hasJsonMethod(context)) {
+      const body = await context.json();
+      if (isRecord(body) && typeof body.error === 'string') {
+        const stage = typeof body.stage === 'string' && body.stage ? ` (${body.stage})` : '';
+        return `${body.error}${stage}`;
+      }
+    }
+  } catch {
+    // Non-JSON / network error — keep the fallback.
+  }
+  return fallback;
+};
+
+const errorMessage = (error: unknown, fallback: string): string => (
+  error instanceof Error
+    ? error.message
+    : isRecord(error) && typeof error.message === 'string'
+      ? error.message
+      : fallback
+);
+
 const SubmissionDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -119,8 +151,7 @@ const SubmissionDetail = () => {
     try {
       const { data, error } = await supabase.functions.invoke('grade-submission', { body: { submissionId: id } });
       if (error) {
-        let msg = 'Grading failed';
-        try { const body = await (error as any).context?.json?.(); if (body?.error) msg = `${body.error}${body.stage ? ` (${body.stage})` : ''}`; } catch { /* ignore */ }
+        const msg = await readFunctionErrorMessage(error, 'Grading failed');
         analytics.capture('grade_completed', { submission_id: id, ok: false, duration_ms: Date.now() - startedAt });
         toast({ title: 'Could not grade', description: msg, variant: 'destructive' });
       } else {
@@ -131,9 +162,9 @@ const SubmissionDetail = () => {
           : { title: 'Graded', description: 'Review the AI’s notes — you have the final say.' });
         await load();
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       analytics.capture('grade_completed', { submission_id: id, ok: false, duration_ms: Date.now() - startedAt });
-      toast({ title: 'Could not grade', description: e?.message ?? 'Unexpected error', variant: 'destructive' });
+      toast({ title: 'Could not grade', description: errorMessage(e, 'Unexpected error'), variant: 'destructive' });
     } finally {
       setGrading(false);
     }

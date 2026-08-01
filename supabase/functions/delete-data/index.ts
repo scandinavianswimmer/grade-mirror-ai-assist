@@ -13,8 +13,7 @@ const UPLOAD_BUCKET = "uploads"; // matches src/lib/fileUpload.ts default
 
 // Best-effort removal of the Storage objects backing a set of submissions. Non-fatal: a storage
 // hiccup must not leave the caller unable to erase their DB rows (we log and continue).
-// deno-lint-ignore no-explicit-any
-async function removeFiles(db: any, filePaths: string[]): Promise<number> {
+async function removeFiles(db: ReturnType<typeof userClient>, filePaths: string[]): Promise<number> {
   const paths = filePaths.filter((p): p is string => typeof p === "string" && p.length > 0);
   if (paths.length === 0) return 0;
   const { error } = await db.storage.from(UPLOAD_BUCKET).remove(paths);

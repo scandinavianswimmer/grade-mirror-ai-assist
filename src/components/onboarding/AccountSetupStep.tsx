@@ -4,9 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
+export interface AccountSetupData {
+  inviteColleagues?: string;
+  syncLMS?: string;
+}
+
 interface AccountSetupStepProps {
-  data: any;
-  onNext: (data: any) => void;
+  data?: AccountSetupData;
+  onNext: (data: AccountSetupData) => void;
   onBack?: () => void;
 }
 

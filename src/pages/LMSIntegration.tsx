@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,12 +28,7 @@ const LMSIntegration = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  useEffect(() => {
-    checkConnectionStatus();
-    loadSyncStats();
-  }, [user]);
-
-  const checkConnectionStatus = async () => {
+  const checkConnectionStatus = useCallback(async () => {
     if (!user) return;
 
     const { data } = await supabase
@@ -48,9 +43,9 @@ const LMSIntegration = () => {
     if (data?.canvas_url) {
       setCanvasUrl(data.canvas_url);
     }
-  };
+  }, [user]);
 
-  const loadSyncStats = async () => {
+  const loadSyncStats = useCallback(async () => {
     if (!user) return;
 
     // Get assignments count
@@ -81,7 +76,12 @@ const LMSIntegration = () => {
       gradesCount: gradesCount || 0,
       lastSync: lastAssignment?.created_at || null
     });
-  };
+  }, [user]);
+
+  useEffect(() => {
+    checkConnectionStatus();
+    loadSyncStats();
+  }, [checkConnectionStatus, loadSyncStats]);
 
   const handleConnect = () => {
     if (!canvasUrl.trim()) {

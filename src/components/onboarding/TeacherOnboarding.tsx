@@ -7,31 +7,31 @@ import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import BasicInfoStep from './BasicInfoStep';
-import TeachingEnvironmentStep from './TeachingEnvironmentStep';
-import GoalsStep from './GoalsStep';
-import TechnicalComfortStep from './TechnicalComfortStep';
-import AccountSetupStep from './AccountSetupStep';
-import ReferralStep from './ReferralStep';
+import BasicInfoStep, { type BasicInfoData } from './BasicInfoStep';
+import TeachingEnvironmentStep, { type TeachingEnvironmentData } from './TeachingEnvironmentStep';
+import GoalsStep, { type GoalsData } from './GoalsStep';
+import TechnicalComfortStep, { type TechnicalComfortData } from './TechnicalComfortStep';
+import AccountSetupStep, { type AccountSetupData } from './AccountSetupStep';
+import ReferralStep, { type ReferralData } from './ReferralStep';
 import { updateOnboardingProfile, checkGuidedTourStatus } from '@/lib/onboardingApi';
 import GuidedTour from './GuidedTour';
 
 const STEPS = [
-  { id: 1, title: 'Basic Information', component: BasicInfoStep },
-  { id: 2, title: 'Teaching Environment', component: TeachingEnvironmentStep },
-  { id: 3, title: 'Goals & Use Cases', component: GoalsStep },
-  { id: 4, title: 'Technical Comfort', component: TechnicalComfortStep },
-  { id: 5, title: 'Account Setup', component: AccountSetupStep },
-  { id: 6, title: 'How did you hear about us?', component: ReferralStep }
+  { id: 1, title: 'Basic Information' },
+  { id: 2, title: 'Teaching Environment' },
+  { id: 3, title: 'Goals & Use Cases' },
+  { id: 4, title: 'Technical Comfort' },
+  { id: 5, title: 'Account Setup' },
+  { id: 6, title: 'How did you hear about us?' }
 ];
 
 interface OnboardingData {
-  basicInfo: any;
-  teachingEnvironment: any;
-  goals: any;
-  technicalComfort: any;
-  accountSetup: any;
-  referral: any;
+  basicInfo: BasicInfoData;
+  teachingEnvironment: TeachingEnvironmentData;
+  goals: GoalsData;
+  technicalComfort: TechnicalComfortData;
+  accountSetup: AccountSetupData;
+  referral: ReferralData;
 }
 
 interface TeacherOnboardingProps {
@@ -53,8 +53,10 @@ const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => 
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const handleStepComplete = (stepData: any) => {
-    const stepKey = getCurrentStepKey();
+  const handleStepComplete = <K extends keyof OnboardingData>(
+    stepKey: K,
+    stepData: OnboardingData[K]
+  ) => {
     setOnboardingData(prev => ({
       ...prev,
       [stepKey]: stepData
@@ -139,21 +141,66 @@ const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => 
     }
   };
 
-  const getCurrentStepKey = () => {
-    const keyMap: { [key: number]: keyof OnboardingData } = {
-      1: 'basicInfo',
-      2: 'teachingEnvironment',
-      3: 'goals',
-      4: 'technicalComfort',
-      5: 'accountSetup',
-      6: 'referral'
-    };
-    return keyMap[currentStep];
-  };
-
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const renderCurrentStep = () => {
+    const onBack = currentStep > 1 ? handleBack : undefined;
+
+    switch (currentStep) {
+      case 1:
+        return (
+          <BasicInfoStep
+            data={onboardingData.basicInfo}
+            onNext={(data) => handleStepComplete('basicInfo', data)}
+            onBack={onBack}
+          />
+        );
+      case 2:
+        return (
+          <TeachingEnvironmentStep
+            data={onboardingData.teachingEnvironment}
+            onNext={(data) => handleStepComplete('teachingEnvironment', data)}
+            onBack={onBack}
+          />
+        );
+      case 3:
+        return (
+          <GoalsStep
+            data={onboardingData.goals}
+            onNext={(data) => handleStepComplete('goals', data)}
+            onBack={onBack}
+          />
+        );
+      case 4:
+        return (
+          <TechnicalComfortStep
+            data={onboardingData.technicalComfort}
+            onNext={(data) => handleStepComplete('technicalComfort', data)}
+            onBack={onBack}
+          />
+        );
+      case 5:
+        return (
+          <AccountSetupStep
+            data={onboardingData.accountSetup}
+            onNext={(data) => handleStepComplete('accountSetup', data)}
+            onBack={onBack}
+          />
+        );
+      case 6:
+        return (
+          <ReferralStep
+            data={onboardingData.referral}
+            onNext={(data) => handleStepComplete('referral', data)}
+            onBack={onBack}
+          />
+        );
+      default:
+        return null;
     }
   };
 
@@ -211,9 +258,6 @@ const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => 
     );
   }
 
-  const CurrentStepComponent = STEPS[currentStep - 1].component;
-  const currentStepKey = getCurrentStepKey();
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
       <div className="container mx-auto px-4 max-w-2xl">
@@ -246,11 +290,7 @@ const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => 
             </div>
 
             {/* Step Content */}
-            <CurrentStepComponent
-              data={onboardingData[currentStepKey]}
-              onNext={handleStepComplete}
-              onBack={currentStep > 1 ? handleBack : undefined}
-            />
+            {renderCurrentStep()}
           </CardContent>
         </Card>
       </div>

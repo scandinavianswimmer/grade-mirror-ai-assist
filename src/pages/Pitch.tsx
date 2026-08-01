@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import TypewriterText from '@/components/TypewriterText';
 import { 
   Clock, 
   CheckCircle2, 
@@ -63,12 +62,8 @@ const Pitch = () => {
       {/* Hero Section */}
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-4xl text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 min-h-[8rem] md:min-h-[12rem] flex items-center justify-center">
-            <TypewriterText 
-              text={'You\'re not "falling behind." You\'re carrying the weight of a whole classroom.'}
-              wordsPerMinute={91}
-              className="text-4xl md:text-6xl font-bold text-foreground"
-            />
+          <h1 className="mb-6 text-4xl font-bold text-foreground md:text-6xl">
+            You're not “falling behind.” You're carrying the weight of a whole classroom.
           </h1>
           
           <p className="text-xl text-muted-foreground mb-8 leading-relaxed animate-fade-in">
@@ -210,7 +205,7 @@ const Pitch = () => {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold mb-4 text-center">After aiTA</h3>
               {[
-                { icon: CheckCircle2, text: "4:30 PM: laptop closed" },
+                { icon: CheckCircle2, text: "A review queue instead of a blank page" },
                 { icon: MessageSquare, text: "Comments drafted in your voice" },
                 { icon: Star, text: "Rubric‑aligned score proposals ready" },
                 { icon: Download, text: "Downloadable, annotated essays + summary" }
@@ -283,7 +278,7 @@ const Pitch = () => {
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-6xl">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-foreground mb-16">
-            Benefits that map to feelings
+            Built for the way teachers work
           </h2>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -333,10 +328,10 @@ const Pitch = () => {
         </div>
       </section>
 
-      {/* Demo Section */}
+      {/* Demo Section — intentionally non-interactive until a real release recording exists. */}
       <section className="py-20 px-4 bg-muted/50">
         <div className="container mx-auto max-w-4xl text-center">
-          <h2 className="text-xl font-semibold text-foreground mb-8 animate-fade-in">45‑second demo</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-8 animate-fade-in">Product walkthrough</h2>
           
           <p className="text-xl text-muted-foreground mb-8 animate-fade-in">
             "Remember when teaching felt like teaching—not triage at midnight?"
@@ -344,13 +339,12 @@ const Pitch = () => {
           
           <div className="bg-card rounded-lg p-8 shadow-lg hover-scale transition-all duration-300 animate-fade-in group relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div className="bg-muted rounded-lg aspect-video flex items-center justify-center mb-6 relative group/play cursor-pointer">
+            <div className="bg-muted rounded-lg aspect-video flex items-center justify-center mb-6 relative">
               <div className="text-center">
-                <Play className="w-16 h-16 text-primary mx-auto mb-4 group-hover/play:scale-110 transition-transform duration-300" />
-                <p className="text-lg font-medium">Watch the demo</p>
-                <p className="text-sm text-muted-foreground">Upload → Align → Review → Deliver</p>
+                <Play className="w-16 h-16 text-primary mx-auto mb-4" />
+                <p className="text-lg font-medium">Live-release recording pending</p>
+                <p className="text-sm text-muted-foreground">The demo will show Upload → Align → Review → Deliver.</p>
               </div>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover/play:opacity-100 transition-opacity duration-1000 transform -skew-x-12 group-hover/play:translate-x-full"></div>
             </div>
             <p className="text-muted-foreground relative z-10">Your voice. Your standards. Your evening back.</p>
           </div>
@@ -365,15 +359,15 @@ const Pitch = () => {
           </h2>
           
           <h3 className="text-xl font-semibold text-center text-muted-foreground mb-12">
-            What teachers say they notice first
+            What the workflow is designed to improve
           </h3>
           
           <div className="grid md:grid-cols-2 gap-8">
             {[
               "Time back for planning, feedback conferences, and life outside school",
-              "Better student uptake because feedback is clear and in your voice", 
+              "Feedback organized for quicker student review",
               "Less decision fatigue with strong drafts and aligned score proposals",
-              "Confidence that grading aligns with expectations and is documented"
+              "A consistent place to inspect alignment and the supporting evidence"
             ].map((outcome, index) => (
               <div key={index} className="flex items-start space-x-3 animate-fade-in hover-scale transition-all duration-300"
                    style={{ animationDelay: `${index * 0.15}s` }}>
@@ -384,7 +378,7 @@ const Pitch = () => {
           </div>
           
           <p className="text-center text-xl text-foreground mt-12">
-            No hype—just meaningful hours returned to your week.
+            Measure these outcomes against your own baseline; aiTA keeps the underlying activity auditable.
           </p>
         </div>
       </section>
@@ -431,7 +425,7 @@ const Pitch = () => {
           </div>
           
           <p className="text-center text-lg text-muted-foreground mt-12">
-            If you have requirements, we'll meet them. That's our job.
+            Before a school rollout, validate the deployed configuration against your district's requirements.
           </p>
         </div>
       </section>
@@ -449,7 +443,7 @@ const Pitch = () => {
               <CardContent className="p-6 text-center relative z-10">
                 <h3 className="text-2xl font-bold mb-4 group-hover:text-primary transition-colors">Free</h3>
                 <p className="text-muted-foreground mb-6">
-                  Try aiTA with your real assignments. No credit card.
+                  Start with synthetic or de-identified assignments. No credit card.
                 </p>
                 <Button onClick={handleStartFree} className="w-full hover-scale relative overflow-hidden group/button">
                   <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover/button:opacity-100 transition-opacity duration-300"></div>
@@ -509,7 +503,7 @@ const Pitch = () => {
               },
               {
                 question: "How hard is it to start?",
-                answer: "Upload, review, export. Most teachers feel comfortable within minutes."
+                answer: "The core workflow is three steps: upload, review, and export."
               }
             ].map((faq, index) => (
               <Card key={index} className="hover:shadow-sm transition-shadow">

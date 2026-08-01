@@ -1,114 +1,48 @@
-# XPRIZE Submission — <3-min Video Script + Judge Narrative
+# XPRIZE video and judge narrative — evidence-gated draft
 
-> The two judge-facing deliverables. Strategy: `XPRIZE-MASTER-PLAN.md` (target = $50K runner-up on the
-> balanced 3-criteria score; win on **AI-native operations** + the **measured voice-convergence proof**).
-> Judge-facing framing only — lead with the documented **bias** problem and the measured proof; **no
-> student-outcome claims.** The video must SHOW unattended grading (auto-finalize), or the AI-native claim
-> is narrated, not true.
+> **Do not submit or record yet.** The existing aiTA project predates the contest cutoff and needs a written organizer eligibility ruling or a genuinely new eligible-project pivot. The configured production app is also not live. The canonical gate and checklist are in [`../../launch/XPRIZE-SUBMISSION.md`](../../launch/XPRIZE-SUBMISSION.md).
 
----
+## Video production brief
 
-# PART 1 — Demo video script (target 2:50, hard cap 3:00)
+Target **2:40**; hard cap **3:00**. Use the timed plan in the canonical submission document. Record in one continuous judge flow from a private browser window against the exact release commit. Burn in captions and show the public URL, a real Gemini request/trace identifier, a refusal path, teacher controls, and only metrics backed by dated exports.
 
-Format: `[TIME] ON-SCREEN — VO`. ~430 words VO (~150 wpm) leaves room for demo beats. Record the demo on
-the real app (`aita-launch-prep` build); auto-finalize is shipped (commit `1e95e9a`).
+Required capture list:
 
-```
-[0:00–0:12]  ON-SCREEN: a teacher's desk, a tall stack of essays; cut to a generic AI feedback blurb.
-VO: "Every English teacher knows this stack. And they know the catch with AI grading: it's biased,
-     it's generic, and it doesn't sound like them — so they stop trusting it."
+- [ ] Live login and judge account with synthetic, privacy-safe content
+- [ ] Real assignment and rubric creation/open flow
+- [ ] On-topic grading output with evidence anchors
+- [ ] Off-topic or risky work routed for review/withheld
+- [ ] Accept, edit, dismiss, and teacher finalize controls
+- [ ] Gemini plus Google Cloud production trace from the same release
+- [ ] Real user/revenue panel, with sample size and related-party revenue labeled
+- [ ] Closing URL and category
 
-[0:12–0:30]  ON-SCREEN: aiTA dashboard, clean. Title card: "aiTA — grades in your voice, you stay in command."
-VO: "aiTA is different by construction. It grades to your rubric, learns your feedback voice, refuses work
-     it shouldn't touch — and it runs as an AI workforce you supervise."
+Do not show a seed persona as a real customer. Do not describe high-confidence rows as auto-finalized unless persisted `finalized_by` or `auto_finalized_at` provenance proves unattended publication. If that feature is not live and opt-in, omit it.
 
-[0:30–1:25]  ON-SCREEN: click "Grade all" on a 25-essay batch. The named agent pipeline animates
-            (Rubric → Relevance → Grading → Annotation → Feedback → Style). Grades populate UNATTENDED.
-            The dashboard reframes as a monitoring view: "22 auto-finalized · 3 routed to you."
-VO: "Watch it grade a full set — unattended. High-confidence, on-topic grades publish automatically.
-     This is auto-finalize: the AI does the work, and only the cases that need a human get routed to one.
-     The teacher isn't grading 25 essays. They're supervising an exception queue of 3."
+## Judge narrative draft (replace every bracket before use)
 
-[1:25–1:55]  ON-SCREEN: open one of the 3 exceptions — an off-topic submission. aiTA shows a WITHHELD grade
-            + the reason ("off-assignment — not scored"). Then the voice toggle: "generic draft" vs
-            "in the teacher's voice," side by side.
-VO: "Here's why you can trust the ones it publishes: when work is off-topic, aiTA refuses to grade it and
-     says why. And the feedback it does write is in the teacher's own voice — not a bot's. Flip the toggle:
-     same essay, generic versus theirs."
+### aiTA: grading support in the teacher's own standards and voice
 
-[1:55–2:20]  ON-SCREEN: teacher edits one comment, clicks Approve. A small "aiTA learned from your edit" toast.
-VO: "Every edit teaches aiTA that teacher's voice. The loop is the product — and we measured it."
+Teachers need to return specific, useful feedback while managing workloads that can turn a stack of essays into an evening of repetitive work. Generic AI output does not solve that problem when it ignores the teacher's rubric, invents evidence, or speaks in a voice the teacher would never use. aiTA is designed around a narrower promise: help a teacher evaluate written work consistently, show the evidence behind each suggestion, and keep the teacher in control of what becomes final.
 
-[2:20–2:48]  ON-SCREEN: the convergence chart (with-profile vs holdout, rising) + a line: "Pre-registered
-            on OSF · honest kill criterion." Then a Stripe revenue-by-month sparkline + "arms-length teachers."
-VO: "We pre-registered a study — with a kill criterion that could have failed — showing aiTA converges on a
-     teacher's voice. Real teachers are paying. Real grading is running in production, mostly unattended."
+The workflow starts with the teacher's assignment and rubric. A student response moves through a structured Gemini pipeline for rubric interpretation, relevance and risk checks, criterion-level grading, evidence verification, anchored annotations, summary feedback, and optional teacher-style adaptation. The system recomputes totals server-side and exposes the resulting evidence instead of asking the teacher to trust a single opaque answer. When work is off assignment or the pipeline cannot support a grade, aiTA routes it for review rather than silently fabricating certainty. In the live evaluation period from **[START_DATE]** to **[END_DATE]**, this path processed **[REAL_SUBMISSION_COUNT]** privacy-safe submissions for **[REAL_TEACHER_COUNT]** independent teachers; the linked production export contains the exact denominators and failure cases.
 
-[2:48–2:58]  ON-SCREEN: logo + "aiTA — your voice. You stay the teacher." + trial URL.
-VO: "aiTA. The grading runs itself. The teacher stays in command."
-```
+Teacher control is part of the product, not a disclaimer. A teacher can accept, edit, or dismiss an annotation and can finalize the grade. Those decisions create an audit trail and, with explicit consent, improve the style profile used for later feedback. Unattended publication remains opt-in. If enabled, aiTA counts a grade as auto-finalized only when the database records explicit AI-finalization provenance; model confidence by itself is never reported as completed work. During **[MEASUREMENT_WINDOW]**, **[PROVEN_AUTO_FINALIZED_COUNT]** of **[ELIGIBLE_GRADED_COUNT]** eligible grades were proven auto-finalized, while **[ROUTED_COUNT]** were routed to a teacher. If no verified unattended publications occurred, this sentence will instead state that the teacher finalized every grade.
 
-**Shot list to capture (real app):** Grade-all on a 25-batch · the agent pipeline animation · the
-"N auto-finalized / M routed" summary · an off-topic WITHHELD card · the voice toggle · an edit→approve→learn
-toast · the convergence chart · a Stripe revenue-by-month chart. **B-roll:** the Marginalia UI wide shot.
+The deployed system uses **[GOOGLE_CLOUD_PRODUCT]** and calls the Gemini API through **[GEMINI_INTEGRATION_PATH]**. The demo links a visible grading event to **[TRACE_OR_REQUEST_ID]**, and the attached logs show **[PRODUCTION_REQUEST_COUNT]** production Gemini requests from release **[COMMIT_OR_TAG]**. This matters because the AI is doing the central unit of product work: interpreting a rubric and drafting evidence-backed feedback. The surrounding controls—refusal, provenance, rate limits, de-identification, and teacher approval—make that AI operation inspectable. We describe only services proven in the deployed architecture; code-only adapters are labeled as planned rather than live.
 
-**Production notes:** ≤3:00 hard (the rules cap it). Captions burned in (judges may watch muted). Show real
-timestamps/counts — verifiable beats polished. End on the AI-native + command-stays-human dual message.
+Impact is measured at the teacher-workflow level. Across **[SAMPLE_SIZE]** completed sessions, teachers spent a median **[BASELINE_MINUTES]** minutes on the baseline workflow and **[AITA_MINUTES]** minutes with aiTA, measured by **[METHOD]**. The approval/edit results were **[RESULT_WITH_INTERVAL]**, and the teacher-voice evaluation was **[VOICE_RESULT_WITH_METHOD]**. These are early operational results, not student-outcome claims. We report small samples, null findings, and excluded sessions directly. The goal is to return time for instruction without hiding uncertainty or removing professional judgment.
 
----
+Business viability is reported with the same discipline. From **[MONTH_RANGE]**, aiTA generated **[$ARMS_LENGTH_REVENUE]** in arms-length revenue and **[$RELATED_PARTY_REVENUE]** in separately labeled related-party revenue from **[PAID_ACCOUNT_COUNT]** paid accounts. Operating costs excluding marketing were **[$OPERATING_COST]**, marketing spend was **[$MARKETING_SPEND]**, and measured customer acquisition cost was **[$CAC_OR_NOT_ENOUGH_DATA]**. **[RETENTION_RESULT]** describes retention using the stated cohort and window. Stripe and analytics exports accompany these figures; trials, seed accounts, and founder-funded purchases are not counted as independent traction.
 
-# PART 2 — Judge narrative (≈700 words)
+aiTA belongs in Education & Human Potential because it targets a practical constraint on timely, individualized feedback while preserving the teacher's authority. Its differentiator is not that an AI can produce a grade. It is that the product grounds suggestions in the teacher's rubric, shows its evidence, refuses work it should not grade, and learns from explicit teacher decisions. The next milestone is **[NEXT_MEASURABLE_MILESTONE]**, evaluated against **[GO_NO_GO_THRESHOLD]**. That makes the submission falsifiable: judges can reproduce the demo, inspect the logs and code, and see where the evidence is strong, early, or still missing.
 
-> Order: documented bias → aiTA's structural fix → the measured proof → AI-native operations → viability.
-> Maps to the three judging criteria without ever claiming student outcomes.
+## Final claim audit
 
-**The problem is measured, not asserted.** AI essay grading carries documented bias. Stanford's LAK26 work
-and ETS data — including a ~1.1-point penalty against Asian-American writers — show that generic LLM graders
-are unreliable and unfair. Teachers feel it too: the majority don't trust-and-edit AI feedback, because it
-misapplies the rubric and reads like a machine. The result is an entire category of tools that teachers try
-once and abandon. That distrust is the real market failure, and it's the failure aiTA is built to fix.
-
-**aiTA fixes it by construction, not by disclaimer.** Four mechanisms work together. First, **rubric-grounded
-scoring** with a deterministic relevance gate: aiTA grades strictly to the teacher's rubric and **withholds**
-a grade on off-topic or off-assignment work rather than inventing one. Second, **mandatory human-in-the-loop**:
-the teacher is the final grader, always. Third, **trust-through-refusal**: per-criterion evidence and
-confidence, server-side score recomputation, and visible reasons when it declines. Fourth, **voice learning**:
-aiTA learns each teacher's feedback voice from their accept/edit/dismiss signals, so the output sounds like the
-teacher — which is exactly what makes them willing to use it. Bias is constrained at the architecture level.
-
-**The proof is pre-registered and could have failed.** Most "learns your style" claims in this market are
-marketing. Ours is a study. We pre-registered on OSF — before collecting outcome data — a holdout-controlled,
-within-teacher design with a **blinded GPT-judge** scoring voice-trait fidelity as the primary metric,
-corroborated by aggregated LUAR-MUD stylometric similarity, and an **honest kill criterion**: if aiTA's
-with-profile feedback doesn't measurably beat a no-profile holdout, we say the wedge failed and pivot to a
-time-savings claim. A proof that could have failed and didn't is worth more than any demo. (We deliberately
-replaced an earlier edit-rate metric after evidence — Borchers et al., AIED 2026 — showed 51% of teachers
-never edit AI feedback, making edit-rate uninterpretable. We changed the metric because the science said to.)
-
-**The operation is genuinely AI-native.** aiTA runs as a traced, named multi-agent pipeline — Rubric,
-Relevance/Risk, Grading, Annotation, Feedback, Style — and, with confidence-thresholded **auto-finalize**,
-publishes high-confidence, on-topic grades **unattended**, routing only low-confidence or off-topic cases to
-the teacher. This is the On-the-Loop pattern: the AI does the grading; the human supervises exceptions. The
-dashboard is a monitoring-and-exception surface, not a manual workbench. The business's core unit of work —
-grading — is performed by AI agents in production, which is precisely what an AI-native company should be able
-to show, not narrate.
-
-**Viability is arms-length and growing.** We launched on a 14-day full-access trial (no card; onboards on
-sample essays, no student data), priced at the market anchor with annual prepay, and we acquire strangers
-through teacher communities, content, and Product Hunt — quarantining every founder-network dollar as
-related-party so the headline revenue is genuinely arms-length. We report **trajectory, arms-length share,
-and unit economics**, not a vanity total. Compliance is real and specific: send-time de-identification keeps
-education records out of the model, so we state exactly what we do and never claim "fully compliant."
-
-**Why aiTA, specifically.** Competitors market "sounds like you" as a prompt setting or refuse to score at
-all. aiTA is the only entrant pairing **trust-by-construction** (it refuses what it shouldn't grade) with a
-**pre-registered, measured** voice-convergence result. That combination — an AI that operates the business
-unattended *and* has proof it earns the teacher's trust — is the case for viability, AI-native operations, and
-category impact, in one product.
-
----
-
-## Founder-gated vs agent-done
-**Founder:** recording/narrating the video, the real Stripe + convergence numbers at submission time, final
-edit. **Agent-done (this doc + on request):** the full script, shot list, the narrative, and a tightened
-60-second cut-down if you want a teaser.
+- [ ] Narrative is 500–1,000 words after replacing placeholders.
+- [ ] Every number links to a dated primary export.
+- [ ] Every deployment statement matches the live architecture.
+- [ ] Every user is real and every seed persona is labeled synthetic.
+- [ ] Auto-finalize numbers derive only from persisted provenance.
+- [ ] No student-outcome, compliance, bias, uniqueness, or competitor-superiority claim lacks evidence.
+- [ ] Eligibility ruling or eligible-project evidence is attached.

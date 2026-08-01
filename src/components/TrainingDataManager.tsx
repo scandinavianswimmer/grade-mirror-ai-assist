@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,13 +23,7 @@ const TrainingDataManager = () => {
   });
   const [newName, setNewName] = useState('');
 
-  useEffect(() => {
-    if (user) {
-      fetchTrainingData();
-    }
-  }, [user]);
-
-  const fetchTrainingData = async () => {
+  const fetchTrainingData = useCallback(async () => {
     if (!user) return;
     
     try {
@@ -45,7 +39,13 @@ const TrainingDataManager = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast, user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchTrainingData();
+    }
+  }, [fetchTrainingData, user]);
 
   const handleDelete = async (id: string, dataType: string) => {
     try {

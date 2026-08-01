@@ -3,41 +3,32 @@ import {
   computeOnTheLoopSummary,
   dispositionFor,
   isAutoFinalized,
-  AUTO_FINALIZE_CONFIDENCE,
 } from './onTheLoop';
 
 describe('dispositionFor', () => {
   it('routes off-ramp statuses to needs_review regardless of confidence', () => {
-    expect(dispositionFor({ id: '1', status: 'needs_review' }, 0.99)).toBe('needs_review');
-    expect(dispositionFor({ id: '2', status: 'grade_error' }, 0.99)).toBe('needs_review');
+    expect(dispositionFor({ id: '1', status: 'needs_review' })).toBe('needs_review');
+    expect(dispositionFor({ id: '2', status: 'grade_error' })).toBe('needs_review');
   });
 
-  it('auto-finalizes high-confidence clean grades', () => {
-    expect(dispositionFor({ id: '1', status: 'graded' }, 0.9)).toBe('auto_finalized');
-    expect(dispositionFor({ id: '2', status: 'finalized' }, AUTO_FINALIZE_CONFIDENCE)).toBe('auto_finalized');
+  it('never infers unattended publication from a grade without provenance', () => {
+    expect(dispositionFor({ id: '1', status: 'graded' })).toBe('needs_review');
+    expect(dispositionFor({ id: '2', status: 'finalized' })).toBe('pending');
   });
 
-  it('routes low-confidence grades to needs_review', () => {
-    expect(dispositionFor({ id: '1', status: 'graded' }, 0.5)).toBe('needs_review');
-  });
-
-  it('honors explicit auto-finalize provenance even below the threshold', () => {
-    expect(dispositionFor({ id: '1', status: 'graded', finalized_by: 'aiTA' }, 0.1)).toBe('auto_finalized');
-    expect(dispositionFor({ id: '2', status: 'graded', auto_finalized_at: '2026-01-01' }, 0.1)).toBe('auto_finalized');
-  });
-
-  it('returns pending when no confidence is recorded and no provenance', () => {
-    expect(dispositionFor({ id: '1', status: 'graded' }, null)).toBe('pending');
+  it('honors explicit auto-finalize provenance', () => {
+    expect(dispositionFor({ id: '1', status: 'graded', finalized_by: 'aiTA' })).toBe('auto_finalized');
+    expect(dispositionFor({ id: '2', status: 'graded', auto_finalized_at: '2026-01-01' })).toBe('auto_finalized');
   });
 });
 
 describe('computeOnTheLoopSummary', () => {
   it('partitions graded submissions into auto-finalized / needs-review / pending', () => {
     const submissions = [
-      { id: 'a', status: 'graded' }, // high conf → auto
-      { id: 'b', status: 'graded' }, // low conf → review
+      { id: 'a', status: 'finalized', finalized_by: 'aiTA' }, // proven AI finalize
+      { id: 'b', status: 'graded' }, // no AI-finalize provenance → review
       { id: 'c', status: 'needs_review' }, // off-ramp → review
-      { id: 'd', status: 'graded' }, // no conf → pending
+      { id: 'd', status: 'finalized' }, // teacher-finalized → pending
       { id: 'e', status: 'uploaded' }, // ungraded, not exception → ignored
     ];
     const grades = [
@@ -65,7 +56,7 @@ describe('computeOnTheLoopSummary', () => {
     expect(summary.autoFinalizedPct).toBeNull();
   });
 
-  it('uses the best (highest) confidence across re-grades', () => {
+  it('does not convert high-confidence re-grades into unattended publication', () => {
     const summary = computeOnTheLoopSummary(
       [{ id: 'a', status: 'graded' }],
       [
@@ -73,7 +64,8 @@ describe('computeOnTheLoopSummary', () => {
         { submission_id: 'a', confidence: 0.9 },
       ],
     );
-    expect(summary.autoFinalized).toBe(1);
+    expect(summary.autoFinalized).toBe(0);
+    expect(summary.needsReview).toBe(1);
     expect(summary.graded).toBe(1);
   });
 
@@ -84,14 +76,14 @@ describe('computeOnTheLoopSummary', () => {
 });
 
 describe('isAutoFinalized', () => {
-  it('is true for high-confidence clean grades and false for low-confidence', () => {
-    expect(isAutoFinalized('graded', 0.9)).toBe(true);
-    expect(isAutoFinalized('graded', 0.4)).toBe(false);
-    expect(isAutoFinalized('needs_review', 0.99)).toBe(false);
+  it('is false without explicit provenance', () => {
+    expect(isAutoFinalized('graded')).toBe(false);
+    expect(isAutoFinalized('finalized')).toBe(false);
+    expect(isAutoFinalized('needs_review')).toBe(false);
   });
 
   it('honors explicit provenance', () => {
-    expect(isAutoFinalized('graded', 0.1, 'aiTA')).toBe(true);
-    expect(isAutoFinalized('graded', null, null, '2026-01-01')).toBe(true);
+    expect(isAutoFinalized('graded', 'aiTA')).toBe(true);
+    expect(isAutoFinalized('graded', null, '2026-01-01')).toBe(true);
   });
 });

@@ -3,6 +3,7 @@
 // submission needs_review and does NOT auto-grade. OCR is a pluggable hook (not enabled by default).
 import { extractText as extractPdf, getDocumentProxy } from "https://esm.sh/unpdf@0.12.1";
 import mammoth from "npm:mammoth@1.9.1";
+import { Buffer } from "node:buffer";
 import { AppError } from "../http.ts";
 
 export interface ExtractResult {
@@ -74,7 +75,7 @@ export async function extractDocument(filename: string, bytes: Uint8Array): Prom
       text = Array.isArray(res.text) ? res.text.join("\n") : (res.text as string);
       pages = res.totalPages ?? (totalPages || 1);
     } else if (kind === "docx") {
-      const res = await mammoth.extractRawText({ buffer: bytes });
+      const res = await mammoth.extractRawText({ buffer: Buffer.from(bytes) });
       text = res.value ?? "";
       if (res.messages?.length) warnings.push(`mammoth: ${res.messages.length} message(s)`);
     } else if (kind === "text") {
@@ -88,7 +89,7 @@ export async function extractDocument(filename: string, bytes: Uint8Array): Prom
   }
 
   const normalized = normalizeText(text);
-  let confidence = scoreConfidence(normalized);
+  const confidence = scoreConfidence(normalized);
 
   // Scanned/image PDFs: empty text layer. Hook for OCR (disabled unless OCR_PROVIDER configured).
   if (kind === "pdf" && confidence < 0.2) {

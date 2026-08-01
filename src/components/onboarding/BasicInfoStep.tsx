@@ -6,9 +6,15 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 
+export interface BasicInfoData {
+  fullName?: string;
+  grades?: string[];
+  subjects?: string[];
+}
+
 interface BasicInfoStepProps {
-  data: any;
-  onNext: (data: any) => void;
+  data?: BasicInfoData;
+  onNext: (data: BasicInfoData) => void;
   onBack?: () => void;
 }
 

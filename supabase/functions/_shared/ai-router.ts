@@ -29,6 +29,11 @@ export interface AIResponse {
   fallbackChain?: string[];
 }
 
+interface ModelHealthRecord {
+  model_name: string;
+  provider: string;
+}
+
 const CIRCUIT_BREAKER_THRESHOLD = 5; // failures before circuit opens (M55: removed unused TIMEOUT)
 
 export class AIRouter {
@@ -297,8 +302,9 @@ export class AIRouter {
       .select('*')
       .in('status', ['healthy', 'degraded']);
 
+    const typedHealthRecords = (healthRecords ?? []) as ModelHealthRecord[];
     const healthyModelNames = new Set(
-      healthRecords?.map((r: any) => `${r.model_name}:${r.provider}`) || []
+      typedHealthRecords.map((record) => `${record.model_name}:${record.provider}`)
     );
 
     return this.models

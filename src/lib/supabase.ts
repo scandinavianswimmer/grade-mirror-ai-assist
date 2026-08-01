@@ -1,10 +1,13 @@
 
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/integrations/supabase/types';
+import type { Database, Json } from '@/integrations/supabase/types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? 'https://yhdobsmmhdvqswjpousc.supabase.co';
-const supabaseAnonKey =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? 'sb_publishable_K6aT1ZXMuEfdgGYMuQ2IRg_Rz5sM6TB';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing VITE_SUPABASE_URL/VITE_SUPABASE_PUBLISHABLE_KEY');
+}
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -41,7 +44,7 @@ export interface Submission {
   final_score?: number;
   feedback?: string;
   ai_feedback?: string;
-  inline_comments?: any;
+  inline_comments?: Json;
   canvas_submission_id?: string;
   status: 'pending' | 'ai_graded' | 'finalize' | 'pushed_to_lms';
   created_at: string;
@@ -51,7 +54,7 @@ export interface Rubric {
   id: string;
   user_id: string;
   title: string;
-  rubric_json: any;
+  rubric_json: Json;
   created_at: string;
 }
 

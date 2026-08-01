@@ -36,7 +36,7 @@ export interface GradingExample {
   file_url: string;
   file_type: string;
   uploaded_at: string;
-  teacher_comments?: any;
+  teacher_comments?: unknown;
 }
 
 interface AIProfile {

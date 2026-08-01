@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,12 +50,6 @@ const Profile = () => {
   // Privacy settings hook
   const { settings: privacySettings, isLoading: privacyLoading, saveSettings, isSaving } = usePrivacySettings();
 
-  useEffect(() => {
-    if (user) {
-      fetchUserProfile();
-    }
-  }, [user]);
-
   // Reflect the persisted retention choice (H32).
   useEffect(() => {
     if (privacySettings) {
@@ -86,7 +80,7 @@ const Profile = () => {
     toast({ title: 'Learned style reset', description: 'aiTA will rebuild your style from new exemplars.' });
   };
 
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -121,7 +115,13 @@ const Profile = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserProfile();
+    }
+  }, [fetchUserProfile, user]);
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({

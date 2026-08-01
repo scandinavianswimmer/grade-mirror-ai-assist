@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,18 +20,18 @@ const UploadExamples = ({ userId, onComplete }: UploadExamplesProps) => {
   const [title, setTitle] = useState('');
   const [comments, setComments] = useState<{[key: string]: string}>({});
 
-  useEffect(() => {
-    loadExamples();
-  }, [userId]);
-
-  const loadExamples = async () => {
+  const loadExamples = useCallback(async () => {
     try {
       const data = await getGradingExamples(userId);
       setExamples(data);
     } catch (error) {
       console.error('Error loading examples:', error);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    loadExamples();
+  }, [loadExamples]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

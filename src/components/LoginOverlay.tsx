@@ -13,6 +13,23 @@ interface LoginOverlayProps {
   onLoginSuccess: () => void;
 }
 
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return error.message;
+  }
+
+  return fallback;
+};
+
 const LoginOverlay: React.FC<LoginOverlayProps> = ({ onLoginSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -53,10 +70,10 @@ const LoginOverlay: React.FC<LoginOverlayProps> = ({ onLoginSuccess }) => {
           description: "Please check your email to verify your account."
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: getErrorMessage(error, "Something went wrong. Please try again."),
         variant: "destructive"
       });
     } finally {
@@ -70,10 +87,10 @@ const LoginOverlay: React.FC<LoginOverlayProps> = ({ onLoginSuccess }) => {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Google sign-in failed",
-        description: error.message,
+        description: getErrorMessage(error, "Could not sign in with Google. Please try again."),
         variant: "destructive"
       });
       setGoogleLoading(false);

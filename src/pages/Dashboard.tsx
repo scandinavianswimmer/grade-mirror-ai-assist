@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -84,30 +84,6 @@ const Dashboard = () => {
   const hasInitiallyLoaded = useRef(false);
 
   useEffect(() => {
-    if (user) {
-      // Show cache instantly for a snappy paint, but ALWAYS refetch so cross-page mutations
-      // (e.g. a new assignment created elsewhere) can't leave the dashboard stale (M41).
-      if (dashboardCache) {
-        setAssignments(dashboardCache.assignments);
-        setClasses(dashboardCache.classes);
-        setLoading(false);
-        if (!hasInitiallyLoaded.current) {
-          setTimeout(() => setHasAnimated(true), 100);
-          hasInitiallyLoaded.current = true;
-        }
-      }
-      fetchData();
-      // Best-effort On-the-Loop throughput — degrades to hidden if it can't load (never blocks
-      // the dashboard, and column-tolerant for lagging cloud schemas).
-      setOnTheLoopLoading(true);
-      fetchOnTheLoopSummary()
-        .then(setOnTheLoop)
-        .catch(() => setOnTheLoop(null))
-        .finally(() => setOnTheLoopLoading(false));
-    }
-  }, [user]);
-
-  useEffect(() => {
     if (!user) {
       setHasAnimated(false);
       hasInitiallyLoaded.current = false;
@@ -115,7 +91,7 @@ const Dashboard = () => {
     }
   }, [user]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
     try {
       const { data: assignmentsData, error: assignmentsError } = await supabase
@@ -172,7 +148,31 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      // Show cache instantly for a snappy paint, but ALWAYS refetch so cross-page mutations
+      // (e.g. a new assignment created elsewhere) can't leave the dashboard stale (M41).
+      if (dashboardCache) {
+        setAssignments(dashboardCache.assignments);
+        setClasses(dashboardCache.classes);
+        setLoading(false);
+        if (!hasInitiallyLoaded.current) {
+          setTimeout(() => setHasAnimated(true), 100);
+          hasInitiallyLoaded.current = true;
+        }
+      }
+      fetchData();
+      // Best-effort On-the-Loop throughput — degrades to hidden if it can't load (never blocks
+      // the dashboard, and column-tolerant for lagging cloud schemas).
+      setOnTheLoopLoading(true);
+      fetchOnTheLoopSummary()
+        .then(setOnTheLoop)
+        .catch(() => setOnTheLoop(null))
+        .finally(() => setOnTheLoopLoading(false));
+    }
+  }, [fetchData, user]);
 
   const sortClasses = (list: Class[], by: SortOption): Class[] =>
     [...list].sort((a, b) => {

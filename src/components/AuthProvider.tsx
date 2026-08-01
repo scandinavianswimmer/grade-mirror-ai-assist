@@ -23,6 +23,7 @@ const AuthContext = createContext<AuthContextType>({
   signInWithGoogle: async () => {},
 });
 
+// eslint-disable-next-line react-refresh/only-export-components -- Splitting this established hook would churn every auth consumer; keep the exception local.
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

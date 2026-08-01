@@ -51,7 +51,6 @@ export default function EssayWithAnnotations({
         // Render paragraph with spans
         let paragraphCursor = paragraphStart;
         const content: JSX.Element[] = [];
-        let spanIndex = 0;
 
         // Build content for this paragraph
         const sortedAnchors = anchors

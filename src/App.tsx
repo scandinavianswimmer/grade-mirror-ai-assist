@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/components/AuthProvider";
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 import AuthGuard from "@/components/AuthGuard";
 import LoginOverlay from "@/components/LoginOverlay";
@@ -44,20 +44,7 @@ const AppContent = () => {
 
   console.log('AppContent: Auth state:', { user: !!user, session: !!session, loading });
 
-  useEffect(() => {
-    if (loading) return;
-
-    if (!user && !session) {
-      setShowLoginOverlay(true);
-      setShowOnboarding(false);
-      setCheckingOnboarding(false);
-    } else if (user && session) {
-      setShowLoginOverlay(false);
-      checkOnboardingStatus();
-    }
-  }, [user, session, loading]);
-
-  const checkOnboardingStatus = async () => {
+  const checkOnboardingStatus = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -97,7 +84,20 @@ const AppContent = () => {
     } finally {
       setCheckingOnboarding(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (loading) return;
+
+    if (!user && !session) {
+      setShowLoginOverlay(true);
+      setShowOnboarding(false);
+      setCheckingOnboarding(false);
+    } else if (user && session) {
+      setShowLoginOverlay(false);
+      checkOnboardingStatus();
+    }
+  }, [user, session, loading, checkOnboardingStatus]);
 
   const handleLoginSuccess = () => {
     setShowLoginOverlay(false);

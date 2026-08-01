@@ -5,15 +5,17 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
+interface StyleData {
+  tone: string;
+  priority: string;
+  approach: string;
+  phrases: string;
+}
+
 interface StyleStepProps {
-  onNext: (data: any) => void;
+  onNext: (data: StyleData) => void;
   onBack: () => void;
-  initialData: {
-    tone: string;
-    priority: string;
-    approach: string;
-    phrases: string;
-  };
+  initialData: StyleData;
 }
 
 const StyleStep = ({ onNext, onBack, initialData }: StyleStepProps) => {

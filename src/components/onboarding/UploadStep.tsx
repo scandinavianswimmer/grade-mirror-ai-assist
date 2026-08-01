@@ -10,7 +10,7 @@ import { Upload, FileText, Shield, CheckCircle, AlertCircle } from 'lucide-react
 interface UploadStepProps {
   onComplete: () => void;
   onBack: () => void;
-  styleData: any;
+  styleData: unknown;
   userId: string;
 }
 

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,13 +39,7 @@ const CreateAssignment = () => {
   // Explicit choice: grade against a rubric, or deliberately grade holistically (H20).
   const [noRubric, setNoRubric] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchClasses();
-    }
-  }, [user]);
-
-  const fetchClasses = async () => {
+  const fetchClasses = useCallback(async () => {
     try {
       const { data: classesData, error } = await supabase
         .from('classes')
@@ -64,7 +58,13 @@ const CreateAssignment = () => {
     } catch (error) {
       console.error('Error fetching classes:', error);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchClasses();
+    }
+  }, [fetchClasses, user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

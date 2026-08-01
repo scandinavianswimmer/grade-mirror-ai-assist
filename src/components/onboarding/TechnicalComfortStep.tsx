@@ -4,9 +4,14 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 
+export interface TechnicalComfortData {
+  comfortLevel?: number;
+  needsGuidedTour?: string;
+}
+
 interface TechnicalComfortStepProps {
-  data: any;
-  onNext: (data: any) => void;
+  data?: TechnicalComfortData;
+  onNext: (data: TechnicalComfortData) => void;
   onBack?: () => void;
 }
 
