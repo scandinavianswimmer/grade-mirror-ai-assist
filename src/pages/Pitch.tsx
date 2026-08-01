@@ -579,13 +579,15 @@ const Pitch = () => {
             <a href="#security" className="hover:text-foreground transition-colors">Security</a>
             <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
             <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
+            <Link to="/privacy" className="underline-offset-4 hover:text-foreground hover:underline transition-colors">Privacy</Link>
+            <Link to="/terms" className="underline-offset-4 hover:text-foreground hover:underline transition-colors">Terms</Link>
             {salesContactHref && (
               <a href={salesContactHref} className="hover:text-foreground transition-colors">Contact</a>
             )}
           </nav>
           
           <div className="text-center text-sm text-muted-foreground">
-            Copyright © aiTA
+            Copyright © aiTA · Launch preview
           </div>
         </div>
       </footer>

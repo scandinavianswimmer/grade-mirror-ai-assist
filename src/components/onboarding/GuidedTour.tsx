@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { X, ArrowRight, ArrowLeft } from 'lucide-react';
@@ -56,6 +56,44 @@ const TOUR_STEPS = [
 const GuidedTour: React.FC<GuidedTourProps> = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const isCompletingRef = useRef(false);
+  const titleId = useId();
+  const descriptionId = useId();
+
+  const restoreTriggerFocus = useCallback(() => {
+    const trigger = returnFocusRef.current;
+    if (trigger?.isConnected) {
+      trigger.focus();
+    }
+  }, []);
+
+  useEffect(() => {
+    const activeElement = document.activeElement;
+    returnFocusRef.current = activeElement instanceof HTMLElement && activeElement !== document.body
+      ? activeElement
+      : null;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      restoreTriggerFocus();
+    };
+  }, [restoreTriggerFocus]);
+
+  useEffect(() => {
+    if (!isVisible) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      titleRef.current?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [currentStep, isVisible]);
 
   // Add spotlight effect for the current target
   useEffect(() => {
@@ -63,7 +101,8 @@ const GuidedTour: React.FC<GuidedTourProps> = ({ onComplete }) => {
     if (currentStepData.target) {
       const element = document.querySelector(currentStepData.target);
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        element.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
         // Add spotlight effect
         element.classList.add('tour-spotlight');
         return () => {
@@ -88,6 +127,13 @@ const GuidedTour: React.FC<GuidedTourProps> = ({ onComplete }) => {
   };
 
   const handleComplete = async () => {
+    if (isCompletingRef.current) return;
+    isCompletingRef.current = true;
+
+    setIsVisible(false);
+    restoreTriggerFocus();
+    window.setTimeout(onComplete, 300);
+
     // Mark tour as completed in database
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -100,9 +146,6 @@ const GuidedTour: React.FC<GuidedTourProps> = ({ onComplete }) => {
     } catch (error) {
       console.error('Error marking tour as completed:', error);
     }
-    
-    setIsVisible(false);
-    setTimeout(onComplete, 300);
   };
 
   const handleSkip = () => {
@@ -113,22 +156,74 @@ const GuidedTour: React.FC<GuidedTourProps> = ({ onComplete }) => {
 
   const currentStepData = TOUR_STEPS[currentStep];
 
+  const handleDialogKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      void handleComplete();
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const focusableElements = Array.from(
+      dialog.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((element) => !element.hasAttribute('hidden') && element.getAttribute('aria-hidden') !== 'true');
+
+    if (focusableElements.length === 0) {
+      event.preventDefault();
+      dialog.focus();
+      return;
+    }
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+    const activeElement = document.activeElement as HTMLElement | null;
+    const activeIsFocusable = activeElement ? focusableElements.includes(activeElement) : false;
+
+    if (event.shiftKey && (!activeIsFocusable || activeElement === firstElement)) {
+      event.preventDefault();
+      lastElement.focus();
+    } else if (!event.shiftKey && (!activeIsFocusable || activeElement === lastElement)) {
+      event.preventDefault();
+      firstElement.focus();
+    }
+  };
+
   return (
-    <>
-      {/* Overlay */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity">
-        {/* Tour Card */}
-        <div className={`absolute ${
-          currentStepData.position === 'center' 
-            ? 'top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2'
-            : 'top-20 left-1/2 transform -translate-x-1/2'
-        }`}>
-          <Card className="w-96 shadow-2xl animate-fade-in">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4 transition-opacity sm:p-6">
+      <div
+        className={`flex min-h-full justify-center ${
+          currentStepData.position === 'center' ? 'items-center' : 'items-start py-12 sm:py-16'
+        }`}
+      >
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          aria-describedby={descriptionId}
+          tabIndex={-1}
+          onKeyDown={handleDialogKeyDown}
+          className="w-full max-w-md"
+        >
+          <Card className="max-h-[calc(100dvh-2rem)] w-full overflow-y-auto shadow-2xl animate-fade-in">
             <CardContent className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">{currentStepData.title}</h3>
-                  <div className="text-sm text-gray-500 mb-3">
+              <div className="mb-4 flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h3
+                    ref={titleRef}
+                    id={titleId}
+                    tabIndex={-1}
+                    className="mb-2 text-lg font-semibold outline-none"
+                  >
+                    {currentStepData.title}
+                  </h3>
+                  <div className="mb-3 text-sm text-gray-500">
                     Step {currentStep + 1} of {TOUR_STEPS.length}
                   </div>
                 </div>
@@ -136,42 +231,44 @@ const GuidedTour: React.FC<GuidedTourProps> = ({ onComplete }) => {
                   variant="ghost" 
                   size="sm" 
                   onClick={handleSkip}
-                  className="text-gray-400 hover:text-gray-600"
+                  aria-label="Close guided tour"
+                  className="min-h-11 min-w-11 shrink-0 p-0 text-gray-500 hover:text-gray-700"
                 >
-                  <X className="w-4 h-4" />
+                  <X aria-hidden="true" className="h-4 w-4" />
                 </Button>
               </div>
               
-              <p className="text-gray-700 mb-6 leading-relaxed">
+              <p id={descriptionId} className="mb-6 text-gray-700 leading-relaxed">
                 {currentStepData.content}
               </p>
               
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <Button 
                   variant="ghost" 
                   onClick={handleSkip}
-                  className="text-gray-500"
+                  className="min-h-11 self-start text-gray-600"
                 >
                   Skip Tour
                 </Button>
                 
-                <div className="flex gap-2">
+                <div className="flex w-full flex-wrap justify-end gap-2 sm:w-auto">
                   {currentStep > 0 && (
                     <Button 
                       variant="outline" 
                       onClick={handlePrevious}
                       size="sm"
+                      className="min-h-11"
                     >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      <ArrowLeft aria-hidden="true" className="mr-2 h-4 w-4" />
                       Previous
                     </Button>
                   )}
                   
-                  <Button onClick={handleNext} size="sm">
+                  <Button onClick={handleNext} size="sm" className="min-h-11">
                     {currentStep < TOUR_STEPS.length - 1 ? (
                       <>
                         Next
-                        <ArrowRight className="w-4 h-4 ml-2" />
+                        <ArrowRight aria-hidden="true" className="ml-2 h-4 w-4" />
                       </>
                     ) : (
                       'Get Started!'
@@ -183,7 +280,7 @@ const GuidedTour: React.FC<GuidedTourProps> = ({ onComplete }) => {
           </Card>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

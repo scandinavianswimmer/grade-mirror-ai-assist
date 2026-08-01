@@ -13,6 +13,21 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://aita-5aca5.web.app/pricing</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://aita-5aca5.web.app/privacy</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://aita-5aca5.web.app/terms</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
     <loc>https://aita-5aca5.web.app/auth</loc>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>

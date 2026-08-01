@@ -217,11 +217,11 @@ const Profile = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
+        <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center py-12">
             <div className="text-lg font-medium animate-pulse">Loading profile...</div>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -230,14 +230,14 @@ const Profile = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
+        <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
           <Card className="max-w-2xl mx-auto">
             <CardContent className="p-8 text-center">
               <h2 className="text-xl font-semibold text-gray-700 mb-2">Profile Not Found</h2>
               <p className="text-gray-600">Unable to load your profile information.</p>
             </CardContent>
           </Card>
-        </div>
+        </main>
       </div>
     );
   }
@@ -246,7 +246,7 @@ const Profile = () => {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -435,7 +435,7 @@ const Profile = () => {
                           value={formData.years_experience?.toString()} 
                           onValueChange={(value) => handleInputChange('years_experience', parseInt(value))}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger id="years_experience">
                             <SelectValue placeholder="Select years of experience" />
                           </SelectTrigger>
                           <SelectContent>
@@ -624,7 +624,7 @@ const Profile = () => {
                       How long to keep uploaded files and grading data
                     </p>
                     <Select value={dataRetention} onValueChange={handleRetentionChange}>
-                      <SelectTrigger className="w-full max-w-xs">
+                      <SelectTrigger id="retention" className="w-full max-w-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
@@ -696,7 +696,7 @@ const Profile = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

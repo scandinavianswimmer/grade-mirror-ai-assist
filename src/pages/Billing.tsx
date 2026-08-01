@@ -85,7 +85,7 @@ const Billing = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto px-4 py-10">
+      <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-10">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="font-display text-3xl font-semibold tracking-tight">Plans &amp; billing</h1>
           <p className="mt-2 text-muted-foreground">

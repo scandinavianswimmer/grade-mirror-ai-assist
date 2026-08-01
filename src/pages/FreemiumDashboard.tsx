@@ -54,9 +54,9 @@ const FreemiumDashboard = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <Navbar />
-        <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+        <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8 flex items-center justify-center">
           <div className="text-lg font-medium">Loading dashboard...</div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -65,7 +65,7 @@ const FreemiumDashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
@@ -222,7 +222,7 @@ const FreemiumDashboard = () => {
             </Card>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

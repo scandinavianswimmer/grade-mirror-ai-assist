@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label'
 import { useAuth } from '@/components/AuthProvider'
 import { Feather, ShieldCheck } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import GoogleIcon from '@/components/icons/GoogleIcon'
+import { MIN_PASSWORD_LENGTH } from '@/lib/passwordRecovery'
 
 const getErrorMessage = (error: unknown, fallback: string): string => {
   if (error instanceof Error) {
@@ -123,8 +124,8 @@ const Auth = () => {
       </aside>
 
       {/* Form */}
-      <main className="flex items-center justify-center p-6">
-        <Card className="w-full max-w-md border-border/70 p-8 shadow-md animate-fade-up">
+      <main className="flex min-w-0 items-center justify-center px-4 py-6 sm:p-6">
+        <Card className="w-full min-w-0 max-w-md border-border/70 p-5 shadow-md animate-fade-up sm:p-8">
           <div className="mb-8 lg:hidden">
             <div className="flex items-center gap-2.5">
               <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground">
@@ -219,14 +220,24 @@ const Auth = () => {
                   setPassword(e.target.value)
                   setFormError(null)
                 }}
-                minLength={isLogin ? undefined : 6}
+                minLength={isLogin ? undefined : MIN_PASSWORD_LENGTH}
                 required
                 placeholder="••••••••"
               />
               {!isLogin && (
                 <p id="password-requirements" className="text-xs text-muted-foreground">
-                  Use at least 6 characters. You can paste or use a password manager.
+                  Use at least {MIN_PASSWORD_LENGTH} characters. You can paste or use a password manager.
                 </p>
+              )}
+              {isLogin && (
+                <div className="flex justify-end">
+                  <Link
+                    to="/auth/forgot-password"
+                    className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline-offset-4 hover:underline"
+                  >
+                    Forgot your password?
+                  </Link>
+                </div>
               )}
             </div>
             <Button type="submit" className="w-full" size="lg" disabled={loading}>
@@ -247,6 +258,18 @@ const Auth = () => {
               {isLogin ? 'Create an account' : 'Sign in'}
             </button>
           </div>
+
+          <p className="mt-6 border-t border-border/70 pt-5 text-center text-xs leading-5 text-muted-foreground">
+            Launch preview · Read our{' '}
+            <Link to="/privacy" className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
+              Privacy preview
+            </Link>{' '}
+            and{' '}
+            <Link to="/terms" className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
+              Terms preview
+            </Link>
+            . Final legal details are pending review.
+          </p>
         </Card>
       </main>
     </div>

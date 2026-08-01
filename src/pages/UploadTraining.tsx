@@ -101,13 +101,13 @@ const UploadTraining = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
+        <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
           <div className="max-w-2xl mx-auto text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Sign In Required</h1>
             <p className="text-gray-600 mb-8">Please sign in to upload training examples.</p>
             <Button onClick={() => navigate('/auth')}>Sign In</Button>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -116,7 +116,7 @@ const UploadTraining = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Upload Training Example</h1>
@@ -209,7 +209,7 @@ const UploadTraining = () => {
             </div>
           </Card>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

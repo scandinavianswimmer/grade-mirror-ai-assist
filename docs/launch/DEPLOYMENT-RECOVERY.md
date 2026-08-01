@@ -2,7 +2,7 @@
 
 Verified context: **August 1, 2026**
 
-Use this runbook only after deciding to continue aiTA outside the competition or after receiving a written organizer eligibility ruling. The release candidate is draft PR [#30](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/pull/30).
+Organizer approval to proceed was confirmed by the founder on August 1, 2026. Use this runbook to restore the production path without weakening the release gates. The release candidate is draft PR [#30](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/pull/30).
 
 ## Stop rules
 
@@ -60,7 +60,17 @@ VITE_SUPABASE_URL=https://yhdobsmmhdvqswjpousc.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=<current publishable key>
 ```
 
-Set server secrets directly on the confirmed Supabase project. Ensure `ALLOWED_ORIGINS` includes the final Firebase origin. Then run the full gate with Node 22:
+No custom domain has been purchased. Use `https://aita-5aca5.web.app` as the launch origin only after the Firebase project is confirmed and the deployed site passes the acceptance gate. Keep custom-domain fields visibly marked as pending; do not configure or advertise `aita.app` unless it is later purchased and ownership is verified.
+
+In Supabase Auth, add the exact recovery redirect URL for every origin that will be tested:
+
+```text
+http://localhost:4173/auth/reset-password
+https://aita-5aca5.web.app/auth/reset-password
+https://<purchased-and-verified-domain>/auth/reset-password   # later, not tonight
+```
+
+The app derives the recovery redirect from `window.location.origin`; it does not hard-code an unowned domain. Set server secrets directly on the confirmed Supabase project. Ensure `ALLOWED_ORIGINS` includes the final Firebase origin. Then run the full gate with Node 22:
 
 ```sh
 nvm use
@@ -90,7 +100,11 @@ Record the deploy output, release time, public URL, and Git commit. A successful
 All of these must pass against the public URL in a private browser session:
 
 - The release SHA shown in the evidence record matches the deployed branch head.
-- `/`, `/pitch`, `/pricing`, `/auth`, and an unknown route load without console or network errors.
+- `/`, `/pitch`, `/pricing`, `/privacy`, `/terms`, `/auth`, `/auth/forgot-password`, and an unknown route load without console or network errors.
+- A password-reset request returns the account-enumeration-safe confirmation, its emailed link opens `/auth/reset-password`, an expired link fails safely, and a valid link can update the password once without exposing credentials in logs or screenshots.
+- VoiceOver exposes the same named landmarks, headings, form controls, links, route announcements, and dialog behavior verified locally; keyboard focus returns to every dialog trigger.
+- Safari at exactly 200% zoom and macOS Increase Contrast preserve navigation, control boundaries, readable content, and operability without horizontal clipping. Restore both host settings after the check.
+- Privacy and Terms remain visibly labeled previews until the effective date, legal entity, privacy/support contact, final counsel review, and any purchased domain are real and verified.
 - A fresh judge account can sign in without access to any real student data.
 - Upload or paste a privacy-safe fixture; the demonstrated grading path reaches Gemini through the deployed backend.
 - An on-topic fixture returns rubric-grounded evidence and persists the grade and annotations.

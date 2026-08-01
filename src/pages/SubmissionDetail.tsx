@@ -318,17 +318,17 @@ const SubmissionDetail = () => {
   if (loading) {
     return (
       <div className="min-h-screen"><Navbar />
-        <div className="container mx-auto px-4 py-20 text-center text-muted-foreground animate-pulse">Loading submission…</div>
+        <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-20 text-center text-muted-foreground animate-pulse">Loading submission…</main>
       </div>
     );
   }
   if (!submission) {
     return (
       <div className="min-h-screen"><Navbar />
-        <div className="container mx-auto px-4 py-20 text-center">
+        <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-20 text-center">
           <p className="text-muted-foreground">Submission not found.</p>
           <Link to="/"><Button variant="outline" className="mt-4">Back to dashboard</Button></Link>
-        </div>
+        </main>
       </div>
     );
   }
@@ -336,7 +336,7 @@ const SubmissionDetail = () => {
   return (
     <div className="min-h-screen">
       <Navbar />
-      <div className="container mx-auto px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -541,7 +541,7 @@ const SubmissionDetail = () => {
             )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

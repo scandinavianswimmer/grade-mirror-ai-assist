@@ -28,13 +28,15 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
+    <>
+      <a href="#main-content" className="skip-link">Skip to main content</a>
+      <nav aria-label="Primary navigation" className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between gap-6">
           <div className="flex items-center gap-8">
             <Link to="/" className="group flex items-center gap-2.5">
               <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-transform group-hover:-rotate-6">
-                <Feather className="h-[18px] w-[18px]" />
+                <Feather aria-hidden="true" className="h-[18px] w-[18px]" />
               </span>
               <span className="font-display text-[1.6rem] font-semibold leading-none tracking-tight text-foreground">
                 ai<span className="text-primary">TA</span>
@@ -49,13 +51,14 @@ const Navbar = () => {
                   <Link
                     key={item.path}
                     to={item.path}
+                    aria-current={isActive ? 'page' : undefined}
                     className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                       isActive
                         ? 'bg-primary/10 text-primary'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     }`}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon aria-hidden="true" className="h-4 w-4" />
                     <span>{item.label}</span>
                   </Link>
                 );
@@ -106,8 +109,32 @@ const Navbar = () => {
             )}
           </div>
         </div>
+
+        <div className="grid grid-cols-5 gap-1 border-t border-border/60 py-1.5 md:hidden">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                aria-current={isActive ? 'page' : undefined}
+                className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-[11px] font-medium leading-none transition-colors ${
+                  isActive
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                <Icon aria-hidden="true" className="h-5 w-5 shrink-0" />
+                <span className="max-w-full truncate">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
-    </nav>
+      </nav>
+    </>
   );
 };
 

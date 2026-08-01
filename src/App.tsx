@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/components/AuthProvider";
-import { useState, useEffect, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import AuthGuard from "@/components/AuthGuard";
 import TeacherOnboarding from "@/components/onboarding/TeacherOnboarding";
@@ -26,6 +26,14 @@ const SubmitAssignment = lazy(() => import("./pages/SubmitAssignment"));
 const PdfSubmission = lazy(() => import("./pages/PdfSubmission").then((m) => ({ default: m.PdfSubmission })));
 const Pitch = lazy(() => import("./pages/Pitch"));
 const Pricing = lazy(() => import("./pages/Pricing"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const ForgotPassword = lazy(() =>
+  import("./pages/PasswordRecovery").then((module) => ({ default: module.ForgotPassword })),
+);
+const ResetPassword = lazy(() =>
+  import("./pages/PasswordRecovery").then((module) => ({ default: module.ResetPassword })),
+);
 const Billing = lazy(() => import("./pages/Billing"));
 const Metrics = lazy(() => import("./pages/Metrics"));
 const History = lazy(() => import("./pages/History"));
@@ -35,8 +43,12 @@ const queryClient = new QueryClient();
 const getDocumentTitle = (pathname: string) => {
   if (pathname === "/pitch") return "aiTA for teachers · grading co-pilot";
   if (pathname === "/pricing") return "Pricing · aiTA";
+  if (pathname === "/privacy") return "Privacy preview · aiTA";
+  if (pathname === "/terms") return "Terms preview · aiTA";
   if (pathname === "/auth") return "Sign in or create an account · aiTA";
   if (pathname === "/auth/callback") return "Completing sign-in · aiTA";
+  if (pathname === "/auth/forgot-password") return "Reset your password · aiTA";
+  if (pathname === "/auth/reset-password") return "Choose a new password · aiTA";
 
   const workspaceRoute =
     pathname === "/" ||
@@ -67,9 +79,36 @@ const AppContent = () => {
   const [isNewUser, setIsNewUser] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+  const previousPathname = useRef(location.pathname);
+  const [routeAnnouncement, setRouteAnnouncement] = useState("");
 
   useEffect(() => {
-    document.title = getDocumentTitle(location.pathname);
+    const title = getDocumentTitle(location.pathname);
+    document.title = title;
+
+    if (previousPathname.current !== location.pathname) {
+      setRouteAnnouncement(`Navigated to ${title}`);
+
+      let animationFrame = 0;
+      let attempts = 0;
+      const focusPageHeading = () => {
+        const heading = document.querySelector<HTMLElement>("main h1, [role='main'] h1, h1");
+        if (heading) {
+          heading.tabIndex = -1;
+          heading.focus({ preventScroll: true });
+          return;
+        }
+
+        attempts += 1;
+        if (attempts < 12) animationFrame = window.requestAnimationFrame(focusPageHeading);
+      };
+
+      animationFrame = window.requestAnimationFrame(focusPageHeading);
+      previousPathname.current = location.pathname;
+      return () => window.cancelAnimationFrame(animationFrame);
+    }
+
+    previousPathname.current = location.pathname;
   }, [location.pathname]);
 
   const checkOnboardingStatus = useCallback(async () => {
@@ -135,20 +174,33 @@ const AppContent = () => {
 
   if (loading || checkingOnboarding) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-lg font-medium" role="status" aria-live="polite">Loading…</div>
-      </div>
+      <>
+        <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{routeAnnouncement}</p>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+          <div className="text-lg font-medium" role="status" aria-live="polite">Loading…</div>
+        </div>
+      </>
     );
   }
 
-  // Allow public marketing pages to be viewed without authentication.
-  if (location.pathname === '/pitch' || location.pathname === '/pricing') {
+  // Allow public product, legal, and account-recovery pages without authentication.
+  if (
+    ['/pitch', '/pricing', '/privacy', '/terms', '/auth/forgot-password', '/auth/reset-password']
+      .includes(location.pathname)
+  ) {
     return (
-      <Routes>
-        <Route path="/pitch" element={<Pitch />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <>
+        <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{routeAnnouncement}</p>
+        <Routes>
+          <Route path="/pitch" element={<Pitch />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+          <Route path="/auth/reset-password" element={<ResetPassword />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </>
     );
   }
 
@@ -176,7 +228,9 @@ const AppContent = () => {
   }
 
   return (
-    <Routes>
+    <>
+      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{routeAnnouncement}</p>
+      <Routes>
       {/* Protected routes */}
       <Route path="/" element={
         <AuthGuard>
@@ -269,10 +323,15 @@ const AppContent = () => {
       } />
       <Route path="/pitch" element={<Pitch />} />
       <Route path="/pricing" element={<Pricing />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+      <Route path="/auth/reset-password" element={<ResetPassword />} />
       <Route path="*" element={<NotFound />} />
-    </Routes>
+      </Routes>
+    </>
   );
 };
 

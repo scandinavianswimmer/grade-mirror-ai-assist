@@ -10,32 +10,24 @@ Official sources: [rules](https://www.geminixprize.com/rules) · [Devpost rules]
 
 Conditional deployment recovery: [`DEPLOYMENT-RECOVERY.md`](DEPLOYMENT-RECOVERY.md)
 
-## 0. Stop gate: the existing project is not presently eligible
+## 0. Eligibility gate: organizer approval received
 
-Do **not** submit aiTA in its current identity or describe it as a project newly created after May 19, 2026.
+On **August 1, 2026**, the founder confirmed that organizer approval was received for aiTA to proceed. Archive the written ruling in the private submission evidence folder and preserve its complete wording; do not commit private correspondence or contact details to this public repository.
 
-- The public GitHub repository was created on **June 23, 2025**.
-- Its first commit is dated **June 23, 2025** and already describes an AI Grading Assistant MVP.
-- The organizer's published clarification says the project/business itself must be newly created after May 19, 2026. A later launch, a new feature, a hosted edition, or substantial enhancements to an older application do not make the older project eligible.
-- Generic libraries, templates, frameworks, boilerplate, and snippets may be reused in a genuinely new post-cutoff project if disclosed. That is not permission to relabel this application.
+- The public GitHub repository and first AI Grading Assistant MVP commit date to **June 23, 2025**.
+- That history was the reason written organizer confirmation was required.
+- The submission should accurately describe the history and follow any conditions in the ruling rather than claiming the repository itself was first created after May 19, 2026.
 
-Proceed only after one of these gates clears:
-
-1. **Written organizer ruling:** send the exact history above to the organizer and receive written confirmation that this project is eligible; or
-2. **Genuinely new project:** create a substantively new project and business after May 19, 2026. It cannot be aiTA with a new name or one added feature. Disclose every reused generic component.
-
-Suggested organizer message:
-
-> Our public repository and AI-grading MVP date to June 23, 2025. Since May 19, 2026 we have added new Gemini/Google Cloud infrastructure and product capabilities. Your FAQ says a pre-existing application remains ineligible even when substantially enhanced. Can you confirm in writing whether this project is ineligible, and whether only generic boilerplate—not product-specific grading code—may be reused in a genuinely new project?
+Eligibility is therefore no longer the release stop gate. Deployment evidence, a working judge journey, and complete submission materials remain blocking.
 
 ## 1. Verified readiness snapshot
 
 | Gate | Status on Aug 1 | Evidence / next action |
 |---|---|---|
-| Date eligibility | **NO-GO** | Repo and product history begin in June 2025; obtain written ruling or pivot |
+| Date eligibility | **CLEARED — founder confirmed** | Organizer approval received Aug 1; archive the written ruling and follow any stated conditions |
 | Public code repository | Ready | `scandinavianswimmer/grade-mirror-ai-assist` is public |
 | License | Open | All rights reserved; founder must choose whether to add a license |
-| Public live application | **NO-GO** | `aita.app` is a GoDaddy parked domain; configured Firebase Hosting URL returns HTTP 404 |
+| Public live application | **NO-GO** | No custom domain has been purchased; do not use or imply ownership of `aita.app`. Use the configured Firebase Hosting URL for launch after it returns HTTP 200 (it currently returns 404), then connect a purchased domain later. |
 | Working backend | **NO-GO** | Both candidate Supabase hosts (`rwiqwuohbcvhuvtlxlvh` and `yhdobsmmhdvqswjpousc`) return authoritative DNS NXDOMAIN; current credentials cannot access the intended later project |
 | Google Cloud product in deployed app | **UNPROVEN** | Cloud Run/Firebase/Vertex paths exist in code; no live deployment evidence |
 | Gemini API call in deployed app | **UNPROVEN** | Gemini integration exists in code; no production request/log proof |
@@ -46,11 +38,25 @@ Suggested organizer message:
 | Production execution logs | Missing | Capture Gemini/GCP request volume, agent traces, failures, and release identifiers |
 | Public demo video under 3:00 | Missing | Record only after the live build and evidence below are verified |
 | 500–1,000 word narrative | Draft only | Complete with measured figures and links; remove every placeholder |
-| Repository credential hygiene | Partial | Current tree scan is clean; old history contains public Supabase/Firebase client identifiers and GitHub secret scanning is disabled |
+| Repository/security hygiene | Partial | Current tree scan is clean; old history contains public Supabase/Firebase client identifiers and GitHub secret scanning is disabled. `npm audit --omit=dev` reports the current React Router RSC advisory, but the official advisory says it applies only to unstable RSC APIs; this Vite `BrowserRouter` SPA has no RSC package or API usage. Track and upgrade when a compatible patched release is published. |
+| Password recovery | **READY LOCALLY; LIVE GATE PENDING** | Dedicated request/update routes, account-enumeration-safe confirmation, expired-link handling, and recovery-intent tests pass. A real emailed link still requires the confirmed Supabase project and redirect allowlist. |
+| Privacy and Terms | **POLISHED PREVIEWS** | Public, accessible preview pages now state the product's current practices and show conspicuous placeholders for the effective date, legal entity, contact, and future public domain. Final legal review and real contact details remain required before launch. |
+| Accessibility beta pass | **READY LOCALLY; REPEAT ON LIVE URL** | VoiceOver, exact 200% Safari zoom, macOS Increase Contrast, keyboard/dialog focus, 320px reflow, route announcements, landmarks, form labels, and chart text alternatives were exercised against the configured production build. Repeat against the exact deployed release. |
 
-## 2. Conditional submission checklist
+### 1.1 Beta-gap closure evidence — August 1
 
-Use this only after the eligibility gate clears.
+- `npm run verify` passes locally with zero lint warnings, both TypeScript projects, **230 tests**, a production build, deterministic eval dry runs, and the calibration gate.
+- Password recovery now uses `/auth/forgot-password` and `/auth/reset-password`. The request result is deliberately generic, success headings receive focus, expired or context-free update links fail closed, and tab-scoped recovery intent is cleared after use or sign-out. The local synthetic-backend browser pass covered request confirmation and invalid-link behavior; a valid emailed production link remains part of the live gate.
+- VoiceOver was enabled through macOS Accessibility settings for a real Safari pass. Safari exposed the auth and recovery headings, named email/password controls, recovery/legal links, and the `Navigated to Reset your password · aiTA` route announcement. The VoiceOver rotor opened and exited normally.
+- Safari page zoom was set to exactly **200%**. The recovery flow remained readable and operable with no horizontal clipping; the setting was restored to 100% afterward.
+- macOS **Increase Contrast** was enabled. Input, card, link, focus, and primary-action boundaries remained visible; the setting was restored afterward. Source-level forced-colors and `prefers-contrast` fallbacks are also present.
+- At 320px, authenticated navigation retains all five destinations with 56px targets, workspace pages do not overflow horizontally, long dialogs scroll inside the viewport, and closing a dialog restores focus to its launch button. At 640px and the default desktop viewport, public/auth/legal surfaces also reflow without horizontal overflow.
+- Privacy and Terms are intentionally labeled launch previews. They do not invent ownership of a domain, a legal entity, an effective date, a privacy address, or a completed compliance review.
+- The production dependency audit currently reports [GHSA-qwww-vcr4-c8h2](https://github.com/advisories/GHSA-qwww-vcr4-c8h2) through `react-router`/`react-router-dom`. GitHub's reviewed advisory says the issue affects only unstable RSC APIs; the app is a client-only Vite SPA using `BrowserRouter`, has no React Server Components package or RSC API references, and therefore does not expose the affected path. No compatible patched npm release was available during this audit, so a forced breaking downgrade was not used to create a false-green report.
+
+## 2. Submission checklist
+
+The eligibility gate is cleared. Every remaining item still requires evidence from the exact release.
 
 - [ ] One category selected: Education & Human Potential.
 - [ ] Project name, short tagline, thumbnail, team, and contact details finalized.
@@ -58,6 +64,7 @@ Use this only after the eligibility gate clears.
 - [ ] Public demo video is **under three minutes**, captioned, and shows the exact deployed release.
 - [ ] Public repository URL points to the reviewed commit/tag and includes setup instructions.
 - [ ] Live application URL works in a private browser session.
+- [ ] Submission and product surfaces use the verified Firebase Hosting URL; replace the polished custom-domain placeholders only after a domain is purchased, connected, and verified.
 - [ ] Judge account and test instructions reproduce the demonstrated path without exposing real student data.
 - [ ] At least one Google Cloud product and at least one Gemini API call are present in the deployed app and backed by timestamped logs.
 - [ ] Real-user counts, demographics, testimonials, and production usage are documented.
@@ -102,7 +109,7 @@ If opt-in unattended publication is actually enabled, show the setting and expli
 
 ## 5. Tonight's honest finish line
 
-Tonight can produce a reviewed release candidate and a complete evidence map. It cannot honestly produce an eligible submission from this pre-cutoff project, a working production deployment without account access/configuration, or real traction that has not occurred.
+Tonight can produce a reviewed release candidate and complete the submission surfaces. Organizer approval clears the eligibility issue, but a working production deployment and evidence that has not yet been collected cannot be fabricated.
 
 - [x] Finish the local `npm run verify` gate.
 - [x] Validate GitHub Actions syntax and remove masked deployment failures.
@@ -113,7 +120,10 @@ Tonight can produce a reviewed release candidate and a complete evidence map. It
 - [x] Scan the current tree and targeted historical credential patterns; document the remaining public client identifiers.
 - [x] Push the isolated release-candidate branch and open draft PR #30.
 - [x] Pass the remote GitHub Actions quality gate on the pushed candidate.
-- [ ] Send the organizer eligibility question.
-- [ ] Decide whether to seek a ruling, pivot to a genuinely new eligible project, or ship aiTA outside this competition.
+- [x] Receive organizer approval to proceed.
+- [x] Implement and locally test password recovery, including generic request confirmation and fail-closed invalid links.
+- [x] Publish polished Privacy and Terms previews with conspicuous launch placeholders instead of invented facts.
+- [x] Complete the local VoiceOver, exact 200% zoom, Increase Contrast, keyboard, dialog-focus, and responsive-layout beta pass; restore all host settings afterward.
+- [ ] Archive the written ruling in the private submission evidence folder and note any conditions.
 - [ ] If continuing: confirm the canonical Supabase ref, restore/provision only that backend, configure Google Cloud/Firebase and secrets, deploy, and re-run the release gate against the live URLs.
 - [ ] Only then collect real evidence, record the video, finish the narrative, and submit.

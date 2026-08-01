@@ -74,7 +74,7 @@ const Metrics = () => {
   return (
     <div className="min-h-screen">
       <Navbar />
-      <div className="container mx-auto px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="font-display text-3xl font-semibold tracking-tight">Metrics</h1>
           <p className="text-muted-foreground">Your grading impact and how aiTA is learning your style.</p>
@@ -144,7 +144,7 @@ const Metrics = () => {
 
         {/* PROOF-01 — "Is aiTA learning you?" per-batch convergence trend */}
         <ConvergencePanel />
-      </div>
+      </main>
     </div>
   );
 };

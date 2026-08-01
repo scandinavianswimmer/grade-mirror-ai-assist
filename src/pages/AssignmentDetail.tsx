@@ -226,11 +226,11 @@ const AssignmentDetail = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
+        <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
           <div className="text-center py-12">
             <div className="text-lg font-medium">Loading assignment...</div>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -239,14 +239,14 @@ const AssignmentDetail = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
+        <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
           <div className="text-center py-12">
             <div className="text-lg font-medium text-red-600">Assignment not found</div>
             <Link to="/dashboard">
               <Button className="mt-4">Back to Dashboard</Button>
             </Link>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -282,7 +282,7 @@ const AssignmentDetail = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-4 mb-8">
             <Link to="/dashboard">
@@ -457,7 +457,7 @@ const AssignmentDetail = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

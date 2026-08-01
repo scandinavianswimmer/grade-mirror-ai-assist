@@ -133,7 +133,7 @@ const CreateAssignment = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center gap-4 mb-8">
             <Link to="/dashboard">
@@ -166,7 +166,7 @@ const CreateAssignment = () => {
                 <div className="space-y-2">
                   <Label htmlFor="classId">Assign to Class (Optional)</Label>
                   <Select value={formData.classId} onValueChange={handleClassSelect}>
-                    <SelectTrigger>
+                    <SelectTrigger id="classId">
                       <SelectValue placeholder="Select a class (leave blank for unassigned)" />
                     </SelectTrigger>
                     <SelectContent>
@@ -227,7 +227,7 @@ const CreateAssignment = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

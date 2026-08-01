@@ -158,6 +158,17 @@ const Pricing = () => {
           settings.
         </p>
       </main>
+
+      <footer className="border-t border-border/70 px-4 py-8">
+        <div className="container mx-auto flex max-w-5xl flex-col gap-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <p>aiTA launch preview · Final legal details pending review</p>
+          <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2">
+            <Link to="/pitch" className="underline underline-offset-4 hover:text-foreground">Overview</Link>
+            <Link to="/privacy" className="underline underline-offset-4 hover:text-foreground">Privacy</Link>
+            <Link to="/terms" className="underline underline-offset-4 hover:text-foreground">Terms</Link>
+          </nav>
+        </div>
+      </footer>
     </div>
   );
 };

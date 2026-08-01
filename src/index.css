@@ -40,7 +40,7 @@
 
     /* Semantic annotation "pens": foreground + soft highlight tint */
     --praise: 150 46% 34%;        --praise-soft: 150 52% 92%;
-    --suggestion: 34 80% 42%;     --suggestion-soft: 38 86% 90%;
+    --suggestion: 34 80% 31%;     --suggestion-soft: 38 86% 90%;
     --critique: 352 60% 48%;      --critique-soft: 352 80% 95%;
     --question: 230 46% 50%;      --question-soft: 230 70% 95%;
 
@@ -238,6 +238,44 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     transition-delay: 0ms !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --muted-foreground: 220 18% 28%;
+    --border: 222 22% 30%;
+    --input: 222 22% 30%;
+    --ring: 168 78% 20%;
+  }
+
+  .dark {
+    --muted-foreground: 40 24% 82%;
+    --border: 40 30% 76%;
+    --input: 40 30% 76%;
+    --ring: 168 70% 66%;
+  }
+
+  :where(a, button, input, select, textarea, [role="button"]) {
+    text-decoration-thickness: 0.12em;
+  }
+}
+
+@media (forced-colors: active) {
+  :where(button, [role="button"], input, select, textarea) {
+    border: 1px solid ButtonText;
+  }
+
+  :where(a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible,
+  [aria-current="page"] {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  .anno,
+  .anno-active {
+    border-bottom: 2px solid CanvasText;
+    box-shadow: none;
   }
 }
 

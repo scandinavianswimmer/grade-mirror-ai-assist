@@ -113,7 +113,7 @@ const SubmitAssignment = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Grade Student Essay</h1>
@@ -307,7 +307,7 @@ const SubmitAssignment = () => {
             </div>
           </Card>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
