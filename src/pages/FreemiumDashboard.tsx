@@ -22,20 +22,12 @@ const FreemiumDashboard = () => {
   const loadDashboardData = useCallback(async () => {
     if (!user) return;
     
-    console.log('FreemiumDashboard: Loading data for user', user.id);
-    
     try {
       const [limitsData, submissionsData, trainingData] = await Promise.all([
         getUserLimits(user.id),
         getSubmissions(user.id),
         getTrainingExamples(user.id)
       ]);
-
-      console.log('FreemiumDashboard: Data loaded', { 
-        limits: limitsData, 
-        submissions: submissionsData.length, 
-        training: trainingData.length 
-      });
 
       setLimits(limitsData);
       setSubmissions(submissionsData.slice(0, 5));

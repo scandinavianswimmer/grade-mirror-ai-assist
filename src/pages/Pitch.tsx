@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { SCHOOL_CONTACT_EMAIL, SCHOOL_CONTACT_SUBJECT } from '@/lib/pricingPlans';
 import { 
   Clock, 
   CheckCircle2, 
@@ -17,8 +18,11 @@ import {
   ChevronUp
 } from 'lucide-react';
 
+const salesContactHref = SCHOOL_CONTACT_EMAIL
+  ? `mailto:${SCHOOL_CONTACT_EMAIL}?subject=${encodeURIComponent(SCHOOL_CONTACT_SUBJECT)}`
+  : null;
+
 const Pitch = () => {
-  const [beforeAfter, setBeforeAfter] = useState<'before' | 'after'>('before');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const navigate = useNavigate();
 
@@ -36,11 +40,13 @@ const Pitch = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <a href="#pitch-main" className="skip-link">Skip to main content</a>
+
       {/* Navigation */}
-      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 animate-fade-in">
+      <nav aria-label="Primary" className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 animate-fade-in">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-8">
-            <div className="text-2xl font-bold text-primary hover:scale-105 transition-transform duration-300 cursor-pointer">aiTA</div>
+            <Link to="/pitch" className="text-2xl font-bold text-primary transition-colors hover:text-primary/80">aiTA</Link>
             <div className="hidden md:flex space-x-6 text-sm">
               <a href="#product" className="story-link text-muted-foreground hover:text-foreground transition-colors">Product</a>
               <a href="#how-it-works" className="story-link text-muted-foreground hover:text-foreground transition-colors">How it works</a>
@@ -59,8 +65,9 @@ const Pitch = () => {
         </div>
       </nav>
 
+      <main id="pitch-main" tabIndex={-1}>
       {/* Hero Section */}
-      <section className="py-20 px-4">
+      <section id="product" className="py-20 px-4">
         <div className="container mx-auto max-w-4xl text-center">
           <h1 className="mb-6 text-4xl font-bold text-foreground md:text-6xl">
             You're not “falling behind.” You're carrying the weight of a whole classroom.
@@ -98,10 +105,18 @@ const Pitch = () => {
                 <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
               </span>
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 hover-scale relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <span className="relative z-10">Book a 10‑minute walkthrough</span>
-            </Button>
+            {salesContactHref ? (
+              <Button asChild variant="outline" size="lg" className="text-lg px-8 hover-scale relative overflow-hidden group">
+                <a href={salesContactHref}>
+                  <span className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" aria-hidden="true" />
+                  <span className="relative z-10">Book a 10‑minute walkthrough</span>
+                </a>
+              </Button>
+            ) : (
+              <Button disabled variant="outline" size="lg" className="text-lg px-8">
+                Walkthroughs opening soon
+              </Button>
+            )}
           </div>
           
           <p className="text-sm text-muted-foreground mb-8 animate-fade-in">No credit card.</p>
@@ -153,37 +168,12 @@ const Pitch = () => {
         </div>
       </section>
 
-      {/* Before/After Switcher */}
+      {/* Before/After comparison */}
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-4xl">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-foreground mb-12">
             The Day Feels Different
           </h2>
-          
-          <div className="flex justify-center mb-12">
-            <div className="bg-muted rounded-full p-1 flex animate-fade-in">
-              <button
-                onClick={() => setBeforeAfter('before')}
-                className={`px-6 py-2 rounded-full transition-all duration-300 hover-scale ${
-                  beforeAfter === 'before' 
-                    ? 'bg-primary text-primary-foreground shadow-lg' 
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Before aiTA
-              </button>
-              <button
-                onClick={() => setBeforeAfter('after')}
-                className={`px-6 py-2 rounded-full transition-all duration-300 hover-scale ${
-                  beforeAfter === 'after' 
-                    ? 'bg-primary text-primary-foreground shadow-lg' 
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                After aiTA
-              </button>
-            </div>
-          </div>
           
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-4">
@@ -394,8 +384,8 @@ const Pitch = () => {
             {[
               {
                 icon: Shield,
-                title: "You approve every comment and score.",
-                description: "aiTA suggests; you decide."
+                title: "By default, you approve every comment and score.",
+                description: "Unattended publishing remains off unless you explicitly opt in."
               },
               {
                 icon: Shield,
@@ -449,7 +439,7 @@ const Pitch = () => {
                   <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover/button:opacity-100 transition-opacity duration-300"></div>
                   <span className="relative z-10">Start free</span>
                 </Button>
-                <p className="text-sm text-muted-foreground mt-4">Cancel anytime</p>
+                <p className="text-sm text-muted-foreground mt-4">Upgrade only when you're ready</p>
               </CardContent>
             </Card>
             
@@ -461,10 +451,18 @@ const Pitch = () => {
                 <p className="text-muted-foreground mb-6">
                   Volume pricing + onboarding support.
                 </p>
-                <Button variant="outline" className="w-full hover-scale relative overflow-hidden group/button">
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover/button:opacity-100 transition-opacity duration-300"></div>
-                  <span className="relative z-10">Contact Sales</span>
-                </Button>
+                {salesContactHref ? (
+                  <Button asChild variant="outline" className="w-full hover-scale relative overflow-hidden group/button">
+                    <a href={salesContactHref}>
+                      <span className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover/button:opacity-100 transition-opacity duration-300" aria-hidden="true" />
+                      <span className="relative z-10">Contact sales</span>
+                    </a>
+                  </Button>
+                ) : (
+                  <Button disabled variant="outline" className="w-full">
+                    School inquiries opening soon
+                  </Button>
+                )}
                 <p className="text-sm text-muted-foreground mt-4">Custom terms</p>
               </CardContent>
             </Card>
@@ -509,19 +507,29 @@ const Pitch = () => {
               <Card key={index} className="hover:shadow-sm transition-shadow">
                 <CardContent className="p-6">
                   <button
+                    id={`faq-trigger-${index}`}
+                    type="button"
                     onClick={() => toggleFaq(index)}
-                    className="flex items-center justify-between w-full text-left"
+                    aria-expanded={expandedFaq === index}
+                    aria-controls={`faq-panel-${index}`}
+                    className="flex min-h-11 w-full items-center justify-between gap-4 rounded-sm text-left"
                   >
                     <h3 className="text-lg font-semibold">{faq.question}</h3>
                     {expandedFaq === index ? (
-                      <ChevronUp className="w-5 h-5" />
+                      <ChevronUp className="w-5 h-5 shrink-0" aria-hidden="true" />
                     ) : (
-                      <ChevronDown className="w-5 h-5" />
+                      <ChevronDown className="w-5 h-5 shrink-0" aria-hidden="true" />
                     )}
                   </button>
-                  {expandedFaq === index && (
-                    <p className="text-muted-foreground mt-4">{faq.answer}</p>
-                  )}
+                  <p
+                    id={`faq-panel-${index}`}
+                    role="region"
+                    aria-labelledby={`faq-trigger-${index}`}
+                    hidden={expandedFaq !== index}
+                    className="text-muted-foreground mt-4"
+                  >
+                    {faq.answer}
+                  </p>
                 </CardContent>
               </Card>
             ))}
@@ -545,9 +553,15 @@ const Pitch = () => {
               Start free
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8">
-              Book a 10‑minute walkthrough
-            </Button>
+            {salesContactHref ? (
+              <Button asChild variant="outline" size="lg" className="text-lg px-8">
+                <a href={salesContactHref}>Book a 10‑minute walkthrough</a>
+              </Button>
+            ) : (
+              <Button disabled variant="outline" size="lg" className="text-lg px-8">
+                Walkthroughs opening soon
+              </Button>
+            )}
           </div>
           
           <p className="text-muted-foreground">
@@ -555,19 +569,20 @@ const Pitch = () => {
           </p>
         </div>
       </section>
+      </main>
 
       {/* Footer */}
       <footer className="border-t py-12 px-4 bg-muted/30">
         <div className="container mx-auto">
-          <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground mb-8">
+          <nav aria-label="Footer" className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground mb-8">
             <a href="#product" className="hover:text-foreground transition-colors">Product</a>
             <a href="#security" className="hover:text-foreground transition-colors">Security</a>
             <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
             <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
-            <a href="#contact" className="hover:text-foreground transition-colors">Contact</a>
-            <a href="#terms" className="hover:text-foreground transition-colors">Terms</a>
-            <a href="#privacy" className="hover:text-foreground transition-colors">Privacy</a>
-          </div>
+            {salesContactHref && (
+              <a href={salesContactHref} className="hover:text-foreground transition-colors">Contact</a>
+            )}
+          </nav>
           
           <div className="text-center text-sm text-muted-foreground">
             Copyright © aiTA

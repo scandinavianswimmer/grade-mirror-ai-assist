@@ -80,8 +80,6 @@ const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => 
     }
 
     try {
-      console.log('Saving onboarding data:', onboardingData);
-      
       // Save onboarding data to the users table
       const { error: userUpdateError } = await supabase
         .from('users')

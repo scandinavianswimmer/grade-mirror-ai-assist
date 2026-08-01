@@ -17,7 +17,7 @@ const EXCEPTION_STATUSES = new Set(['needs_review', 'grade_error']);
 export interface OnTheLoopSubmission {
   id: string;
   status: string | null | undefined;
-  // Optional provenance (cloud schema may lag migrations). finalized_by === 'aiTA'
+  // Optional provenance (cloud schema may lag migrations). finalized_by === 'ai'
   // (or a truthy auto_finalized_at) is the only authority for "auto-finalized".
   finalized_by?: string | null;
   auto_finalized_at?: string | null;
@@ -40,7 +40,7 @@ export interface OnTheLoopSummary {
 
 // True when explicit provenance says aiTA published this unattended.
 const hasAutoFinalizeProvenance = (s: OnTheLoopSubmission): boolean =>
-  !!s.auto_finalized_at || (typeof s.finalized_by === 'string' && s.finalized_by.toLowerCase() === 'aita');
+  !!s.auto_finalized_at || s.finalized_by === 'ai';
 
 // Classify one graded submission. Confidence alone never proves unattended publication.
 export const dispositionFor = (submission: OnTheLoopSubmission): Disposition => {

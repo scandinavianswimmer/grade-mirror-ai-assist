@@ -77,7 +77,9 @@ const Profile = () => {
     if (!user) return;
     await supabase.from('ai_profiles').delete().eq('user_id', user.id);
     setStyleSummary(null);
-    toast({ title: 'Learned style reset', description: 'aiTA will rebuild your style from new exemplars.' });
+    toast.success('Learned style reset', {
+      description: 'aiTA will rebuild your style from new exemplars.',
+    });
   };
 
   const fetchUserProfile = useCallback(async () => {

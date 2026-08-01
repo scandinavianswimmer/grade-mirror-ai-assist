@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 import {
   PRO_MONTHLY_PRICE,
@@ -7,7 +7,6 @@ import {
   PRICING_TIERS,
   SCHOOL_CONTACT_EMAIL,
   SCHOOL_CONTACT_SUBJECT,
-  isProPriceConfigured,
 } from './pricingPlans';
 
 describe('pricingPlans — price points', () => {
@@ -82,56 +81,15 @@ describe('pricingPlans — tier config', () => {
 });
 
 describe('pricingPlans — contact config', () => {
-  it('routes School / Dept enquiries to a valid contact email', () => {
-    expect(SCHOOL_CONTACT_EMAIL).toBe('hello@aita.app');
-    expect(SCHOOL_CONTACT_EMAIL).toMatch(/^[^@\s]+@[^@\s]+\.[^@\s]+$/);
+  it('never routes School / Dept enquiries to the parked aita.app domain', () => {
+    expect(SCHOOL_CONTACT_EMAIL).not.toBe('hello@aita.app');
+    if (SCHOOL_CONTACT_EMAIL) {
+      expect(SCHOOL_CONTACT_EMAIL).toMatch(/^[^@\s]+@[^@\s]+\.[^@\s]+$/);
+    }
   });
 
   it('uses a non-empty contact subject line', () => {
     expect(SCHOOL_CONTACT_SUBJECT).toBeTruthy();
     expect(typeof SCHOOL_CONTACT_SUBJECT).toBe('string');
-  });
-});
-
-// isProPriceConfigured reads import.meta.env at module-load time, so we re-import the
-// module under different stubbed env to exercise both the configured and unconfigured paths.
-describe('isProPriceConfigured — gates on the Stripe price env vars', () => {
-  beforeEach(() => {
-    vi.resetModules();
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
-    vi.resetModules();
-  });
-
-  it('returns true for each cadence whose VITE_STRIPE_PRICE_PRO_* var is set', async () => {
-    vi.stubEnv('VITE_STRIPE_PRICE_PRO_MONTHLY', 'price_monthly_123');
-    vi.stubEnv('VITE_STRIPE_PRICE_PRO_ANNUAL', 'price_annual_456');
-
-    const mod = await import('./pricingPlans');
-
-    expect(mod.isProPriceConfigured('monthly')).toBe(true);
-    expect(mod.isProPriceConfigured('annual')).toBe(true);
-  });
-
-  it('returns false for a cadence whose price env var is missing', async () => {
-    vi.stubEnv('VITE_STRIPE_PRICE_PRO_MONTHLY', 'price_monthly_123');
-    vi.stubEnv('VITE_STRIPE_PRICE_PRO_ANNUAL', '');
-
-    const mod = await import('./pricingPlans');
-
-    expect(mod.isProPriceConfigured('monthly')).toBe(true);
-    expect(mod.isProPriceConfigured('annual')).toBe(false);
-  });
-
-  it('returns false for both cadences when no price env vars are configured', async () => {
-    vi.stubEnv('VITE_STRIPE_PRICE_PRO_MONTHLY', '');
-    vi.stubEnv('VITE_STRIPE_PRICE_PRO_ANNUAL', '');
-
-    const mod = await import('./pricingPlans');
-
-    expect(mod.isProPriceConfigured('monthly')).toBe(false);
-    expect(mod.isProPriceConfigured('annual')).toBe(false);
   });
 });

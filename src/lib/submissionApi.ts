@@ -1,11 +1,11 @@
 
 import { supabase } from './supabase';
 import { processSubmissionFile } from './fileProcessing';
-import type { Database } from '@/integrations/supabase/types';
+import type { AppDatabase } from '@/integrations/supabase/app-database';
 
-type SubmissionRow = Database['public']['Tables']['submissions']['Row'];
-type SubmissionInsert = Database['public']['Tables']['submissions']['Insert'];
-type SubmissionUpdate = Database['public']['Tables']['submissions']['Update'];
+type SubmissionRow = AppDatabase['public']['Tables']['submissions']['Row'];
+type SubmissionInsert = AppDatabase['public']['Tables']['submissions']['Insert'];
+type SubmissionUpdate = AppDatabase['public']['Tables']['submissions']['Update'];
 
 export interface CreateSubmissionData {
   assignmentId: string;

@@ -7,7 +7,6 @@ import { AuthProvider, useAuth } from "@/components/AuthProvider";
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 import AuthGuard from "@/components/AuthGuard";
-import LoginOverlay from "@/components/LoginOverlay";
 import TeacherOnboarding from "@/components/onboarding/TeacherOnboarding";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
@@ -33,16 +32,45 @@ const History = lazy(() => import("./pages/History"));
 
 const queryClient = new QueryClient();
 
+const getDocumentTitle = (pathname: string) => {
+  if (pathname === "/pitch") return "aiTA for teachers · grading co-pilot";
+  if (pathname === "/pricing") return "Pricing · aiTA";
+  if (pathname === "/auth") return "Sign in or create an account · aiTA";
+  if (pathname === "/auth/callback") return "Completing sign-in · aiTA";
+
+  const workspaceRoute =
+    pathname === "/" ||
+    [
+      "/dashboard",
+      "/create-assignment",
+      "/upload-training",
+      "/submit-assignment",
+      "/training",
+      "/lms",
+      "/lms/callback",
+      "/profile",
+      "/billing",
+      "/metrics",
+      "/history",
+    ].includes(pathname) ||
+    pathname.startsWith("/assignment/") ||
+    pathname.startsWith("/submission/") ||
+    pathname.startsWith("/pdf/submission/");
+
+  return workspaceRoute ? "Grading workspace · aiTA" : "Page not found · aiTA";
+};
+
 const AppContent = () => {
   const { user, session, loading } = useAuth();
   const location = useLocation();
-  const [showLoginOverlay, setShowLoginOverlay] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
 
-  console.log('AppContent: Auth state:', { user: !!user, session: !!session, loading });
+  useEffect(() => {
+    document.title = getDocumentTitle(location.pathname);
+  }, [location.pathname]);
 
   const checkOnboardingStatus = useCallback(async () => {
     if (!user) return;
@@ -89,20 +117,14 @@ const AppContent = () => {
   useEffect(() => {
     if (loading) return;
 
-    if (!user && !session) {
-      setShowLoginOverlay(true);
+    if (!user || !session) {
       setShowOnboarding(false);
+      setIsNewUser(false);
       setCheckingOnboarding(false);
-    } else if (user && session) {
-      setShowLoginOverlay(false);
+    } else {
       checkOnboardingStatus();
     }
   }, [user, session, loading, checkOnboardingStatus]);
-
-  const handleLoginSuccess = () => {
-    setShowLoginOverlay(false);
-    // Onboarding status will be checked in the useEffect
-  };
 
   const handleOnboardingComplete = async () => {
     setShowOnboarding(false);
@@ -114,7 +136,7 @@ const AppContent = () => {
   if (loading || checkingOnboarding) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-lg font-medium">Loading...</div>
+        <div className="text-lg font-medium" role="status" aria-live="polite">Loading…</div>
       </div>
     );
   }
@@ -145,21 +167,6 @@ const AppContent = () => {
       <Routes>
         <Route path="/auth" element={<Auth />} />
       </Routes>
-    );
-  }
-
-  // Show login overlay for unauthenticated users (except /pitch)
-  if (showLoginOverlay) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        {/* Background content (blurred) */}
-        <div className="opacity-50 blur-sm">
-          <FreemiumDashboard />
-        </div>
-        
-        {/* Login overlay */}
-        <LoginOverlay onLoginSuccess={handleLoginSuccess} />
-      </div>
     );
   }
 
@@ -270,8 +277,6 @@ const AppContent = () => {
 };
 
 const App = () => {
-  console.log('App: Starting application');
-  
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -280,7 +285,7 @@ const App = () => {
         <BrowserRouter>
           <AuthProvider>
             <Suspense fallback={
-              <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+              <div className="min-h-screen flex items-center justify-center text-muted-foreground" role="status" aria-live="polite">
                 Loading…
               </div>
             }>

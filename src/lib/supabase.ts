@@ -1,6 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js';
-import type { Database, Json } from '@/integrations/supabase/types';
+import type { Json } from '@/integrations/supabase/types';
+import type { AppDatabase } from '@/integrations/supabase/app-database';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -9,7 +10,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing VITE_SUPABASE_URL/VITE_SUPABASE_PUBLISHABLE_KEY');
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient<AppDatabase>(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: localStorage,
     persistSession: true,

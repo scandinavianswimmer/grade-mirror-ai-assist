@@ -1,8 +1,8 @@
 
 import { supabase } from './supabase';
-import type { Database } from '@/integrations/supabase/types';
+import type { AppDatabase } from '@/integrations/supabase/app-database';
 
-type SyncedAssignment = Database['public']['Tables']['assignments']['Row'];
+type SyncedAssignment = AppDatabase['public']['Tables']['assignments']['Row'];
 
 interface CanvasGradeUpdate {
   submission: {

@@ -1,5 +1,6 @@
 
 import { supabase, PrivacySettings } from './supabase'
+import type { AppTableInsert, AppTableUpdate } from '@/integrations/supabase/app-database'
 
 // Privacy Settings
 export const getPrivacySettings = async (userId: string): Promise<PrivacySettings | null> => {
@@ -16,7 +17,7 @@ export const getPrivacySettings = async (userId: string): Promise<PrivacySetting
   return data
 }
 
-export const createPrivacySettings = async (settings: Omit<PrivacySettings, 'id' | 'created_at'>): Promise<PrivacySettings> => {
+export const createPrivacySettings = async (settings: AppTableInsert<'privacy_settings'>): Promise<PrivacySettings> => {
   const { data, error } = await supabase
     .from('privacy_settings')
     .insert(settings)
@@ -27,7 +28,7 @@ export const createPrivacySettings = async (settings: Omit<PrivacySettings, 'id'
   return data
 }
 
-export const updatePrivacySettings = async (userId: string, updates: Partial<PrivacySettings>): Promise<PrivacySettings> => {
+export const updatePrivacySettings = async (userId: string, updates: AppTableUpdate<'privacy_settings'>): Promise<PrivacySettings> => {
   const { data, error } = await supabase
     .from('privacy_settings')
     .update(updates)
@@ -75,7 +76,7 @@ export const exportUserData = async (userId: string) => {
 
 // Best-effort delete that ignores "table/column doesn't exist" so a partial schema
 // (v1 + additive v2) never aborts the whole deletion (H29).
-const tryDelete = async (run: () => Promise<{ error: unknown }>) => {
+const tryDelete = async (run: () => PromiseLike<{ error: unknown }>) => {
   try { await run() } catch { /* table may not exist in this schema */ }
 }
 

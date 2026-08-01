@@ -11,6 +11,7 @@ import Navbar from "@/components/Navbar";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
+import type { AppTableUpdate } from "@/integrations/supabase/app-database";
 import { generateCanvasAuthUrl, disconnectCanvas } from "@/lib/canvasOAuth";
 import { syncCanvasAssignments, getCanvasClient } from "@/lib/canvasApi";
 
@@ -144,9 +145,13 @@ const LMSIntegration = () => {
   const updateSyncSettings = async (setting: 'auto_sync' | 'auto_push', value: boolean) => {
     if (!user) return;
 
+    const updates: AppTableUpdate<'lms_integrations'> = setting === 'auto_sync'
+      ? { auto_sync: value }
+      : { auto_push: value };
+
     await supabase
       .from('lms_integrations')
-      .update({ [setting]: value })
+      .update(updates)
       .eq('user_id', user.id)
       .eq('platform', 'canvas');
   };

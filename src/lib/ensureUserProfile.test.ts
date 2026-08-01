@@ -5,10 +5,10 @@ import type { User } from '@supabase/supabase-js';
 const maybeSingle = vi.fn();
 const insert = vi.fn();
 const select = vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle })) }));
-const from = vi.fn(() => ({ select, insert }));
+const from = vi.fn((_table: string) => ({ select, insert }));
 
 vi.mock('@/lib/supabase', () => ({
-  supabase: { from: (...args: unknown[]) => from(...args) },
+  supabase: { from: (table: string) => from(table) },
 }));
 
 import { ensureUserProfile } from './ensureUserProfile';

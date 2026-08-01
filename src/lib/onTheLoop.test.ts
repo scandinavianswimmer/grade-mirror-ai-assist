@@ -17,15 +17,19 @@ describe('dispositionFor', () => {
   });
 
   it('honors explicit auto-finalize provenance', () => {
-    expect(dispositionFor({ id: '1', status: 'graded', finalized_by: 'aiTA' })).toBe('auto_finalized');
+    expect(dispositionFor({ id: '1', status: 'graded', finalized_by: 'ai' })).toBe('auto_finalized');
     expect(dispositionFor({ id: '2', status: 'graded', auto_finalized_at: '2026-01-01' })).toBe('auto_finalized');
+  });
+
+  it('rejects non-schema aliases as auto-finalize provenance', () => {
+    expect(dispositionFor({ id: '1', status: 'finalized', finalized_by: 'aiTA' })).toBe('pending');
   });
 });
 
 describe('computeOnTheLoopSummary', () => {
   it('partitions graded submissions into auto-finalized / needs-review / pending', () => {
     const submissions = [
-      { id: 'a', status: 'finalized', finalized_by: 'aiTA' }, // proven AI finalize
+      { id: 'a', status: 'finalized', finalized_by: 'ai' }, // proven AI finalize
       { id: 'b', status: 'graded' }, // no AI-finalize provenance → review
       { id: 'c', status: 'needs_review' }, // off-ramp → review
       { id: 'd', status: 'finalized' }, // teacher-finalized → pending
@@ -83,7 +87,7 @@ describe('isAutoFinalized', () => {
   });
 
   it('honors explicit provenance', () => {
-    expect(isAutoFinalized('graded', 'aiTA')).toBe(true);
+    expect(isAutoFinalized('graded', 'ai')).toBe(true);
     expect(isAutoFinalized('graded', null, '2026-01-01')).toBe(true);
   });
 });

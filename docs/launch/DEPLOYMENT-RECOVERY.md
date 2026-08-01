@@ -69,11 +69,13 @@ npm run verify
 npm run build
 ```
 
-If the remote schema or functions differ from the reviewed migration history, stop and reconcile them before deployment. Do not make the frontend tolerant of an unknown production schema merely to get a demo running.
+If the remote schema or functions differ from the reviewed migration history, stop and reconcile them before deployment. Do not make the frontend tolerant of an unknown production schema merely to get a demo running. Confirm that additive migration `0022_training_examples_reinforcement.sql` is present before testing the learning loop; it reconciles the legacy required `rubric` field with the v2 `rubric_text`/`source` shape used by consented reinforcement writes.
 
 ## 4. Deploy deliberately
 
 Deploy only the functions whose source and required migrations were reviewed. The exact function set depends on the remote inventory from step 2; do not blindly redeploy every legacy function.
+
+The current CI deploy loop ships 9 of the repository's 16 edge entrypoints. The frontend also invokes omitted functions including `create-class` and `rebuild-exemplars`, alongside older grading/count functions that should not automatically be revived. Before release, create an explicit modern runtime manifest: either review and add each required function to CI, or remove/replace its caller. A green frontend build is not evidence that these server calls exist in production.
 
 After the backend is verified, deploy the already-built `dist/` directory to the confirmed Firebase project:
 

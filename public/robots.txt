@@ -13,5 +13,6 @@ Allow: /
 User-agent: *
 Allow: /
 
-# Replace aita.app with your production domain.
-Sitemap: https://aita.app/sitemap.xml
+# Firebase Hosting is the configured release target. Replace this only after a custom domain is
+# owned, connected, and verified against the exact release.
+Sitemap: https://aita-5aca5.web.app/sitemap.xml

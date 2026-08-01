@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Replace https://aita.app with your production domain. Only public (non-authenticated)
-     routes are listed; the rest of the app requires sign-in. -->
+<!-- Firebase Hosting is the configured release target. Replace this only after a custom domain
+     is owned, connected, and verified. Only public routes are listed. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://aita.app/</loc>
+    <loc>https://aita-5aca5.web.app/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://aita.app/pitch</loc>
+    <loc>https://aita-5aca5.web.app/pitch</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://aita.app/auth</loc>
+    <loc>https://aita-5aca5.web.app/auth</loc>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>

@@ -111,8 +111,6 @@ const CreateAssignment = () => {
         throw error;
       }
 
-      console.log('Assignment created successfully:', data);
-
       toast({
         title: "Assignment created successfully!",
         description: "You can now upload student essays for grading."

@@ -44,6 +44,16 @@ export interface SampleSubmissionSeed {
   essay: string;
 }
 
+export interface SampleSubmissionRow {
+  assignment_id: string;
+  student_name: string;
+  essay: string;
+  extracted_text: string;
+  extraction_confidence: number;
+  status: 'uploaded';
+  processing_status: 'uploaded';
+}
+
 // A deliberate spread: strong essays should auto-finalize; the too-short and off-topic ones should
 // route to the teacher's review queue — showcasing On-the-Loop in one batch.
 export const SAMPLE_SUBMISSIONS: SampleSubmissionSeed[] = [
@@ -102,7 +112,7 @@ export const SAMPLE_SUBMISSIONS: SampleSubmissionSeed[] = [
  * unit-tested. extracted_text + extraction_confidence are what make a submission gradeable
  * (grade-submission rejects anything without them); `essay` is the v1 display fallback.
  */
-export function buildSampleSubmissionRows(assignmentId: string): Record<string, unknown>[] {
+export function buildSampleSubmissionRows(assignmentId: string): SampleSubmissionRow[] {
   return SAMPLE_SUBMISSIONS.map((s) => ({
     assignment_id: assignmentId,
     student_name: s.studentName,

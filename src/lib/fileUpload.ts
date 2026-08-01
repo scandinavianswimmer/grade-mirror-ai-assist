@@ -38,8 +38,6 @@ export const uploadFile = async (file: File, bucket: string = 'uploads'): Promis
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
     const filePath = `${user.id}/${fileName}`;
 
-    console.log('Uploading file to bucket:', bucket, 'path:', filePath);
-
     const { data, error } = await supabase.storage
       .from(bucket)
       .upload(filePath, file, {
@@ -72,8 +70,6 @@ export const uploadFile = async (file: File, bucket: string = 'uploads'): Promis
 export const extractTextFromFile = async (file: File): Promise<string> => {
   try {
     const fileType = file.type;
-    console.log('Extracting text from file type:', fileType);
-
     if (fileType === 'text/plain' || fileType === 'text/csv') {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();

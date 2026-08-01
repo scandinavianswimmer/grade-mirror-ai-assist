@@ -61,11 +61,10 @@ const CreateClassModal = ({ isOpen, onClose, onClassCreated }: CreateClassModalP
     e.preventDefault();
     if (!user) return;
 
-    console.log('Submitting class creation with data:', formData);
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('create-class', {
+      const { error } = await supabase.functions.invoke('create-class', {
         body: {
           className: formData.className,
           gradeLevel: formData.gradeLevel,
@@ -79,8 +78,6 @@ const CreateClassModal = ({ isOpen, onClose, onClassCreated }: CreateClassModalP
         console.error('Supabase function error:', error);
         throw error;
       }
-
-      console.log('Class created successfully:', data);
 
       toast({
         title: "Class created successfully!",

@@ -35,11 +35,11 @@ Suggested organizer message:
 | Date eligibility | **NO-GO** | Repo and product history begin in June 2025; obtain written ruling or pivot |
 | Public code repository | Ready | `scandinavianswimmer/grade-mirror-ai-assist` is public |
 | License | Open | All rights reserved; founder must choose whether to add a license |
-| Public live application | **NO-GO** | Configured Firebase URL returns HTTP 404 |
-| Working backend | **NO-GO** | `supabase/config.toml` points to inactive `rwiqwuohbcvhuvtlxlvh`, while historical deployment notes point to inaccessible `yhdobsmmhdvqswjpousc`; confirm the canonical project before any restore, migration, or function deployment |
+| Public live application | **NO-GO** | `aita.app` is a GoDaddy parked domain; configured Firebase Hosting URL returns HTTP 404 |
+| Working backend | **NO-GO** | Both candidate Supabase hosts (`rwiqwuohbcvhuvtlxlvh` and `yhdobsmmhdvqswjpousc`) return authoritative DNS NXDOMAIN; current credentials cannot access the intended later project |
 | Google Cloud product in deployed app | **UNPROVEN** | Cloud Run/Firebase/Vertex paths exist in code; no live deployment evidence |
 | Gemini API call in deployed app | **UNPROVEN** | Gemini integration exists in code; no production request/log proof |
-| CI quality gate | **Ready remotely** | Draft [PR #30](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/pull/30) is mergeable; [GitHub Actions run 30717852981](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30717852981) passed lint, typecheck, 224 tests, production build, and deterministic eval gates |
+| CI quality gate | **Ready locally; remote rerun pending** | The repaired gate now checks the app and Node projects instead of zero source files; lint, real TypeScript compilation, 222 tests, production build, and deterministic eval gates pass locally. Update this row with the exact new GitHub run after pushing. |
 | Test credentials / judge instructions | Missing | Create only against the exact live release; never include secrets in the repo |
 | Real users and testimonials | Unverified | Export timestamped, privacy-safe evidence; do not use seed/demo personas as users |
 | Real revenue and P&L | Unverified | Export Stripe revenue by month, costs excluding marketing, CAC, and related-party split |
@@ -81,7 +81,7 @@ Claim rules:
 - “Implemented” means code exists and passed the release gate.
 - “Deployed” means the public URL and exact release were tested.
 - “In production” requires real production logs from that release.
-- “Auto-finalized” requires persisted `finalized_by = aiTA` or `auto_finalized_at` provenance; confidence alone is not proof.
+- “Auto-finalized” requires persisted `finalized_by = ai` or `auto_finalized_at` provenance; confidence alone is not proof.
 - “Paying users,” “revenue,” “time saved,” and “convergence” require dated primary evidence.
 
 ## 4. Conditional video plan — target 2:40, hard cap 3:00
@@ -107,6 +107,9 @@ Tonight can produce a reviewed release candidate and a complete evidence map. It
 - [x] Finish the local `npm run verify` gate.
 - [x] Validate GitHub Actions syntax and remove masked deployment failures.
 - [x] Smoke-test public routes from a production build with local, non-production configuration.
+- [x] Repair the false-green TypeScript command, compile the actual app, and resolve all 53 surfaced errors.
+- [x] Run a developer, beta/accessibility, and production-surface audit; fail dead checkout/contact links closed and remove student-data debug traces.
+- [x] Add the missing additive `training_examples` reconciliation migration so consented reinforcement writes match the deployable schema.
 - [x] Scan the current tree and targeted historical credential patterns; document the remaining public client identifiers.
 - [x] Push the isolated release-candidate branch and open draft PR #30.
 - [x] Pass the remote GitHub Actions quality gate on the pushed candidate.

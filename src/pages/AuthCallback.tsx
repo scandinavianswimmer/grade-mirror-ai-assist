@@ -24,12 +24,12 @@ const AuthCallback = () => {
   }, [user, loading, navigate])
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-3 text-muted-foreground">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-3 text-muted-foreground" role="status" aria-live="polite">
       <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary text-primary-foreground">
-        <Feather className="h-5 w-5" />
+        <Feather className="h-5 w-5" aria-hidden="true" />
       </span>
       <p className="text-sm">Completing sign-in…</p>
-    </div>
+    </main>
   )
 }
 
