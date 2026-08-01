@@ -13,6 +13,7 @@
 - [GitHub Actions run 30717852981](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30717852981) passed lint, typecheck, all 224 tests, the production build, and deterministic eval gates.
 - The Firebase URL configured in this repository currently returns HTTP 404. There is no verified live frontend release.
 - The backend target is unresolved: `supabase/config.toml` names inactive project `rwiqwuohbcvhuvtlxlvh`, while the May deployment notes below name `yhdobsmmhdvqswjpousc`, which is not visible to the currently authenticated CLI account. Do **not** restore, link, migrate, or deploy until the founder confirms which ref is canonical.
+- Ignored CLI state had linked this sprint worktree to unrelated active project `zuazyrqrktlfgtncpeei`. The link was removed on August 1; default Supabase remote commands now fail closed until an explicit, verified relink.
 - The authenticated Vercel scope contains only an unrelated project. Do **not** deploy aiTA into that scope.
 - The existing aiTA project predates the XPRIZE eligibility cutoff. Do not submit it without a written organizer ruling; see the competition gate for the official-source evidence and pivot options.
 

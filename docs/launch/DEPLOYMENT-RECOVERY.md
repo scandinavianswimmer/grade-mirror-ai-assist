@@ -8,6 +8,7 @@ Use this runbook only after deciding to continue aiTA outside the competition or
 
 - Do not deploy into the active Supabase project `zuazyrqrktlfgtncpeei`; it belongs to another application.
 - Do not restore or migrate `rwiqwuohbcvhuvtlxlvh` merely because it appears in `supabase/config.toml`. That ref describes the older Grade Mirror architecture; later production records consistently identify `yhdobsmmhdvqswjpousc` as the live v1-plus-v2 environment.
+- At the start of this audit, ignored CLI state linked the sprint worktree to unrelated active project `zuazyrqrktlfgtncpeei`. That link was removed on August 1; bare remote commands now fail closed. Do not recreate a default link until the intended production account and ref are confirmed.
 - Do not run a migration until the remote migration list and schema have been compared with `supabase/migrations_v2/`. The later environment was evolved additively and must not receive the clean-room baseline.
 - Do not put access tokens, database passwords, Gemini keys, service-role keys, or judge credentials in `.env`, shell history, this repository, a PR, or the Devpost entry.
 - Do not call a release “live” until the exact deployed commit passes the checks in the final section.
