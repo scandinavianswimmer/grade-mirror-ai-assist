@@ -39,7 +39,7 @@ Suggested organizer message:
 | Working backend | **NO-GO** | Both candidate Supabase hosts (`rwiqwuohbcvhuvtlxlvh` and `yhdobsmmhdvqswjpousc`) return authoritative DNS NXDOMAIN; current credentials cannot access the intended later project |
 | Google Cloud product in deployed app | **UNPROVEN** | Cloud Run/Firebase/Vertex paths exist in code; no live deployment evidence |
 | Gemini API call in deployed app | **UNPROVEN** | Gemini integration exists in code; no production request/log proof |
-| CI quality gate | **Ready locally; remote rerun pending** | The repaired gate now checks the app and Node projects instead of zero source files; lint, real TypeScript compilation, 222 tests, production build, and deterministic eval gates pass locally. Update this row with the exact new GitHub run after pushing. |
+| CI quality gate | **Ready remotely** | Code commit `5a59250` passed the repaired app-and-Node TypeScript gate, lint, 222 tests, production build, and deterministic evals in [GitHub Actions run 30719973506](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30719973506) |
 | Test credentials / judge instructions | Missing | Create only against the exact live release; never include secrets in the repo |
 | Real users and testimonials | Unverified | Export timestamped, privacy-safe evidence; do not use seed/demo personas as users |
 | Real revenue and P&L | Unverified | Export Stripe revenue by month, costs excluding marketing, CAC, and related-party split |
