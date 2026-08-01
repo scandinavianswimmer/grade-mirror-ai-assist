@@ -8,6 +8,8 @@ Official deadline: **August 17, 2026 at 1:00 PM PDT**
 
 Official sources: [rules](https://www.geminixprize.com/rules) · [Devpost rules](https://xprize.devpost.com/rules) · [FAQ](https://xprize.devpost.com/details/faq) · [eligibility clarification](https://xprize.devpost.com/forum_topics/44047-clarification-on-eligibility-timeline) · [dates](https://xprize.devpost.com/details/dates)
 
+Conditional deployment recovery: [`DEPLOYMENT-RECOVERY.md`](DEPLOYMENT-RECOVERY.md)
+
 ## 0. Stop gate: the existing project is not presently eligible
 
 Do **not** submit aiTA in its current identity or describe it as a project newly created after May 19, 2026.

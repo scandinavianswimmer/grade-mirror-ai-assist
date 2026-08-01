@@ -3,6 +3,7 @@
 > Product: **aiTA**, an AI grading co-pilot for teachers (repo name: `grade-mirror-ai-assist`).
 > Stack: Vite + React 18 + TS + shadcn/ui + Tailwind · Supabase (Postgres + Edge Functions) · **Google Gemini** for grading.
 > Last verified: 2026-08-01. Full competition gate: `docs/launch/XPRIZE-SUBMISSION.md`.
+> Fail-closed deployment recovery: `docs/launch/DEPLOYMENT-RECOVERY.md`.
 
 ---
 
