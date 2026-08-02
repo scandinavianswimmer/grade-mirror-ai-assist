@@ -1,4 +1,8 @@
 import { createRoot } from 'react-dom/client';
+import '@fontsource-variable/fraunces/wght.css';
+import '@fontsource-variable/hanken-grotesk/wght.css';
+import '@fontsource/spline-sans-mono/latin-400.css';
+import '@fontsource/spline-sans-mono/latin-500.css';
 import './index.css';
 
 const rootElement = document.getElementById('root');
