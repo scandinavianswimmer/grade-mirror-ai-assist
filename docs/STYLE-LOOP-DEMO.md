@@ -19,19 +19,19 @@ These are repository facts. They are not deployment evidence.
 
 ## Synthetic profile
 
-The demo seed describes a warm, Socratic English-teacher style: begin with a specific strength, coach
-with questions, ask for evidence when a claim is unsupported, distinguish summary from analysis, focus
-more on thesis and structure than minor mechanics, and end with a concrete next step.
+The canonical fixture in [`src/fixtures/syntheticDemo.ts`](../src/fixtures/syntheticDemo.ts) describes
+an original coaching style: begin with a precise strength, distinguish evidence from explanation, ask
+one focused question, prioritize ideas over minor mechanics, and end with a labeled revision move.
 
 The profile is deliberately distinctive so an A/B can reveal whether the prompt path applied it. It is
 fabricated and is not the voice of a real teacher or of the teacher who inspired the Mr Selby name.
 
 ## Safety gate before recording
 
-`scripts/seed-demo-style-profile.sql` currently contains a hard-coded teacher UUID, stale backend
-instructions, direct writes to the style profile and training examples, and a consent-setting change.
-**Do not run it as written.** Use only a disposable synthetic account after a separate implementation
-task removes the defaults and confirms the undo path. Administrative SQL bypasses RLS.
+The retired administrative style seed was removed from the active tree and is available only through
+Git history. Apply the canonical profile only through a reviewed, consent-aware product path in
+a disposable synthetic workspace. If that path is not available on the exact release, omit the style
+comparison from the recording.
 
 Before capture:
 
@@ -46,13 +46,13 @@ Before capture:
 
 1. Grade one synthetic essay without a style profile and save the output, trace ID, model, commit, and
    timestamp as the **baseline**.
-2. Apply the reviewed synthetic profile to the same disposable account.
+2. Apply the reviewed canonical synthetic profile through the product's consent-aware path.
 3. Re-grade the same essay with the same rubric and release; save the equivalent evidence as the
    **profile condition**.
 4. Verify the trace reports profile application and that annotation anchors remain valid.
 5. Present both outputs side by side. Highlight concrete language differences without claiming the
    profile made the grade more accurate.
-6. Restore or dispose of the synthetic account using the reviewed recovery procedure.
+6. Restore or dispose of the synthetic workspace using the verified data-deletion procedure.
 
 Do not delete or alter a real teacher's profile to create the baseline.
 
@@ -77,7 +77,8 @@ the teacher.
 
 ## Remaining gaps
 
-- The current seed script must be made safe and backend-neutral before use.
+- The safe backend-neutral fixture is complete; the consent-aware live profile application still
+  requires verification on the configured backend.
 - `build-style-profile` must be deployed, traced, and tested against the configured production model.
 - The profile update path from consented teacher decisions requires live evidence.
 - No measured teacher-voice result belongs in the submission until the held-out evaluation is complete.

@@ -324,7 +324,7 @@ function offTopicResult(input: GradeInput, verdict: RelevanceVerdict, modelId: s
 
 // One step in the grading agent workflow (AGENT-01/02). Persisted to agent_events for the pipeline view.
 export interface AgentStep {
-  agent: "rubric" | "relevance_risk" | "grading" | "annotation" | "feedback_summary" | "style";
+  agent: "rubric" | "relevance_risk" | "grading" | "annotation" | "feedback_summary" | "style" | "finalize";
   status: "ok" | "error" | "skipped";
   modelId?: string;
   latencyMs: number;

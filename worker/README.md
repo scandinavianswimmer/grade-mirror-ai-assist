@@ -1,4 +1,4 @@
-# aiTA grading worker (Phase 4 — async jobs & reliability)
+# Mr Selby grading worker
 
 Async grading at scale: the app enqueues submissions and this worker grades them in the background,
 so a teacher grading a whole class doesn't wait on N sequential model calls.
@@ -25,10 +25,10 @@ Frontend ──► grade-enqueue (edge fn) ──► Upstash Redis (grading:queu
 3. **Deploy this worker to Cloud Run** with the same values + the project's Supabase URL/anon key:
    ```bash
    cd worker
-   gcloud run deploy aita-grading-worker --source . --region us-west1 \
+   gcloud run deploy mr-selby-grading-worker --source . --region us-west1 \
      --min-instances 1 --no-allow-unauthenticated \
      --set-env-vars UPSTASH_REDIS_REST_URL=…,UPSTASH_REDIS_REST_TOKEN=…,\
-   SUPABASE_URL=https://yhdobsmmhdvqswjpousc.supabase.co,SUPABASE_ANON_KEY=…,INTERNAL_GRADE_SECRET=…
+   SUPABASE_URL=https://<project-ref>.supabase.co,SUPABASE_ANON_KEY=…,INTERNAL_GRADE_SECRET=…
    ```
    `--min-instances 1` keeps the poller alive. (Alternatively run as a Cloud Run **Job** on a schedule.)
 4. Deploy the new edge function: `supabase functions deploy grade-enqueue` (and redeploy `grade-submission`, which now accepts the internal path).

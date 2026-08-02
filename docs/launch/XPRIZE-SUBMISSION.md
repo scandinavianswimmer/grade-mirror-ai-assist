@@ -8,7 +8,7 @@ Official deadline: **August 17, 2026 at 1:00 PM PDT**
 
 Official sources: [rules](https://www.geminixprize.com/rules) · [Devpost rules](https://xprize.devpost.com/rules) · [FAQ](https://xprize.devpost.com/details/faq) · [eligibility clarification](https://xprize.devpost.com/forum_topics/44047-clarification-on-eligibility-timeline) · [dates](https://xprize.devpost.com/details/dates)
 
-Conditional deployment recovery: [`DEPLOYMENT-RECOVERY.md`](DEPLOYMENT-RECOVERY.md)
+Protected-product activation: [`../GO-LIVE-RUNBOOK.md`](../GO-LIVE-RUNBOOK.md)
 
 ## 0. Eligibility gate: organizer approval received
 
@@ -25,28 +25,28 @@ Eligibility is therefore no longer the release stop gate. Deployment evidence, a
 | Gate | Status on Aug 1 | Evidence / next action |
 |---|---|---|
 | Date eligibility | **CLEARED — founder confirmed** | Organizer approval received Aug 1; archive the written ruling and follow any stated conditions |
-| Public code repository | Ready | `scandinavianswimmer/grade-mirror-ai-assist` is public |
-| License | Open | All rights reserved; founder must choose whether to add a license |
-| Public live application | **PUBLIC PREVIEW LIVE; PRODUCT GATED** | `https://mrselby.app` serves the rebranded overview, legal previews, security headers, and guarded setup state from Cloudflare Workers. Accounts and classroom data remain closed until the backend is provisioned and verified. |
-| Working backend | **NO-GO** | Both candidate Supabase hosts (`rwiqwuohbcvhuvtlxlvh` and `yhdobsmmhdvqswjpousc`) return authoritative DNS NXDOMAIN; current credentials cannot access the intended later project |
+| Public code repository | **PUBLIC; RELEASE REF PENDING** | `scandinavianswimmer/grade-mirror-ai-assist` is public. Draft PR #30 contains the deployed preview release; merge and tag the exact final submission release before entering the repository URL. |
+| License | **BLOCKED — OWNER DECISION** | The repository is currently all rights reserved and has no `LICENSE`. Choose relevant public-repository licensing, or use the contest's private-repository sharing path. |
+| Public live application | **PUBLIC PREVIEW LIVE; PRODUCT GATED** | Recorded baseline `028c0c7` / Worker `4740b352-418a-46b6-bbda-f21ba30fa296` serves the rebranded overview, legal previews, security headers, and guarded setup state at `https://mrselby.app`. Replace this baseline in the private manifest with the exact current deployment identity after release. Accounts and classroom data remain closed until the backend is provisioned and verified. |
+| Working backend | **NO-GO** | No approved Mr Selby Supabase project is connected. The protected product bundle is intentionally excluded from the live preview. |
 | Google Cloud product in deployed app | **UNPROVEN** | Cloud Run/Firebase/Vertex paths exist in code; no live deployment evidence |
 | Gemini API call in deployed app | **UNPROVEN** | Gemini integration exists in code; no production request/log proof |
-| CI quality gate | **Ready remotely** | Code-bearing commit `000c937` passed the repaired app-and-Node TypeScript gate, lint, 230 tests, production build, and deterministic evals in [GitHub Actions run 30723639443](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30723639443) |
+| CI quality gate | **BASELINE REMOTE; CANDIDATE LOCAL** | Baseline `028c0c7` passed lint, both TypeScript projects, 25 test files with 249 tests, the production build, deterministic evals, and the calibration gate in [GitHub Actions run 30727576006](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30727576006). The current candidate passes 26 files / 256 tests locally plus a frozen Deno check of all 16 Edge Functions; attach its remote run after push. |
 | Test credentials / judge instructions | Missing | Create only against the exact live release; never include secrets in the repo |
 | Real users and testimonials | Unverified | Export timestamped, privacy-safe evidence; do not use seed/demo personas as users |
 | Real revenue and P&L | Unverified | Export Stripe revenue by month, costs excluding marketing, CAC, and related-party split |
 | Production execution logs | Missing | Capture Gemini/GCP request volume, agent traces, failures, and release identifiers |
 | Public demo video under 3:00 | Missing | Record only after the live build and evidence below are verified |
 | 500–1,000 word narrative | Draft only | Complete with measured figures and links; remove every placeholder |
-| Repository/security hygiene | Partial | Current tree scan is clean; old history contains public Supabase/Firebase client identifiers and GitHub secret scanning is disabled. `npm audit --omit=dev` reports the current React Router RSC advisory, but the official advisory says it applies only to unstable RSC APIs; this Vite `BrowserRouter` SPA has no RSC package or API usage. Track and upgrade when a compatible patched release is published. |
+| Repository/security hygiene | **PARTIAL — HISTORICAL ALERT OPEN** | GitHub secret scanning and push protection are enabled. One historical Google API-key alert remains open at commit `ef9b808`; the current `.env.example` value is empty, but the owner must verify the historical key, restrict or revoke it if active, and record the alert's resolution without reproducing the value. `npm audit --omit=dev` also reports the current React Router RSC advisory; the reviewed advisory applies only to unstable RSC APIs, and this Vite `BrowserRouter` SPA has no RSC package or API usage. Track and upgrade when a compatible patched release is published. |
 | Password recovery | **READY LOCALLY; LIVE GATE PENDING** | Dedicated request/update routes, account-enumeration-safe confirmation, expired-link handling, and recovery-intent tests pass. A real emailed link still requires the confirmed Supabase project and redirect allowlist. |
 | Right to erasure | **READY LOCALLY; LIVE GATE PENDING** | The authenticated Edge Function recursively removes and re-verifies all owned objects before deleting records, covers the current and legacy private buckets, rejects cross-owner paths, and fails closed on partial deletion. A seeded live deletion test still requires the confirmed Supabase project. |
 | Privacy and Terms | **POLISHED PREVIEWS — LIVE** | Public, accessible pages at `mrselby.app` state the product's current practices and show conspicuous placeholders for the effective date, legal entity, and contact. Final legal review and real contact details remain required before account launch. |
-| Accessibility beta pass | **READY LOCALLY; REPEAT ON LIVE URL** | VoiceOver, exact 200% Safari zoom, macOS Increase Contrast, keyboard/dialog focus, 320px reflow, route announcements, landmarks, form labels, and chart text alternatives were exercised against the configured production build. Repeat against the exact deployed release. |
+| Accessibility beta pass | **LOCAL MANUAL PASS; LIVE PUBLIC SMOKE PASS** | VoiceOver, exact 200% Safari zoom, macOS Increase Contrast, keyboard/dialog focus, 320px reflow, route announcements, landmarks, form labels, and chart text alternatives were exercised against the configured production build. Public routes were retested live; repeat the full manual pass against the final protected release. |
 
 ### 1.1 Beta-gap closure evidence — August 1
 
-- `npm run verify` passes locally under Node 22.23.1 with zero lint warnings, both TypeScript projects, **249 tests**, a production build, deterministic eval dry runs, and the calibration gate. Both deletion/privacy Edge Functions also pass Deno checks.
+- Recorded baseline `028c0c7` passes remotely under Node 22 in [run 30727576006](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30727576006): zero lint warnings, both TypeScript projects, **25 test files / 249 tests**, a production build, deterministic eval dry runs, and the calibration gate. The current candidate passes **26 test files / 256 tests** locally and typechecks every top-level Edge Function under Deno's frozen lockfile; its remote run remains required release evidence.
 - Password recovery now uses `/auth/forgot-password` and `/auth/reset-password`. The request result is deliberately generic, success headings receive focus, expired or context-free update links fail closed, and tab-scoped recovery intent is cleared after use or sign-out. The local synthetic-backend browser pass covered request confirmation and invalid-link behavior; a valid emailed production link remains part of the live gate.
 - VoiceOver was enabled through macOS Accessibility settings for a real Safari pass. Safari exposed the auth and recovery headings, named email/password controls, recovery/legal links, and the `Navigated to Reset your password · Mr Selby` route announcement. The VoiceOver rotor opened and exited normally.
 - Safari page zoom was set to exactly **200%**. The recovery flow remained readable and operable with no horizontal clipping; the setting was restored to 100% afterward.
@@ -59,8 +59,10 @@ Eligibility is therefore no longer the release stop gate. Deployment evidence, a
 
 The eligibility gate is cleared. Every remaining item still requires evidence from the exact release.
 
-- [ ] One category selected: Education & Human Potential.
-- [ ] Project name, short tagline, thumbnail, team, and contact details finalized.
+- [x] Category selected: Education & Human Potential.
+- [x] Project name finalized: Mr Selby.
+- [x] Short tagline and image candidates prepared: “Thoughtful grading support, shaped by how you teach”; `public/mr-selby-mark.png` and `public/mr-selby-social.png`.
+- [ ] Entrant or team membership and contact details finalized in Devpost.
 - [ ] 500–1,000 word description covers the problem, solution, AI-native operation, business viability, category impact, Google Cloud architecture, and measured evidence.
 - [ ] Public demo video is **under three minutes**, captioned, and shows the exact deployed release.
 - [ ] Public repository URL points to the reviewed commit/tag and includes setup instructions.
@@ -73,7 +75,13 @@ The eligibility gate is cleared. Every remaining item still requires evidence fr
 - [ ] Every factual claim maps to an evidence file or live dashboard capture.
 - [ ] Submission is entered before **August 17, 2026 at 1:00 PM PDT**.
 
-## 3. Evidence-safe narrative outline
+## 3. Private submission evidence bundle
+
+Copy [`EVIDENCE-PACK-TEMPLATE.md`](EVIDENCE-PACK-TEMPLATE.md) into the ignored `.submission-evidence/` directory and fill it with primary evidence or explicit zero/not-yet-available statements. The last recorded public baseline is commit `028c0c7`, Worker version `4740b352-418a-46b6-bbda-f21ba30fa296`, [CI run 30727576006](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30727576006), and `https://mrselby.app`; replace the immutable identifiers with the current release evidence after deployment.
+
+The private bundle must cover the organizer ruling, final repository/license identity, protected release, Gemini and Google Cloud proof, judge journey, users, May–August revenue, related-party revenue, expenses, exact-release media, and final narrative. For every artifact, record its capture time, release SHA, source, denominator, exclusions, and verifier. Redact credentials, student content, private correspondence, and unnecessary personal information before sharing.
+
+## 4. Evidence-safe narrative outline
 
 Target 650–850 words. Bracketed values are blocking placeholders, not claims.
 
@@ -92,9 +100,10 @@ Claim rules:
 - “Auto-finalized” requires persisted `finalized_by = ai` or `auto_finalized_at` provenance; confidence alone is not proof.
 - “Paying users,” “revenue,” “time saved,” and “convergence” require dated primary evidence.
 
-## 4. Conditional video plan — target 2:40, hard cap 3:00
+## 5. Conditional video plan — target 2:40, hard cap 3:00
 
 Do not record against seed data and narrate it as production usage.
+Use an original, clearly synthetic assignment, rubric, and student response unless permission for every third-party work, mark, and recording element has been documented.
 
 | Time | Show | Evidence-safe narration |
 |---|---|---|
@@ -108,7 +117,7 @@ Do not record against seed data and narrate it as production usage.
 
 If opt-in unattended publication is actually enabled, show the setting and explicit provenance. Otherwise omit the auto-finalize claim entirely.
 
-## 5. Tonight's honest finish line
+## 6. Tonight's honest finish line
 
 Tonight can produce a reviewed release candidate and complete the submission surfaces. Organizer approval clears the eligibility issue, but a working production deployment and evidence that has not yet been collected cannot be fabricated.
 
@@ -126,7 +135,12 @@ Tonight can produce a reviewed release candidate and complete the submission sur
 - [x] Publish polished Privacy and Terms previews with conspicuous launch placeholders instead of invented facts.
 - [x] Harden account and retention erasure so nested Storage objects are recursively removed and verified before related records are deleted.
 - [x] Deploy the safe public preview to Cloudflare Workers at `https://mrselby.app` and verify DNS, TLS, SPA routes, assets, and security headers.
+- [x] Establish the recorded public baseline: commit `028c0c7`, Worker version `4740b352-418a-46b6-bbda-f21ba30fa296`, and GitHub Actions run `30727576006` with 249 tests and every deterministic release gate.
+- [ ] Record the current candidate's immutable commit, Worker version, remote CI run, and live QA evidence in the private manifest.
 - [x] Complete the local VoiceOver, exact 200% zoom, Increase Contrast, keyboard, dialog-focus, and responsive-layout beta pass; restore all host settings afterward.
 - [ ] Archive the written ruling in the private submission evidence folder and note any conditions.
-- [ ] If continuing: confirm the canonical Supabase ref, restore/provision only that backend, configure Google Cloud/Firebase and secrets, deploy, and re-run the release gate against the live URLs.
+- [ ] Verify the historical Google API key identified by GitHub, restrict or revoke it if active, and resolve the alert with a documented disposition.
+- [ ] Choose the repository licensing or private-sharing path, then merge and tag the exact final submission release.
+- [ ] Obtain organization and cost approval for a fresh, isolated Supabase project; review the fresh-project schema path before linking, migrating, or deploying.
+- [ ] Configure Google Cloud/Gemini, required functions, auth redirects, and secrets; deploy the protected product and re-run the release gate against the live URLs.
 - [ ] Only then collect real evidence, record the video, finish the narrative, and submit.

@@ -1,11 +1,11 @@
-// aiTA Voice-Convergence Proof — judge fixture parsing (PURE, no I/O).
+// Mr Selby Voice-Convergence Proof — judge fixture parsing (PURE, no I/O).
 // ─────────────────────────────────────────────────────────────────────────────
 // Parses the convergence fixture format (eval/convergence/holes-voice.json) into the inputs the
 // GPT-judge harness needs:
 //   • referenceCorpus : the teacher's TRUE-voice samples (pre-reg wants 8–10 de-identified samples).
 //                       Derived from every `reference[].comment` across batches + held-out — these ARE
 //                       the teacher's own annotation prose, which is exactly their feedback voice.
-//   • candidates      : per (batch × condition) the aiTA-drafted feedback to be judged. In a LIVE run
+//   • candidates      : per (batch × condition) the Mr Selby-drafted feedback to be judged. In a LIVE run
 //                       these come from the grading engine (with-profile vs holdout). The fixture has
 //                       no AI drafts of its own, so loadJudgeFixture only supplies the reference corpus
 //                       + the held-out reference text; the live harness fills candidates from Gemini.

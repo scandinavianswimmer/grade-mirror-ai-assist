@@ -6,23 +6,56 @@ import {
   SAMPLE_SUBMISSIONS,
   buildSampleSubmissionRows,
 } from './sampleEssays';
+import { SYNTHETIC_DEMO_FIXTURE } from '@/fixtures/syntheticDemo';
+
+const fixtureText = JSON.stringify(SYNTHETIC_DEMO_FIXTURE);
+
+describe('SYNTHETIC_DEMO_FIXTURE — public-safe provenance', () => {
+  it('is explicitly synthetic, original, identifier-free, and side-effect-free data', () => {
+    expect(SYNTHETIC_DEMO_FIXTURE.provenance).toEqual({
+      synthetic: true,
+      originalCopy: true,
+      containsRealPeople: false,
+      containsContactDetails: false,
+      containsBackendIdentifiers: false,
+    });
+    expect(SYNTHETIC_DEMO_FIXTURE.marker).toMatch(/SYNTHETIC DEMO/);
+  });
+
+  it('contains no email address or hard-coded UUID', () => {
+    expect(fixtureText).not.toMatch(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+    expect(fixtureText).not.toMatch(/\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/i);
+  });
+
+  it('uses role labels rather than person-like student names', () => {
+    expect(SYNTHETIC_DEMO_FIXTURE.submissions.every((s) => /^Synthetic learner \d{2}$/.test(s.participantLabel))).toBe(true);
+  });
+
+  it('does not reuse the third-party works from the retired demo seeds', () => {
+    expect(fixtureText).not.toMatch(/gatsby|fitzgerald|holes|sachar|the giver|lowry|maupassant|thoreau/i);
+  });
+});
 
 describe('SAMPLE_ASSIGNMENT — gradeable, not fail-closed', () => {
   it('has a non-trivial prompt (description) and rubric the grader can use', () => {
     expect(SAMPLE_ASSIGNMENT.title).toBe(SAMPLE_ASSIGNMENT_TITLE);
     expect(SAMPLE_ASSIGNMENT.description.length).toBeGreaterThan(80);
-    expect(SAMPLE_ASSIGNMENT.rubricText).toMatch(/Thesis/i);
+    expect(SAMPLE_ASSIGNMENT.description).toContain(SYNTHETIC_DEMO_FIXTURE.marker);
+    expect(SAMPLE_ASSIGNMENT.rubricText).toMatch(/Claim/i);
     expect(SAMPLE_ASSIGNMENT.rubricText).toMatch(/Evidence/i);
   });
 });
 
 describe('SAMPLE_SUBMISSIONS — On-the-Loop spread', () => {
-  it('includes a strong, an ELL, a too-short, and an off-topic essay', () => {
+  it('includes strong, developing-language, too-short, and off-topic scenarios', () => {
     const names = SAMPLE_SUBMISSIONS.map((s) => s.studentName);
-    expect(names).toContain('Sofia Reyes'); // strong → auto-finalize
-    expect(names).toContain('Diego Hernández'); // ELL
-    expect(names).toContain('Logan Mitchell'); // too short → review
-    expect(names).toContain('Brandon Davis'); // off-topic → review
+    expect(names).toEqual([
+      'Synthetic learner 01',
+      'Synthetic learner 02',
+      'Synthetic learner 03',
+      'Synthetic learner 04',
+      'Synthetic learner 05',
+    ]);
   });
 
   it('has at least 5 essays so a batch is a believable demo', () => {
@@ -35,9 +68,9 @@ describe('SAMPLE_SUBMISSIONS — On-the-Loop spread', () => {
     }
   });
 
-  it('the off-topic essay really is off-topic (no Gatsby content)', () => {
-    const offTopic = SAMPLE_SUBMISSIONS.find((s) => s.studentName === 'Brandon Davis')!;
-    expect(offTopic.essay.toLowerCase()).not.toMatch(/gatsby|green light|fitzgerald/);
+  it('the off-topic essay really is off-topic (no beacon assignment content)', () => {
+    const offTopic = SAMPLE_SUBMISSIONS.find((s) => s.studentName === 'Synthetic learner 05')!;
+    expect(offTopic.essay.toLowerCase()).not.toMatch(/beacon|ledger|keeper|harbor/);
   });
 });
 

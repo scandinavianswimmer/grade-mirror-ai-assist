@@ -6,23 +6,23 @@ Organizer approval to proceed was confirmed by the founder on August 1, 2026. Us
 
 ## Stop rules
 
-- Do not deploy into the active Supabase project `zuazyrqrktlfgtncpeei`; it belongs to another application.
-- Do not restore or migrate `rwiqwuohbcvhuvtlxlvh` merely because it appears in `supabase/config.toml`. That ref describes the older Grade Mirror architecture; later production records consistently identify `yhdobsmmhdvqswjpousc` as the live v1-plus-v2 environment.
+- Do not deploy into `zuazyrqrktlfgtncpeei`; it belongs to another application.
+- Do not restore or migrate either historical project `rwiqwuohbcvhuvtlxlvh` or `yhdobsmmhdvqswjpousc`. Both are unavailable, their current ownership and state are unverified, and neither is an approved Mr Selby production target.
 - At the start of this audit, ignored CLI state linked the sprint worktree to unrelated active project `zuazyrqrktlfgtncpeei`. That link was removed on August 1; bare remote commands now fail closed. Do not recreate a default link until the intended production account and ref are confirmed.
 - Do not run a migration until the remote migration list and schema have been compared with `supabase/migrations_v2/`. The later environment was evolved additively and must not receive the clean-room baseline.
 - Do not put access tokens, database passwords, Gemini keys, service-role keys, or judge credentials in `.env`, shell history, this repository, a PR, or the Devpost entry.
 - Do not call a release “live” until the exact deployed commit passes the checks in the final section.
 
-## 1. Recover the correct account access
+## 1. Select the organization and approve cost
 
-The current CLI account can list inactive `rwiqwuohbcvhuvtlxlvh` but cannot see `yhdobsmmhdvqswjpousc`. Sign in interactively with the Supabase account or organization that owns the later production project:
+The current Supabase account exposes only an existing organization used for another project. The founder must first confirm whether that organization may host Mr Selby. Then follow the provider's cost-confirmation sequence: retrieve the exact project cost, report it, obtain explicit approval for that amount, and only then create a fresh isolated project.
 
 ```sh
 supabase login
-supabase projects list
+supabase orgs list
 ```
 
-Continue only if the output includes `yhdobsmmhdvqswjpousc` and its ownership, name, and region match the founder's records. If it does not, stop and recover the owning account or obtain a team invitation.
+Do not interpret organizer approval, domain purchase, or a general request to launch as approval to spend money or to use an unrelated organization. Record the chosen organization, quoted cost, explicit approval, new project reference, and region in private release evidence.
 
 Firebase is also unauthenticated on this machine. Recover access only if Firebase remains the chosen
 fallback host:
@@ -37,19 +37,19 @@ Continue only if `aita-5aca5` is visible under the intended Google account. The 
 public URL returns HTTP 404. The preferred frontend path is now Cloudflare Workers Static Assets at
 `mrselby.app`; the Firebase identifiers remain unchanged only as historical infrastructure IDs.
 
-## 2. Inspect before changing remote state
+## 2. Link the newly approved project
 
 Open the existing `grade-mirror-xprize-sprint` worktree, then run:
 
 ```sh
 git pull --ff-only
 git status --short
-supabase functions list --project-ref yhdobsmmhdvqswjpousc
-supabase link --project-ref yhdobsmmhdvqswjpousc
+supabase functions list --project-ref <new-project-ref>
+supabase link --project-ref <new-project-ref>
 supabase migration list --linked
 ```
 
-Require a clean worktree and save privacy-safe output with the date and commit SHA. Compare the remote migrations with the additive v2 history. In particular, do **not** apply `supabase/migrations_v2/0001_baseline.sql` to the historical production database.
+Require a clean worktree and save privacy-safe output with the date and commit SHA. A fresh empty project should receive the reviewed clean-room schema path; do not mix the historical additive and clean-room histories. Review the remote migration inventory before every push.
 
 Before a public release, rotate every server-side secret previously shared in chat or old handoff notes: database password, Supabase secret/service-role keys, Gemini keys, Stripe secret keys, cron secret, and any other provider credentials. Use the provider dashboards or secret stores; never commit the values.
 
@@ -58,8 +58,8 @@ Before a public release, rotate every server-side secret previously shared in ch
 Create a gitignored `.env.local` containing only public browser configuration:
 
 ```text
-VITE_SUPABASE_PROJECT_ID=yhdobsmmhdvqswjpousc
-VITE_SUPABASE_URL=https://yhdobsmmhdvqswjpousc.supabase.co
+VITE_SUPABASE_PROJECT_ID=<new-project-ref>
+VITE_SUPABASE_URL=https://<new-project-ref>.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=<current publishable key>
 ```
 
@@ -94,7 +94,7 @@ If the remote schema or functions differ from the reviewed migration history, st
 
 Deploy only the functions whose source and required migrations were reviewed. The exact function set depends on the remote inventory from step 2; do not blindly redeploy every legacy function.
 
-The current CI deploy loop ships 9 of the repository's 16 edge entrypoints. The frontend also invokes omitted functions including `create-class` and `rebuild-exemplars`, alongside older grading/count functions that should not automatically be revived. Before release, create an explicit modern runtime manifest: either review and add each required function to CI, or remove/replace its caller. A green frontend build is not evidence that these server calls exist in production.
+CI now keeps an explicit reviewed manifest of all 16 top-level Edge Function entrypoints and fails if repository discovery differs from that manifest. Deployment remains disabled unless the repository variable `SUPABASE_DEPLOY_ENABLED` is exactly `true`; enabling it with incomplete credentials fails closed. Keep the switch off until the fresh project, schema path, function inventory, secrets, and redirect URLs have been reviewed.
 
 After the backend is verified and the exact browser configuration is present, validate the staged
 Cloudflare deployment without changing remote state:

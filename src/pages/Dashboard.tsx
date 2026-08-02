@@ -249,8 +249,8 @@ const Dashboard = () => {
     }
   };
 
-  // Sample-essay onboarding: pre-load one assignment + 5 essays so a new teacher can grade (and see
-  // auto-finalize) within a minute, then drop them straight onto the assignment to hit "Grade all".
+  // Synthetic onboarding: load one original assignment + 5 role-labeled responses, then take the
+  // teacher to the assignment. The observed live policy — not this copy — determines disposition.
   const handleLoadSamples = async () => {
     if (!user) return;
     setLoadingSample(true);
@@ -258,10 +258,10 @@ const Dashboard = () => {
     try {
       const { assignmentId, created } = await loadSampleEssays(user.id);
       toast({
-        title: created ? 'Sample essays loaded' : 'Opening your sample set',
+        title: created ? 'Synthetic demo loaded' : 'Opening your synthetic demo',
         description: created
-          ? '5 student essays are ready — hit “Grade all” and watch Mr Selby auto-finalize the strong ones.'
-          : 'You already have the sample assignment — taking you to it.',
+          ? 'Five original, role-labeled responses are ready. Grade them, then verify each result before review.'
+          : 'You already have the synthetic assignment — taking you to it.',
       });
       dashboardCache = null;
       navigate(`/assignment/${assignmentId}`);
@@ -344,14 +344,15 @@ const Dashboard = () => {
             </div>
             <h2 className="font-display text-2xl font-semibold">Start your first class</h2>
             <p className="mx-auto mt-2 max-w-sm text-muted-foreground">
-              The fastest way to see Mr Selby work is our sample essays — no student data, no upload. Or
+              The fastest way to see Mr Selby work is our clearly labeled synthetic set — original copy,
+              no real student data, and no upload. Or
               group your assignments by class and grade real student work in your voice.
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <Button className="gap-2" onClick={handleLoadSamples} disabled={loadingSample}>
                 {loadingSample
                   ? <><Loader2 className="h-4 w-4 animate-spin" /> Loading…</>
-                  : <><Sparkles className="h-4 w-4" /> Try it with 5 sample essays</>}
+                  : <><Sparkles className="h-4 w-4" /> Try the synthetic demo</>}
               </Button>
               <Button variant="outline" className="gap-2" onClick={() => setShowCreateModal(true)}>
                 <Plus className="h-4 w-4" /> Create a class

@@ -1,4 +1,6 @@
-project_id = "rwiqwuohbcvhuvtlxlvh"
+# Local CLI identifier only. A remote project must be selected explicitly with
+# `--project-ref` or `supabase link` after organization and cost approval.
+project_id = "mr-selby"
 
 # ── Edge Functions ────────────────────────────────────────────────────────────
 # All functions verify the caller's JWT at the gateway by default (verify_jwt = true).
@@ -19,9 +21,6 @@ verify_jwt = true
 [functions.record-feedback-usage]
 verify_jwt = true
 
-[functions.generate-podcast]
-verify_jwt = true   # auth also enforced in code (getUserFromJWT); userId derived from the token
-
 [functions.delete-data]
 verify_jwt = true   # right-to-erasure; RLS-scoped deletes of the caller's own data only
 
@@ -38,9 +37,9 @@ enabled = true
 # ── Scheduled jobs (run privacy-tasks nightly via pg_cron + pg_net) ────────────
 # Create the schedule once in SQL (kept here for reference, not auto-applied):
 #   select cron.schedule(
-#     'aita-privacy-nightly', '0 3 * * *',
+#     'mr-selby-privacy-nightly', '0 3 * * *',
 #     $$ select net.http_post(
-#          url := 'https://<project>.functions.supabase.co/privacy-tasks',
+#          url := 'https://<project-ref>.functions.supabase.co/privacy-tasks',
 #          headers := jsonb_build_object('x-cron-secret', '<CRON_SECRET>')
 #        ); $$
 #   );

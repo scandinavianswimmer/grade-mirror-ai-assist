@@ -13,7 +13,7 @@ type RpcCapable = {
   rpc: (
     fn: string,
     args: Record<string, unknown>,
-  ) => Promise<{ data: unknown; error: unknown }>;
+  ) => PromiseLike<{ data: unknown; error: unknown }>;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {

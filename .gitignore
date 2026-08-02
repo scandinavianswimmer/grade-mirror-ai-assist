@@ -54,5 +54,9 @@ supabase/.temp/
 # QA/audit run artifacts — regenerable Playwright output (screenshots, audit json)
 qa-artifacts/
 
+# Private competition evidence: receipts, organizer correspondence, user proof,
+# judge instructions, and production logs must never enter the public repository.
+.submission-evidence/
+
 # Relocated Desktop reference assets (32M of screenshots, sample essays, Sleuth runs) — not source
 docs/loose-assets-2026-06/

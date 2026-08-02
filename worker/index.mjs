@@ -1,4 +1,4 @@
-// aiTA grading worker (Phase 4 — JOBS-01/02, RELY-01/02).
+// Mr Selby grading worker (Phase 4 — JOBS-01/02, RELY-01/02).
 // A Cloud Run service: a tiny HTTP server for the platform health check + a background loop that
 // pops grading jobs off the Upstash queue and invokes the grade-submission edge function via the
 // secret-gated internal path. Idempotent + retried; a single bad job never crashes the loop.

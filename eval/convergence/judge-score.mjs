@@ -1,4 +1,4 @@
-// aiTA Voice-Convergence Proof — GPT-Judge harness (Phase 15 v2, PROOF-redesign)
+// Mr Selby Voice-Convergence Proof — GPT-Judge harness (Phase 15 v2, PROOF-redesign)
 // ─────────────────────────────────────────────────────────────────────────────
 // PURE module. No network, no fs, no process exits. Everything that needs an LLM is
 // injected as an async `scorer` function so the decision logic is fully unit-testable

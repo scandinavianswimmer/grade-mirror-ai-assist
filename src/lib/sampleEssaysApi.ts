@@ -22,9 +22,9 @@ export async function findSampleAssignmentId(userId: string): Promise<string | n
 }
 
 /**
- * Load the sample assignment + essays into the teacher's account. Idempotent: if the sample
- * assignment already exists we return it without duplicating. The teacher then hits "Grade all"
- * and watches auto-finalize publish the strong essays while the weak/off-topic ones await review.
+ * Load the original synthetic assignment + responses into the signed-in teacher's account.
+ * Idempotent: if the assignment already exists, return it without duplicating. The live grading
+ * policy decides every disposition; fixture labels are never used as grading outcomes.
  */
 export async function loadSampleEssays(userId: string): Promise<LoadSampleResult> {
   const existing = await findSampleAssignmentId(userId);

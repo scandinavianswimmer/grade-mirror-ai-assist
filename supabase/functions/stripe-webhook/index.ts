@@ -20,7 +20,7 @@ import { verifyWebhook } from "../_shared/stripe.ts";
 // Map a Stripe Price ID back to our app plan. Configured as secrets, so this is data-driven.
 // Checks every price-id env name a plan may carry — interval-aware (monthly/annual) plus the
 // legacy single name — so an annual subscription resolves to the same plan as its monthly twin.
-function planForPrice(priceId: string | undefined): string | null {
+function planForPrice(priceId: string | null | undefined): string | null {
   if (!priceId) return null;
   for (const plan of ["pro", "enterprise"]) {
     const base = `STRIPE_PRICE_${plan.toUpperCase()}`;
@@ -63,7 +63,7 @@ async function upsertSubscription(row: SubRow): Promise<void> {
 
 // Resolve our user_id either from a row we already store (by customer id) or from event metadata.
 async function resolveUserId(
-  customerId: string | undefined,
+  customerId: string | null | undefined,
   fallback: string | null,
 ): Promise<string | null> {
   if (fallback) return fallback;
