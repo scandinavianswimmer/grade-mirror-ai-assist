@@ -5,16 +5,19 @@
 > Competition gate: [`docs/launch/XPRIZE-SUBMISSION.md`](docs/launch/XPRIZE-SUBMISSION.md).
 > Protected-product activation: [`docs/GO-LIVE-RUNBOOK.md`](docs/GO-LIVE-RUNBOOK.md).
 
-## Recorded public baseline
+## Current verified public release
 
-- Branch: `codex/xprize-submission-sprint-20260801`
-- Draft PR: [#30](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/pull/30)
-- Baseline commit: [`028c0c75873e3da0929c40afa446eceb80231402`](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/commit/028c0c75873e3da0929c40afa446eceb80231402)
+- Source branch: `codex/xprize-submission-sprint-20260801`
+- Merged PR: [#30](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/pull/30)
+- Release commit: [`119d1090cd71fc5f5607379b54cba46261ac9b9c`](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/commit/119d1090cd71fc5f5607379b54cba46261ac9b9c)
+- Release tag: `mr-selby-public-preview-2026-08-01`
+- Main merge commit: `b62a71efd5c20251245a1e9979765bbdb616b558`
 - Cloudflare Worker: `mr-selby`
-- Worker version: `4740b352-418a-46b6-bbda-f21ba30fa296`
-- Remote quality gate: [GitHub Actions run 30727576006](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30727576006)
+- Worker version: `94fc5cfb-941f-4d95-b50e-7de49d9b7066`
+- Release quality gate: [GitHub Actions run 30728937099](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30728937099)
+- Post-merge main gate: [GitHub Actions run 30729106237](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30729106237)
 
-The baseline remote gate passed lint, both TypeScript projects, **25 test files / 249 tests**, the production build, deterministic eval dry runs, and the false-auto-finalize calibration gate. The current candidate passes **26 test files / 256 tests** locally and a frozen Deno check of all 16 Edge Functions. Record its immutable commit, Worker version, and remote CI run in the private evidence manifest after deployment; do not try to embed a commit's own identity in that commit.
+Both remote gates passed lint, both TypeScript projects, **26 test files / 256 tests**, the production build, deterministic eval dry runs, the false-auto-finalize calibration gate, and a frozen Deno check of all 16 Edge Functions. The post-merge deploy job confirmed the Supabase kill switch was disabled and skipped checkout, CLI setup, and function deployment.
 
 ## What is live
 

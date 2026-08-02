@@ -2,7 +2,7 @@
 
 Verified context: **August 1, 2026**
 
-Organizer approval to proceed was confirmed by the founder on August 1, 2026. Use this runbook to restore the production path without weakening the release gates. The release candidate is draft PR [#30](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/pull/30).
+Organizer approval to proceed was confirmed by the founder on August 1, 2026. Use this runbook to restore the production path without weakening the release gates. The verified public-preview release was merged through PR [#30](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/pull/30).
 
 ## Stop rules
 
