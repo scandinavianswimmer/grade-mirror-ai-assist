@@ -4,7 +4,8 @@
 // grade + annotations, logs the LLM session. Returns the GradingResult or an explicit error.
 import { handlePreflight } from "../_shared/cors.ts";
 import { withErrors, ok, AppError } from "../_shared/http.ts";
-import { getUserFromJWT, timingSafeEqual } from "../_shared/auth.ts";
+import { getUserFromJWT } from "../_shared/auth.ts";
+import { matchesConfiguredSecret } from "../_shared/secret.ts";
 import { userClient, adminClient } from "../_shared/db.ts";
 import { gradeSubmission, type AgentStep } from "../_shared/grading/engine.ts";
 import { synthesizeRubric, toRubricInput } from "../_shared/grading/rubric-synth.ts";
@@ -34,7 +35,7 @@ Deno.serve((req) => {
     // ownership is then verified explicitly against the loaded submission below.
     const internalSecret = Deno.env.get("INTERNAL_GRADE_SECRET");
     const providedInternal = req.headers.get("x-internal-secret") ?? "";
-    const isInternal = Boolean(internalSecret) && timingSafeEqual(providedInternal, internalSecret);
+    const isInternal = matchesConfiguredSecret(providedInternal, internalSecret);
     let userId: string;
     let db;
     if (isInternal) {
@@ -49,12 +50,20 @@ Deno.serve((req) => {
 
     // Select user_id only for the internal worker path (the v1 schema may lack it); the normal JWT
     // path relies on RLS for ownership, so it stays on the original v1-safe column set.
-    const submissionCols = "id, assignment_id, extracted_text, extraction_confidence, status, student_name" + (isInternal ? ", user_id" : "");
-    const { data: submission, error: subErr } = await db
-      .from("submissions")
-      .select(submissionCols)
-      .eq("id", submissionId)
-      .single();
+    // Keep both projections as string literals: supabase-js' compile-time query parser cannot infer
+    // a row shape from a dynamically concatenated column string.
+    const submissionResult = isInternal
+      ? await db
+        .from("submissions")
+        .select("id, assignment_id, extracted_text, extraction_confidence, status, student_name, user_id")
+        .eq("id", submissionId)
+        .single()
+      : await db
+        .from("submissions")
+        .select("id, assignment_id, extracted_text, extraction_confidence, status, student_name")
+        .eq("id", submissionId)
+        .single();
+    const { data: submission, error: subErr } = submissionResult;
     if (subErr || !submission) throw new AppError(404, "submission", "Submission not found");
     if (isInternal && (submission as { user_id?: string }).user_id !== userId) {
       throw new AppError(403, "forbidden", "Submission does not belong to the provided userId");
@@ -211,7 +220,7 @@ Deno.serve((req) => {
           user_id: userId,
           assignment_id: submission.assignment_id,
           total_points: synth.totalPoints,
-          title: "aiTA synthesized rubric",
+          title: "Mr Selby synthesized rubric",
           rubric_json: synth,
         };
         let { data: newRubric, error: rubErr } = await db

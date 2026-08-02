@@ -3,9 +3,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'react-router-dom';
 import type { OnTheLoopSummary } from '@/lib/onTheLoop';
 
-// The headline "monitoring console" surface: aiTA grades on-the-loop — it publishes the
+// The headline "monitoring console" surface: Mr Selby grades on-the-loop — it publishes the
 // high-confidence work unattended and only routes exceptions to the teacher. This calm strip
-// makes that story legible on camera: "N graded · M auto-finalized by aiTA · K need review".
+// makes that story legible on camera: "N graded · M auto-finalized by Mr Selby · K need review".
 
 interface Props {
   summary: OnTheLoopSummary | null;
@@ -55,7 +55,7 @@ const OnTheLoopSummary = ({ summary, loading = false, className = '', reviewHref
       <div className="mb-4 flex items-center gap-2">
         <Bot className="h-4 w-4 text-primary" />
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          aiTA on-the-loop
+          Mr Selby on-the-loop
         </span>
         {pct != null && (
           <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
@@ -74,7 +74,7 @@ const OnTheLoopSummary = ({ summary, loading = false, className = '', reviewHref
         <Stat
           icon={Bot}
           value={summary.autoFinalized}
-          label="Auto-finalized by aiTA"
+          label="Auto-finalized by Mr Selby"
           tone="bg-primary/10 text-primary"
         />
         {needsReview > 0 && reviewHref ? (
@@ -97,7 +97,7 @@ const OnTheLoopSummary = ({ summary, loading = false, className = '', reviewHref
       </div>
 
       <p className="mt-4 text-sm text-muted-foreground">
-        aiTA published {summary.autoFinalized} high-confidence grade{summary.autoFinalized === 1 ? '' : 's'} unattended.
+        Mr Selby published {summary.autoFinalized} high-confidence grade{summary.autoFinalized === 1 ? '' : 's'} unattended.
         {needsReview > 0
           ? ` You only need to touch the ${needsReview} exception${needsReview === 1 ? '' : 's'} below.`
           : ' Nothing is waiting on you.'}

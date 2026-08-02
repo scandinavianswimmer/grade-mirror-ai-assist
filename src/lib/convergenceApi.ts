@@ -1,5 +1,5 @@
 // Phase 15 Task 3B (PROOF-01) — fetch the signed-in teacher's convergence series (RLS-scoped) for the
-// in-app "Is aiTA learning you?" trend. Reads grading batches, finalized submissions, and reviewed
+// in-app "Is Mr Selby learning you?" trend. Reads grading batches, finalized submissions, and reviewed
 // annotations (all user_id = auth.uid()), folds them via the pure buildBatchSignals, and runs them
 // through computeConvergence so the in-app trend and the eval harness share ONE definition of the
 // curve. No student PII is read — only statuses, edit-distances, ratings, and ids.

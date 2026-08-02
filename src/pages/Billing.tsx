@@ -13,14 +13,32 @@ import { Check, Loader2, ExternalLink, Sparkles } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { usePlan } from '@/hooks/usePlan';
 import { PLAN_LIMITS, startCheckout, openBillingPortal } from '@/lib/billingApi';
+import { PRO_MONTHLY_PRICE } from '@/lib/pricingPlans';
 
 function limitText(limit: number | null, noun: string): string {
   return limit === null ? `Unlimited ${noun}` : `Up to ${limit.toLocaleString()} ${noun} / month`;
 }
 
-// Display-only Pro price. The actual charge is set by the Stripe Price (STRIPE_PRICE_PRO_MONTHLY).
-// FOUNDER: set this to match the real Stripe Pro monthly price before launch.
-const PRO_PRICE_DISPLAY = '$12';
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
+// Display-only Pro price, sourced from the canonical pricing plan. The actual charge remains
+// authoritative in Stripe and must match before launch.
+const PRO_PRICE_DISPLAY = `$${PRO_MONTHLY_PRICE}`;
 
 const Billing = () => {
   const { plan, status, isPaid, loading } = usePlan();
@@ -42,9 +60,9 @@ const Billing = () => {
       setWorking('checkout');
       const url = await startCheckout('pro');
       window.location.href = url; // redirect to Stripe-hosted Checkout
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      toast.error(err?.message ?? 'Could not start checkout. Please try again.');
+      toast.error(getErrorMessage(err, 'Could not start checkout. Please try again.'));
       setWorking(null);
     }
   };
@@ -54,9 +72,9 @@ const Billing = () => {
       setWorking('portal');
       const url = await openBillingPortal();
       window.location.href = url; // redirect to the Stripe Customer Portal
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      toast.error(err?.message ?? 'Could not open the billing portal.');
+      toast.error(getErrorMessage(err, 'Could not open the billing portal.'));
       setWorking(null);
     }
   };
@@ -67,7 +85,7 @@ const Billing = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto px-4 py-10">
+      <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-10">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="font-display text-3xl font-semibold tracking-tight">Plans &amp; billing</h1>
           <p className="mt-2 text-muted-foreground">
@@ -93,7 +111,7 @@ const Billing = () => {
                 {free.label}
                 {plan === 'free' && <Badge variant="secondary">Your plan</Badge>}
               </CardTitle>
-              <CardDescription>For trying aiTA on a single class.</CardDescription>
+              <CardDescription>For trying Mr Selby on a single class.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="text-3xl font-semibold">$0<span className="text-base font-normal text-muted-foreground">/mo</span></div>

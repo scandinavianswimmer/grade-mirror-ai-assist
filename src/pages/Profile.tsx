@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,12 +50,6 @@ const Profile = () => {
   // Privacy settings hook
   const { settings: privacySettings, isLoading: privacyLoading, saveSettings, isSaving } = usePrivacySettings();
 
-  useEffect(() => {
-    if (user) {
-      fetchUserProfile();
-    }
-  }, [user]);
-
   // Reflect the persisted retention choice (H32).
   useEffect(() => {
     if (privacySettings) {
@@ -83,10 +77,12 @@ const Profile = () => {
     if (!user) return;
     await supabase.from('ai_profiles').delete().eq('user_id', user.id);
     setStyleSummary(null);
-    toast({ title: 'Learned style reset', description: 'aiTA will rebuild your style from new exemplars.' });
+    toast.success('Learned style reset', {
+      description: 'Mr Selby will rebuild your style from new exemplars.',
+    });
   };
 
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -121,7 +117,13 @@ const Profile = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserProfile();
+    }
+  }, [fetchUserProfile, user]);
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({
@@ -215,11 +217,11 @@ const Profile = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
+        <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center py-12">
             <div className="text-lg font-medium animate-pulse">Loading profile...</div>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -228,14 +230,14 @@ const Profile = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
+        <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
           <Card className="max-w-2xl mx-auto">
             <CardContent className="p-8 text-center">
               <h2 className="text-xl font-semibold text-gray-700 mb-2">Profile Not Found</h2>
               <p className="text-gray-600">Unable to load your profile information.</p>
             </CardContent>
           </Card>
-        </div>
+        </main>
       </div>
     );
   }
@@ -244,7 +246,7 @@ const Profile = () => {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -433,7 +435,7 @@ const Profile = () => {
                           value={formData.years_experience?.toString()} 
                           onValueChange={(value) => handleInputChange('years_experience', parseInt(value))}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger id="years_experience">
                             <SelectValue placeholder="Select years of experience" />
                           </SelectTrigger>
                           <SelectContent>
@@ -505,7 +507,7 @@ const Profile = () => {
               <Card className="p-6">
                 <h3 className="text-lg font-semibold mb-1">Grading Automation</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  aiTA always drafts a grade for you to review — that's the default, and you stay in
+                  Mr Selby always drafts a grade for you to review — that's the default, and you stay in
                   control. Auto-finalize is <span className="font-medium">off until you turn it on</span>.
                   Once enabled, the clearest high-confidence, on-topic grades publish for you while you
                   stay On-the-Loop: low-confidence, off-topic, or integrity-flagged essays still come
@@ -518,7 +520,7 @@ const Profile = () => {
                         Auto-finalize high-confidence grades (opt-in)
                       </Label>
                       <p className="text-sm text-gray-600">
-                        Off by default. Turn this on to let aiTA publish confident, rubric-aligned
+                        Off by default. Turn this on to let Mr Selby publish confident, rubric-aligned
                         grades without manual approval. You stay On-the-Loop: low-confidence or
                         off-topic essays, and anything with an integrity flag (possible AI-generated,
                         off-topic, prompt injection), always come to you regardless of this setting.
@@ -537,7 +539,7 @@ const Profile = () => {
                       Confidence threshold
                     </Label>
                     <p className="text-sm text-gray-600 mb-2">
-                      How sure aiTA must be before it finalizes on its own. Higher = more essays routed
+                      How sure Mr Selby must be before it finalizes on its own. Higher = more essays routed
                       to your review.
                     </p>
                     <Select
@@ -622,7 +624,7 @@ const Profile = () => {
                       How long to keep uploaded files and grading data
                     </p>
                     <Select value={dataRetention} onValueChange={handleRetentionChange}>
-                      <SelectTrigger className="w-full max-w-xs">
+                      <SelectTrigger id="retention" className="w-full max-w-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
@@ -649,7 +651,7 @@ const Profile = () => {
                   <p className="text-sm text-gray-700 whitespace-pre-wrap">{styleSummary}</p>
                 ) : (
                   <p className="text-sm text-gray-500">
-                    aiTA hasn't learned a style yet. Upload graded exemplars (with your feedback) to teach it your voice.
+                    Mr Selby hasn't learned a style yet. Upload graded exemplars (with your feedback) to teach it your voice.
                   </p>
                 )}
               </Card>
@@ -684,8 +686,8 @@ const Profile = () => {
                   <div className="p-4 bg-amber-50 rounded-lg">
                     <h4 className="font-medium text-amber-900 mb-2">Regulatory note</h4>
                     <p className="text-amber-800">
-                      aiTA is not certified compliant with FERPA, GDPR, or similar regulations. Compliance for
-                      your use depends on your institution's policies and agreements. Review aiTA with your
+                      Mr Selby is not certified compliant with FERPA, GDPR, or similar regulations. Compliance for
+                      your use depends on your institution's policies and agreements. Review Mr Selby with your
                       school or district before processing student records.
                     </p>
                   </div>
@@ -694,7 +696,7 @@ const Profile = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

@@ -74,10 +74,10 @@ const Metrics = () => {
   return (
     <div className="min-h-screen">
       <Navbar />
-      <div className="container mx-auto px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="font-display text-3xl font-semibold tracking-tight">Metrics</h1>
-          <p className="text-muted-foreground">Your grading impact and how aiTA is learning your style.</p>
+          <p className="text-muted-foreground">Your grading impact and how Mr Selby is learning your style.</p>
         </div>
 
         {/* METRIC-01 summary cards */}
@@ -109,7 +109,7 @@ const Metrics = () => {
               <CardTitle className="font-display text-lg">Edit rate over time</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
-              Edits per graded submission, by week. A downward trend means aiTA is matching your style more closely.
+              Edits per graded submission, by week. A downward trend means Mr Selby is matching your style more closely.
             </p>
           </CardHeader>
           <CardContent className="pt-6">
@@ -142,9 +142,9 @@ const Metrics = () => {
           </CardContent>
         </Card>
 
-        {/* PROOF-01 — "Is aiTA learning you?" per-batch convergence trend */}
+        {/* PROOF-01 — "Is Mr Selby learning you?" per-batch convergence trend */}
         <ConvergencePanel />
-      </div>
+      </main>
     </div>
   );
 };

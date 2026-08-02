@@ -32,8 +32,11 @@ let served = false;
 let resolveStarted!: () => void;
 const started = new Promise<void>((r) => (resolveStarted = r));
 
-// deno-lint-ignore no-explicit-any
-(Deno as any).serve = (a: unknown, b?: unknown) => {
+const denoRuntime = Deno as unknown as {
+  serve: (optionsOrHandler: unknown, handler?: unknown) => ReturnType<typeof realServe>;
+};
+
+denoRuntime.serve = (a: unknown, b?: unknown) => {
   // Two call shapes: (handler) or (options, handler).
   const handler = (typeof a === "function" ? a : b) as Deno.ServeHandler;
   if (typeof handler !== "function") {

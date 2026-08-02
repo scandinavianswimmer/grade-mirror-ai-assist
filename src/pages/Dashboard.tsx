@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -77,35 +77,13 @@ const Dashboard = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [classToEdit, setClassToEdit] = useState<EditableClass | null>(null);
+  const createClassTriggerRef = useRef<HTMLButtonElement>(null);
+  const editClassTriggerRef = useRef<HTMLElement | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('time');
   const [hasAnimated, setHasAnimated] = useState(false);
   const [onTheLoop, setOnTheLoop] = useState<OnTheLoopSummaryData | null>(null);
   const [onTheLoopLoading, setOnTheLoopLoading] = useState(true);
   const hasInitiallyLoaded = useRef(false);
-
-  useEffect(() => {
-    if (user) {
-      // Show cache instantly for a snappy paint, but ALWAYS refetch so cross-page mutations
-      // (e.g. a new assignment created elsewhere) can't leave the dashboard stale (M41).
-      if (dashboardCache) {
-        setAssignments(dashboardCache.assignments);
-        setClasses(dashboardCache.classes);
-        setLoading(false);
-        if (!hasInitiallyLoaded.current) {
-          setTimeout(() => setHasAnimated(true), 100);
-          hasInitiallyLoaded.current = true;
-        }
-      }
-      fetchData();
-      // Best-effort On-the-Loop throughput — degrades to hidden if it can't load (never blocks
-      // the dashboard, and column-tolerant for lagging cloud schemas).
-      setOnTheLoopLoading(true);
-      fetchOnTheLoopSummary()
-        .then(setOnTheLoop)
-        .catch(() => setOnTheLoop(null))
-        .finally(() => setOnTheLoopLoading(false));
-    }
-  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -115,7 +93,7 @@ const Dashboard = () => {
     }
   }, [user]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
     try {
       const { data: assignmentsData, error: assignmentsError } = await supabase
@@ -172,7 +150,31 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      // Show cache instantly for a snappy paint, but ALWAYS refetch so cross-page mutations
+      // (e.g. a new assignment created elsewhere) can't leave the dashboard stale (M41).
+      if (dashboardCache) {
+        setAssignments(dashboardCache.assignments);
+        setClasses(dashboardCache.classes);
+        setLoading(false);
+        if (!hasInitiallyLoaded.current) {
+          setTimeout(() => setHasAnimated(true), 100);
+          hasInitiallyLoaded.current = true;
+        }
+      }
+      fetchData();
+      // Best-effort On-the-Loop throughput — degrades to hidden if it can't load (never blocks
+      // the dashboard, and column-tolerant for lagging cloud schemas).
+      setOnTheLoopLoading(true);
+      fetchOnTheLoopSummary()
+        .then(setOnTheLoop)
+        .catch(() => setOnTheLoop(null))
+        .finally(() => setOnTheLoopLoading(false));
+    }
+  }, [fetchData, user]);
 
   const sortClasses = (list: Class[], by: SortOption): Class[] =>
     [...list].sort((a, b) => {
@@ -247,8 +249,8 @@ const Dashboard = () => {
     }
   };
 
-  // Sample-essay onboarding: pre-load one assignment + 5 essays so a new teacher can grade (and see
-  // auto-finalize) within a minute, then drop them straight onto the assignment to hit "Grade all".
+  // Synthetic onboarding: load one original assignment + 5 role-labeled responses, then take the
+  // teacher to the assignment. The observed live policy — not this copy — determines disposition.
   const handleLoadSamples = async () => {
     if (!user) return;
     setLoadingSample(true);
@@ -256,10 +258,10 @@ const Dashboard = () => {
     try {
       const { assignmentId, created } = await loadSampleEssays(user.id);
       toast({
-        title: created ? 'Sample essays loaded' : 'Opening your sample set',
+        title: created ? 'Synthetic demo loaded' : 'Opening your synthetic demo',
         description: created
-          ? '5 student essays are ready — hit “Grade all” and watch aiTA auto-finalize the strong ones.'
-          : 'You already have the sample assignment — taking you to it.',
+          ? 'Five original, role-labeled responses are ready. Grade them, then verify each result before review.'
+          : 'You already have the synthetic assignment — taking you to it.',
       });
       dashboardCache = null;
       navigate(`/assignment/${assignmentId}`);
@@ -281,19 +283,19 @@ const Dashboard = () => {
     <div className="min-h-screen">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-10" data-tour="dashboard-overview">
+      <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-10" data-tour="dashboard-overview">
         <TrialBanner />
         <div className={`mb-8 flex flex-wrap items-end justify-between gap-4 ${reveal()}`}>
           <div>
             <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">Your workspace</p>
             <h1 className="mt-1 font-display text-4xl font-semibold tracking-tight text-foreground">Classes &amp; assignments</h1>
           </div>
-          <div className="flex gap-3">
-            <Button size="lg" variant="outline" className="gap-2" onClick={() => setShowCreateModal(true)} data-tour="create-class">
+          <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-2">
+            <Button ref={createClassTriggerRef} size="lg" variant="outline" className="w-full gap-2" onClick={() => setShowCreateModal(true)} data-tour="create-class">
               <Plus className="h-5 w-5" /> New class
             </Button>
-            <Link to="/create-assignment">
-              <Button size="lg" className="gap-2" data-tour="create-assignment">
+            <Link to="/create-assignment" className="w-full">
+              <Button size="lg" className="w-full gap-2" data-tour="create-assignment">
                 <Plus className="h-5 w-5" /> New assignment
               </Button>
             </Link>
@@ -342,14 +344,15 @@ const Dashboard = () => {
             </div>
             <h2 className="font-display text-2xl font-semibold">Start your first class</h2>
             <p className="mx-auto mt-2 max-w-sm text-muted-foreground">
-              The fastest way to see aiTA work is our sample essays — no student data, no upload. Or
+              The fastest way to see Mr Selby work is our clearly labeled synthetic set — original copy,
+              no real student data, and no upload. Or
               group your assignments by class and grade real student work in your voice.
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <Button className="gap-2" onClick={handleLoadSamples} disabled={loadingSample}>
                 {loadingSample
                   ? <><Loader2 className="h-4 w-4 animate-spin" /> Loading…</>
-                  : <><Sparkles className="h-4 w-4" /> Try it with 5 sample essays</>}
+                  : <><Sparkles className="h-4 w-4" /> Try the synthetic demo</>}
               </Button>
               <Button variant="outline" className="gap-2" onClick={() => setShowCreateModal(true)}>
                 <Plus className="h-4 w-4" /> Create a class
@@ -380,8 +383,17 @@ const Dashboard = () => {
                     </div>
                     {cs.id !== 'default' && (
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => handleEditClass(classes.find((c) => c.id === cs.id)!)} data-tour="edit-class">
-                          <Edit className="h-4 w-4" />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`Edit ${cs.name}`}
+                          onClick={(event) => {
+                            editClassTriggerRef.current = event.currentTarget;
+                            handleEditClass(classes.find((c) => c.id === cs.id)!);
+                          }}
+                          data-tour="edit-class"
+                        >
+                          <Edit aria-hidden="true" className="h-4 w-4" />
                         </Button>
                         <AlertDialog>
                           <DropdownMenu>
@@ -480,9 +492,9 @@ const Dashboard = () => {
           </div>
         )}
 
-        <CreateClassModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} onClassCreated={handleClassCreated} />
-        <EditClassModal isOpen={showEditModal} onClose={() => setShowEditModal(false)} onClassUpdated={handleClassUpdated} classData={classToEdit} />
-      </div>
+        <CreateClassModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} onClassCreated={handleClassCreated} returnFocusRef={createClassTriggerRef} />
+        <EditClassModal isOpen={showEditModal} onClose={() => setShowEditModal(false)} onClassUpdated={handleClassUpdated} classData={classToEdit} returnFocusRef={editClassTriggerRef} />
+      </main>
     </div>
   );
 };

@@ -1,115 +1,110 @@
-# aiTA Compliance Posture (launch)
+# Mr Selby privacy and compliance posture — launch preview
 
-> Status: agent-drafted 2026-06-15 for the XPRIZE launch. Sections marked **[FOUNDER VERIFY]**
-> assert facts the agent cannot confirm from the repo (official contest rules, signed agreements) —
-> verify against the source before publishing externally.
+Status: code-reviewed August 1, 2026. This is an engineering posture, not legal advice or a final
+privacy policy. The public preview is live, but the protected backend is not currently provisioned and
+the repository does not prove any production database setting, provider contract, school agreement, or
+regulatory certification. Do not claim FERPA, COPPA, GDPR, or district compliance from this document.
 
-## 1. The FERPA keystone: de-identification before any LLM call
+Public-facing summaries remain previews until the legal entity, effective date, monitored contact,
+service-provider list, launch geography, and qualified review are complete.
 
-aiTA's compliance story rests on a single architectural fact: **no student education record reaches
-Google Gemini.** Standard Vertex AI / Gemini is *not* a FERPA-covered service (only Google
-Workspace for Education is), so the answer is not "trust the vendor" — it is "never send the record."
+## 1. Repository-implemented data minimization
 
-**Confirmed in code.** In `supabase/functions/grade-submission/index.ts`, immediately before the
-essay is sent to the model, the grader calls `maskNamesPreservingOffsets()`
-(`supabase/functions/_shared/deid.ts`) when the teacher's `privacy_settings.anonymize_student_names`
-is on — which **defaults to ON** (set at signup; least-permissive default). Each matched identifier is
-replaced with an opaque, length-preserving redaction block so the text that leaves for Gemini carries
-no name, while the teacher still sees the real names locally (annotation offsets still anchor because
-length is preserved). The retention cron uses the sibling `scrubNames()` to scrub stored text +
-annotations together.
+The grading code contains an exact-match masking step before the configured model call. In
+`supabase/functions/grade-submission/index.ts`, the release candidate reads the teacher's
+`privacy_settings.anonymize_student_names` setting. When enabled, it passes known identifiers to
+`maskNamesPreservingOffsets()` in `supabase/functions/_shared/deid.ts`.
 
-**What is masked (HIGH-7 expansion).** The de-id call masks two explicit lists:
-1. **Roster** — the submission's `student_name`.
-2. **Extra identifiers** — caller-supplied terms from the teacher context: the teacher's
-   `users.full_name` and `users.school`. These are proper nouns with low collision risk against essay
-   vocabulary, so exact-match redaction won't corrupt grading. Course/class names are **deliberately
-   excluded** — they are often generic words ("English", "Period 1", "World History") whose redaction
-   would over-mask essay content, a worse failure for a grading product than the residual leak.
+The current call site supplies:
 
-**De-identification flow (send-time):**
+1. the submission's `student_name`, when it contains at least two characters; and
+2. the teacher's stored full name and school, when available and at least two characters.
+
+Matching is case-insensitive and length-preserving, so downstream annotation offsets can still map to
+the original text. Course and class names are not supplied because generic values could over-mask the
+essay. The schema and code fallback are intended to make known-name masking default-on, but the live
+database default and every existing row must be verified after the canonical migrations are applied.
+A teacher can also disable the setting.
+
+This behavior is a data-minimization control, not complete de-identification. It does not establish that
+no education record or personal information reaches a model.
+
+### Send-time flow implemented in the repository
+
+```text
+essay text
+  → exact-match, length-preserving masking of supplied known identifiers
+    (only when anonymize_student_names is enabled)
+  → optional model-based residual-PII pre-pass
+    (only when DEID_PREPASS_ENABLED and the per-teacher deid_prepass setting are both enabled)
+  → configured Gemini grading path
 ```
-essay text  →  maskNamesPreservingOffsets(text, [studentName], [teacherName, school])
-              (only when anonymize_student_names = true, default true)
-            →  [optional] runDeidPrepass(baseMasked, geminiScorer)   ← OFF by default
-              (only when DEID_PREPASS_ENABLED env + privacy_settings.deid_prepass are BOTH on;
-               masks residual free-text PII length-preservingly; FAIL-OPEN to base-masked text)
-            →  Gemini
-```
 
-**Residual risk — state it honestly (do NOT claim fully compliant):**
-- De-id masks ONLY terms the system explicitly knows: the roster student name + the extra-identifiers
-  list above (and, via the retention cron, stored copies). It performs **NO heuristic / NER name
-  detection**. Therefore **other free-text PII written inside an essay body is NOT masked** — a
-  classmate's or sibling's name, a parent's name, a hometown, a street address, a phone number, an
-  employer. All of that still reaches Gemini in cleartext today.
-- Aggressive heuristic masking was **deliberately rejected**: redacting capitalized tokens or
-  "name-like" words mid-essay corrupts the very content being graded (over-masking shifts the meaning
-  the model scores against), which is a worse failure for a grading product than the residual leak.
-- **The real fix — de-id PRE-PASS (now built, OFF by default):** `_shared/deid-prepass.ts` adds a
-  model-based pre-pass that runs over the *base-masked* essay BEFORE grading, asks Gemini to return
-  spans of residual PII it doesn't already know (PERSON other than the author, LOCATION, ORG-school,
-  CONTACT), and masks them with the SAME offset-preserving primitive so annotation anchors still hold.
-  When enabled it closes **most** of the residual free-text leak above (other students, parents,
-  hometowns, addresses, contact info). It is **OFF by default** and double-gated: the global
-  `DEID_PREPASS_ENABLED` env flag AND a per-teacher `privacy_settings.deid_prepass` column (default
-  false) must BOTH be on, and it runs only when anonymization is on. It is **FAIL-OPEN**: if the model
-  errors or times out, grading falls back to the base-masked text and logs — a de-id step must never
-  block grading. Cost/latency: one extra model call per grade (the reason it is flag-gated; intended
-  for **Cohort B** real essays once enabled). Activation requires an edge-fn deploy + both flags on.
-- **Still not "fully compliant," even with the pre-pass on.** Model NER is probabilistic: it can miss a
-  span or over-redact, so the claim remains "FERPA-aware, residual leak substantially reduced when the
-  pre-pass is enabled," **not** "all student PII is provably removed." With the pre-pass OFF (the
-  default), the claim is unchanged: "explicitly-known identifiers are masked," not "all student PII is
-  removed."
-- **Mitigations in place meanwhile:** For **Cohort A (revenue)** the residual leak is structurally
-  avoided — new teachers are steered to grade **synthetic sample essays with no real student PII**
-  (the dashboard empty state makes "Try it with 5 sample essays — no student data" the primary action;
-  `src/lib/sampleEssays.ts` contains only fabricated names/content). For **Cohort B (proof, real
-  essays)** it is covered by **signed school DPAs** + de-id, not de-id alone.
-- A teacher who explicitly disables anonymization sends names. The default-on posture + UI copy keep
-  this an informed opt-out, not a silent default.
+The optional pre-pass is off by default, probabilistic, and fail-open. If it errors or times out, the
+grading path continues with only the exact-match masking. It may find additional person, location,
+organization, or contact spans, but it can miss or over-redact them. Because it fails open, it must not
+be described as a guaranteed privacy boundary.
 
-## 2. Two-cohort data strategy (why there are two engines)
+## 2. Residual risk that must remain visible
 
-| | Cohort A — Revenue | Cohort B — Proof |
+- Names not supplied to the exact-match function can remain in the essay.
+- Addresses, phone numbers, email addresses, health details, discipline records, and other free-text
+  personal information can remain.
+- Exact matching can miss variants, nicknames, misspellings, or references expressed another way.
+- The optional pre-pass adds a model call and remains probabilistic even when enabled.
+- Repository RLS policies, storage controls, encryption settings, retention jobs, and provider settings
+  still require verification against the actual production environment.
+- A user who disables known-name masking can send names to the configured model.
+
+The trial and demo should start with synthetic sample essays. That reduces exposure only while the user
+stays within the synthetic workflow; it does not make later uploads safe by default.
+
+## 3. Two-lane launch posture
+
+| Lane | Permitted data today | Required before broader use |
 |---|---|---|
-| Data | Pre-loaded **sample essays**, no real student PII | **Real** student essays |
-| Legal basis | De-identification + ToS | **Signed school DPA / SDPC NDPA** + de-id |
-| Speed | 5–7 day launch posture | DPA clock (longest pole) |
+| Public preview and synthetic demo | Product pages and fabricated sample essays; no real student records | Verified backend, exact-release security test, monitored contact, final policies |
+| Institutional proof cohort | **Not authorized by this repository** | Institutional approval, appropriate signed agreements, verified provider terms/configuration, data-flow review, retention/deletion procedure, incident and support contacts |
 
-Keeping them separate is the compliance decision: the revenue engine never touches student PII, so
-it ships fast; the proof engine takes on real essays only under a signed agreement.
+No signed DPA, NDPA, district approval, or provider agreement is proven by the repository. Do not enroll
+a real-student proof cohort until the launch owner and qualified reviewer confirm the required documents
+and exact deployment.
 
-## 3. ToS attestation language (paste into Terms / submission narrative)
+## 4. Counsel-review draft for AI-processing disclosure
 
-> **AI processing & student data.** aiTA uses Google's Gemini models to draft rubric-aligned grades
-> and feedback. Before any submission text is transmitted to the model, aiTA removes the student's
-> name from the text (de-identification is enabled by default). aiTA does not use the standard
-> Gemini API as a FERPA-covered service; instead, it is engineered so that personally identifying
-> student information is not transmitted to the model. Teachers grading real student work in a
-> district context do so under a signed data-protection agreement (DPA/NDPA). Teachers remain the
-> authoring authority for every grade: aiTA may auto-finalize high-confidence, on-topic grades, and
-> the teacher may review or change any grade at any time.
+The following is a factual starting point, not final Terms language:
 
-## 4. "Newly created" eligibility paragraph  **[FOUNDER VERIFY against official rules]**
+> **AI processing and student data — preview.** Mr Selby uses configured Google Gemini models to draft
+> rubric-aligned feedback and grades. When known-name masking is enabled, the service replaces exact
+> matches for the student name and certain account-supplied identifiers before the grading request.
+> This control does not identify or remove every piece of personal information that may appear in free
+> text. Teachers should use only content they are authorized to provide and should follow their school
+> or institution's requirements. Teacher review is the default. Eligible automatic finalization, if
+> offered in the verified deployment, is a separate opt-in and does not remove the teacher's
+> responsibility for configuration and results.
 
-> Eligibility — newly created. aiTA was created to operate as an AI-native grading business for the
-> Build with Gemini competition. The product, its grading agents, billing, and go-to-market were
-> built within the competition's stated build window (May 19 – Aug 17, 2026). Revenue reported as the
-> headline figure is **arms-length** (paid by teachers with no prior relationship to the founder);
-> any founder-network revenue is reported **separately as related-party** and is excluded from the
-> headline number. The business is operated by AI agents end-to-end: aiTA grades and finalizes
-> high-confidence student work unattended, routing only low-confidence or off-topic submissions to a
-> human reviewer ("on-the-loop").
+Before publication, counsel and the launch owner must reconcile this draft with the actual provider,
+model route, database defaults, user controls, contracts, locations, retention behavior, and intended
+audience.
 
-> **[FOUNDER VERIFY]** Confirm the exact "newly created" / build-window wording in the official
-> Devpost rules and the precise related-party definition before submitting. The agent cannot read the
-> live rules; the dates and phrasing above are from `XPRIZE-MASTER-PLAN.md` and must be reconciled.
+## 5. Competition eligibility provenance
 
-## 5. Outstanding founder actions
-- [ ] Sign SDPC **NDPA** for each proof-cohort district.
-- [ ] Publish the ToS attestation (§3) on the marketing site / in-app.
-- [ ] Verify and finalize the eligibility paragraph (§4) against the official rules.
-- [ ] Confirm de-id default-on in the live DB after migrations apply
-      (`select bool_and(anonymize_student_names) from privacy_settings;` should trend true).
+The founder reported organizer approval on August 1, 2026. The public repository and earlier AI grading
+work predate the contest and used earlier working names, including Grade Mirror and aiTA. Preserve that
+history. Archive the written ruling privately, follow any conditions in it, and do not replace the
+historical record with a claim that the repository was first created during the contest window.
+
+Any user, revenue, or unattended-operation claim remains separate from eligibility and still requires
+dated primary evidence.
+
+## 6. Outstanding launch actions
+
+- [ ] Provision and identify the canonical backend; apply the reviewed migration sequence.
+- [ ] Verify known-name masking defaults and existing `privacy_settings` rows in the live database.
+- [ ] Decide whether the optional pre-pass will be disabled or enabled; test and document either state.
+- [ ] Trace one privacy-safe production grading request through the exact model/provider path.
+- [ ] Verify RLS, storage access, retention, export, deletion, account closure, and recovery against the live release.
+- [ ] Identify the legal entity, effective date, launch geography, monitored privacy/support contact, and complete provider list.
+- [ ] Obtain qualified review and any institution-specific agreements before real student data is used.
+- [ ] Publish final Privacy and Terms text only after the items above match production.
+- [ ] Archive the organizer ruling privately and retain its exact conditions.

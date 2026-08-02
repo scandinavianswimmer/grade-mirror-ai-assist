@@ -4,9 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 
+export interface GoalsData {
+  goals?: string[];
+}
+
 interface GoalsStepProps {
-  data: any;
-  onNext: (data: any) => void;
+  data?: GoalsData;
+  onNext: (data: GoalsData) => void;
   onBack?: () => void;
 }
 
@@ -45,7 +49,7 @@ const GoalsStep: React.FC<GoalsStepProps> = ({ data, onNext, onBack }) => {
     <div className="space-y-6">
       <div>
         <Label className="text-base font-medium mb-4 block">
-          What are you hoping to use aiTA for? (Choose all that apply)
+          What are you hoping to use Mr Selby for? (Choose all that apply)
         </Label>
         <div className="space-y-3">
           {ACTIVE_GOALS.map((goal) => (

@@ -1,5 +1,15 @@
 
 import { supabase } from './supabase';
+import type { AppDatabase } from '@/integrations/supabase/app-database';
+
+type SyncedAssignment = AppDatabase['public']['Tables']['assignments']['Row'];
+
+interface CanvasGradeUpdate {
+  submission: {
+    posted_grade: string;
+    score?: number;
+  };
+}
 
 export interface CanvasAssignment {
   id: number;
@@ -35,7 +45,7 @@ class CanvasApiClient {
     this.accessToken = accessToken;
   }
 
-  private async makeRequest(endpoint: string, options: RequestInit = {}) {
+  private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}/api/v1${endpoint}`;
     const response = await fetch(url, {
       ...options,
@@ -50,23 +60,23 @@ class CanvasApiClient {
       throw new Error(`Canvas API error: ${response.status} ${response.statusText}`);
     }
 
-    return response.json();
+    return response.json() as Promise<T>;
   }
 
   async getCourses(): Promise<CanvasCourse[]> {
-    return this.makeRequest('/courses?enrollment_type=teacher&state=available');
+    return this.makeRequest<CanvasCourse[]>('/courses?enrollment_type=teacher&state=available');
   }
 
   async getAssignments(courseId: number): Promise<CanvasAssignment[]> {
-    return this.makeRequest(`/courses/${courseId}/assignments`);
+    return this.makeRequest<CanvasAssignment[]>(`/courses/${courseId}/assignments`);
   }
 
   async getSubmissions(assignmentId: number): Promise<CanvasSubmission[]> {
-    return this.makeRequest(`/assignments/${assignmentId}/submissions?include[]=body`);
+    return this.makeRequest<CanvasSubmission[]>(`/assignments/${assignmentId}/submissions?include[]=body`);
   }
 
-  async postComment(submissionId: number, comment: string): Promise<any> {
-    return this.makeRequest(`/submissions/${submissionId}/comments`, {
+  async postComment(submissionId: number, comment: string): Promise<unknown> {
+    return this.makeRequest<unknown>(`/submissions/${submissionId}/comments`, {
       method: 'POST',
       body: JSON.stringify({
         comment: {
@@ -76,13 +86,13 @@ class CanvasApiClient {
     });
   }
 
-  async updateGrade(submissionId: number, grade: string, score?: number): Promise<any> {
-    const body: any = { submission: { posted_grade: grade } };
+  async updateGrade(submissionId: number, grade: string, score?: number): Promise<CanvasSubmission> {
+    const body: CanvasGradeUpdate = { submission: { posted_grade: grade } };
     if (score !== undefined) {
       body.submission.score = score;
     }
 
-    return this.makeRequest(`/submissions/${submissionId}`, {
+    return this.makeRequest<CanvasSubmission>(`/submissions/${submissionId}`, {
       method: 'PUT',
       body: JSON.stringify(body)
     });
@@ -114,7 +124,7 @@ export const syncCanvasAssignments = async (userId: string) => {
   }
 
   const courses = await client.getCourses();
-  const allAssignments: any[] = [];
+  const allAssignments: SyncedAssignment[] = [];
 
   for (const course of courses) {
     const assignments = await client.getAssignments(course.id);

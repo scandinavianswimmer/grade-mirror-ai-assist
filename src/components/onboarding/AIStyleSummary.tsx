@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
@@ -19,11 +19,7 @@ const AIStyleSummary = ({ userId, onComplete }: AIStyleSummaryProps) => {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
 
-  useEffect(() => {
-    generateSummary();
-  }, [userId]);
-
-  const generateSummary = async () => {
+  const generateSummary = useCallback(async () => {
     setGenerating(true);
     try {
       const generatedSummary = await generateStyleSummary(userId);
@@ -39,7 +35,11 @@ const AIStyleSummary = ({ userId, onComplete }: AIStyleSummaryProps) => {
     } finally {
       setGenerating(false);
     }
-  };
+  }, [toast, userId]);
+
+  useEffect(() => {
+    generateSummary();
+  }, [generateSummary]);
 
   const handleSave = async () => {
     if (!summary.trim()) {

@@ -13,6 +13,23 @@ interface LoginOverlayProps {
   onLoginSuccess: () => void;
 }
 
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return error.message;
+  }
+
+  return fallback;
+};
+
 const LoginOverlay: React.FC<LoginOverlayProps> = ({ onLoginSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -44,7 +61,7 @@ const LoginOverlay: React.FC<LoginOverlayProps> = ({ onLoginSuccess }) => {
         await signIn(email, password);
         toast({
           title: "Welcome back!",
-          description: "Successfully signed in to aiTA."
+          description: "Successfully signed in to Mr Selby."
         });
       } else {
         await signUp(email, password, name);
@@ -53,10 +70,10 @@ const LoginOverlay: React.FC<LoginOverlayProps> = ({ onLoginSuccess }) => {
           description: "Please check your email to verify your account."
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: getErrorMessage(error, "Something went wrong. Please try again."),
         variant: "destructive"
       });
     } finally {
@@ -70,10 +87,10 @@ const LoginOverlay: React.FC<LoginOverlayProps> = ({ onLoginSuccess }) => {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Google sign-in failed",
-        description: error.message,
+        description: getErrorMessage(error, "Could not sign in with Google. Please try again."),
         variant: "destructive"
       });
       setGoogleLoading(false);
@@ -95,7 +112,7 @@ const LoginOverlay: React.FC<LoginOverlayProps> = ({ onLoginSuccess }) => {
           <CardHeader className="text-center">
             <div className="flex items-center justify-center gap-2 mb-4">
               <GraduationCap className="w-8 h-8 text-blue-600" />
-              <span className="text-2xl font-bold text-gray-900">aiTA</span>
+              <span className="text-2xl font-bold text-gray-900">Mr Selby</span>
             </div>
             <CardTitle className="text-xl">
               {isLogin ? 'Sign in to your account' : 'Create your account'}

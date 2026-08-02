@@ -45,7 +45,7 @@ function base64UrlEncodeJson(obj: Record<string, unknown>): string {
 }
 
 // Decode a PEM PKCS#8 private key ("-----BEGIN PRIVATE KEY-----…") into raw DER bytes.
-function pemToDer(pem: string): Uint8Array {
+function pemToDer(pem: string): ArrayBuffer {
   const body = pem
     .replace(/-----BEGIN [^-]+-----/g, "")
     .replace(/-----END [^-]+-----/g, "")
@@ -53,7 +53,7 @@ function pemToDer(pem: string): Uint8Array {
   const der = atob(body);
   const bytes = new Uint8Array(der.length);
   for (let i = 0; i < der.length; i++) bytes[i] = der.charCodeAt(i);
-  return bytes;
+  return bytes.buffer;
 }
 
 async function importPrivateKey(pem: string): Promise<CryptoKey> {

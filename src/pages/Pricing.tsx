@@ -21,7 +21,9 @@ import {
 import type { BillingInterval } from '@/lib/billingApi';
 import { analytics } from '@/lib/analytics';
 
-const schoolContactHref = `mailto:${SCHOOL_CONTACT_EMAIL}?subject=${encodeURIComponent(SCHOOL_CONTACT_SUBJECT)}`;
+const schoolContactHref = SCHOOL_CONTACT_EMAIL
+  ? `mailto:${SCHOOL_CONTACT_EMAIL}?subject=${encodeURIComponent(SCHOOL_CONTACT_SUBJECT)}`
+  : null;
 
 const Pricing = () => {
   const { user } = useAuth();
@@ -60,9 +62,11 @@ const Pricing = () => {
           </Button>
         );
       }
+
       return (
         <Button
           className="w-full"
+          aria-busy={starting}
           onClick={() => {
             analytics.capture('upgrade_clicked', { plan: 'pro', interval });
             startProCheckout(interval);
@@ -70,16 +74,24 @@ const Pricing = () => {
           disabled={starting}
         >
           {starting ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
           ) : (
-            <Sparkles className="mr-2 h-4 w-4" />
+            <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />
           )}
-          {user ? 'Upgrade to Pro' : 'Start 14-day Pro trial'}
+          {starting ? 'Starting checkout…' : user ? 'Upgrade to Pro' : 'Start 14-day Pro trial'}
         </Button>
       );
     }
 
-    // School / Dept — lead capture only.
+    // School / Dept — lead capture only. Never advertise a dead or unmonitored inbox.
+    if (!schoolContactHref) {
+      return (
+        <Button disabled variant="outline" className="w-full">
+          School inquiries opening soon
+        </Button>
+      );
+    }
+
     return (
       <Button asChild variant="outline" className="w-full">
         <a href={schoolContactHref}>Contact us</a>
@@ -96,22 +108,24 @@ const Pricing = () => {
 
   return (
     <div className="min-h-screen">
+      <a href="#pricing-main" className="skip-link">Skip to main content</a>
+
       {/* Lightweight public header (the app chrome is auth-gated). */}
       <header className="border-b border-border/70">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4">
-          <Link to="/" className="flex items-center gap-2.5">
+        <nav aria-label="Primary" className="container mx-auto flex items-center justify-between px-4 py-4">
+          <Link to="/" className="flex items-center gap-2.5" aria-label="Mr Selby overview">
             <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <Feather className="h-5 w-5" />
+              <Feather className="h-5 w-5" aria-hidden="true" />
             </span>
-            <span className="font-display text-2xl font-semibold tracking-tight">aiTA</span>
+            <span className="font-display text-2xl font-semibold tracking-tight">Mr Selby</span>
           </Link>
           <Button asChild variant="ghost" size="sm">
             <Link to="/auth">{user ? 'Open app' : 'Sign in'}</Link>
           </Button>
-        </div>
+        </nav>
       </header>
 
-      <main className="container mx-auto px-4 py-14">
+      <main id="pricing-main" tabIndex={-1} className="container mx-auto px-4 py-14">
         <div className="mx-auto max-w-2xl text-center animate-fade-up">
           <h1 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
             Grade in your voice. Pay for what you grade.
@@ -139,11 +153,22 @@ const Pricing = () => {
         </div>
 
         <p className="mx-auto mt-10 flex max-w-2xl items-center justify-center gap-2 text-center text-sm text-muted-foreground">
-          <ShieldCheck className="h-4 w-4 shrink-0" />
+          <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" />
           Payments are processed securely by Stripe. Change or cancel anytime from your billing
           settings.
         </p>
       </main>
+
+      <footer className="border-t border-border/70 px-4 py-8">
+        <div className="container mx-auto flex max-w-5xl flex-col gap-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <p>Mr Selby launch preview · Final legal details pending review</p>
+          <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2">
+            <Link to="/" className="underline underline-offset-4 hover:text-foreground">Overview</Link>
+            <Link to="/privacy" className="underline underline-offset-4 hover:text-foreground">Privacy</Link>
+            <Link to="/terms" className="underline underline-offset-4 hover:text-foreground">Terms</Link>
+          </nav>
+        </div>
+      </footer>
     </div>
   );
 };

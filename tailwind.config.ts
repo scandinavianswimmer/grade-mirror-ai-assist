@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
 	darkMode: ["class"],
@@ -19,9 +20,9 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				'sans': ['"Hanken Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-				'display': ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
-				'serif': ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
+				'sans': ['"Hanken Grotesk Variable"', '"Hanken Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+				'display': ['"Fraunces Variable"', 'Fraunces', 'ui-serif', 'Georgia', 'serif'],
+				'serif': ['"Fraunces Variable"', 'Fraunces', 'ui-serif', 'Georgia', 'serif'],
 				'mono': ['"Spline Sans Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
 			},
 			colors: {
@@ -107,5 +108,5 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [tailwindcssAnimate],
 } satisfies Config;

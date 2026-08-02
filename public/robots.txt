@@ -13,5 +13,6 @@ Allow: /
 User-agent: *
 Allow: /
 
-# Replace aita.app with your production domain.
-Sitemap: https://aita.app/sitemap.xml
+# mrselby.app is the canonical public domain. Account and recovery routes remain non-indexable
+# until the protected production service is connected.
+Sitemap: https://mrselby.app/sitemap.xml

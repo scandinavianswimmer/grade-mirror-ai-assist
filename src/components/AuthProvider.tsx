@@ -4,25 +4,38 @@ import { supabase } from '@/lib/supabase';
 import { ensureUserProfile } from '@/lib/ensureUserProfile';
 import type { User, Session } from '@supabase/supabase-js';
 import { analytics } from '@/lib/analytics';
+import {
+  clearPasswordRecoveryIntent,
+  getInitialPasswordRecoveryIntent,
+  getPasswordResetRedirectUrl,
+  rememberPasswordRecoveryIntent,
+} from '@/lib/passwordRecovery';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  passwordRecovery: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   loading: true,
+  passwordRecovery: false,
   signIn: async () => {},
   signUp: async () => {},
   signInWithGoogle: async () => {},
+  requestPasswordReset: async () => {},
+  updatePassword: async () => {},
 });
 
+// eslint-disable-next-line react-refresh/only-export-components -- Splitting this established hook would churn every auth consumer; keep the exception local.
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -35,6 +48,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [passwordRecovery, setPasswordRecovery] = useState(() =>
+    getInitialPasswordRecoveryIntent(window.location.href, window.sessionStorage)
+  );
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -70,6 +86,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (error) throw error;
   };
 
+  const requestPasswordReset = async (email: string) => {
+    const redirectTo = getPasswordResetRedirectUrl(window.location.origin);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) throw error;
+  };
+
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+    clearPasswordRecoveryIntent(window.sessionStorage);
+    setPasswordRecovery(false);
+  };
+
   useEffect(() => {
     // Get initial session. Never log the session object — it contains the access token (C7).
     supabase.auth.getSession().then(({ data: { session }, error }) => {
@@ -87,6 +116,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        if (event === 'PASSWORD_RECOVERY') {
+          rememberPasswordRecoveryIntent(window.sessionStorage);
+          setPasswordRecovery(true);
+        } else if (event === 'SIGNED_OUT') {
+          clearPasswordRecoveryIntent(window.sessionStorage);
+          setPasswordRecovery(false);
+        } else if (event === 'SIGNED_IN' && window.location.pathname !== '/auth/reset-password') {
+          clearPasswordRecoveryIntent(window.sessionStorage);
+          setPasswordRecovery(false);
+        }
 
         // AUTH-03: bootstrap the profile basics downstream depends on for BOTH
         // email/password and Google paths. The DB trigger normally creates the
@@ -109,7 +149,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signInWithGoogle }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        loading,
+        passwordRecovery,
+        signIn,
+        signUp,
+        signInWithGoogle,
+        requestPasswordReset,
+        updatePassword,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

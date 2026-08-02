@@ -17,7 +17,11 @@ const OPTIONS: { id: BillingInterval; label: string }[] = [
 export function BillingIntervalToggle({ value, onChange }: BillingIntervalToggleProps) {
   return (
     <div className="inline-flex items-center gap-3">
-      <div className="inline-flex rounded-full border border-border/70 bg-card p-1 shadow-sm">
+      <div
+        role="group"
+        aria-label="Billing interval"
+        className="inline-flex rounded-full border border-border/70 bg-card p-1 shadow-sm"
+      >
         {OPTIONS.map((option) => {
           const active = value === option.id;
           return (

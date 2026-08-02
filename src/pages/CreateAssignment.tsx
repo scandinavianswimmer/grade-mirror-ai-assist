@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,13 +39,7 @@ const CreateAssignment = () => {
   // Explicit choice: grade against a rubric, or deliberately grade holistically (H20).
   const [noRubric, setNoRubric] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchClasses();
-    }
-  }, [user]);
-
-  const fetchClasses = async () => {
+  const fetchClasses = useCallback(async () => {
     try {
       const { data: classesData, error } = await supabase
         .from('classes')
@@ -64,7 +58,13 @@ const CreateAssignment = () => {
     } catch (error) {
       console.error('Error fetching classes:', error);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchClasses();
+    }
+  }, [fetchClasses, user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -111,8 +111,6 @@ const CreateAssignment = () => {
         throw error;
       }
 
-      console.log('Assignment created successfully:', data);
-
       toast({
         title: "Assignment created successfully!",
         description: "You can now upload student essays for grading."
@@ -135,7 +133,7 @@ const CreateAssignment = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center gap-4 mb-8">
             <Link to="/dashboard">
@@ -160,7 +158,7 @@ const CreateAssignment = () => {
                     name="title"
                     value={formData.title}
                     onChange={handleInputChange}
-                    placeholder="e.g., Analysis of The Great Gatsby's Symbolism"
+                    placeholder="e.g., Responsibility in The Beacon Ledger"
                     required
                   />
                 </div>
@@ -168,7 +166,7 @@ const CreateAssignment = () => {
                 <div className="space-y-2">
                   <Label htmlFor="classId">Assign to Class (Optional)</Label>
                   <Select value={formData.classId} onValueChange={handleClassSelect}>
-                    <SelectTrigger>
+                    <SelectTrigger id="classId">
                       <SelectValue placeholder="Select a class (leave blank for unassigned)" />
                     </SelectTrigger>
                     <SelectContent>
@@ -229,7 +227,7 @@ const CreateAssignment = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

@@ -1,6 +1,6 @@
 # GPT-Judge Voice-Fidelity Rubric — v1.0 (LOCKED for the pre-registered study)
 
-> The PRIMARY outcome instrument for the aiTA voice-convergence proof (`docs/recruiting/osf-prereg.md`).
+> The PRIMARY outcome instrument for the Mr Selby voice-convergence proof (`docs/recruiting/osf-prereg.md`).
 > **Freeze this file + the judge model/version before Batch 1 grading.** Any change bumps the version and
 > invalidates pre-registration for already-collected data. Consumed by `eval/run.mjs --convergence`.
 >
@@ -9,7 +9,7 @@
 
 ## What the judge sees
 - **REFERENCE corpus:** 8–10 de-identified feedback samples written by the teacher (their true voice).
-- **CANDIDATE:** one piece of aiTA-drafted feedback (condition/batch hidden).
+- **CANDIDATE:** one piece of Mr Selby-drafted feedback (condition/batch hidden).
 The judge never sees whether the candidate is with-profile or holdout, nor the batch index.
 
 ## Task

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">Mr Selby brand mark</title>
+  <desc id="description">A cream feather and ochre underline on a rounded pine-green square.</desc>
+  <rect width="512" height="512" rx="116" fill="#205f51"/>
+  <path
+    d="M368 111c-74 7-151 56-193 117-30 44-42 91-35 136l54-54 43-2 4-42 42-4 6-39 79-112Z"
+    fill="none"
+    stroke="#fbf8f1"
+    stroke-width="25"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path d="M139 386c51-53 102-104 154-154" fill="none" stroke="#fbf8f1" stroke-width="25" stroke-linecap="round"/>
+  <path d="M147 416h218" fill="none" stroke="#df8a26" stroke-width="20" stroke-linecap="round"/>
+</svg>

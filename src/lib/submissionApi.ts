@@ -1,6 +1,11 @@
 
 import { supabase } from './supabase';
 import { processSubmissionFile } from './fileProcessing';
+import type { AppDatabase } from '@/integrations/supabase/app-database';
+
+type SubmissionRow = AppDatabase['public']['Tables']['submissions']['Row'];
+type SubmissionInsert = AppDatabase['public']['Tables']['submissions']['Insert'];
+type SubmissionUpdate = AppDatabase['public']['Tables']['submissions']['Update'];
 
 export interface CreateSubmissionData {
   assignmentId: string;
@@ -18,24 +23,38 @@ export interface IngestResult {
 }
 
 export interface CreateSubmissionResult {
-  submission: any;
+  submission: SubmissionRow;
   ingest: IngestResult | null;
   ingestError: string | null;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  value !== null && typeof value === 'object'
+);
+
+const hasJsonMethod = (value: unknown): value is { json: () => Promise<unknown> } => (
+  isRecord(value) && typeof value.json === 'function'
+);
+
 // Surface the structured error body an edge function returns (FunctionsHttpError hides it on .message).
 const readFunctionError = async (error: unknown): Promise<string> => {
   try {
-    const body = await (error as any)?.context?.json?.();
-    if (body?.error) return `${body.error}${body.stage ? ` (${body.stage})` : ''}`;
+    const context = isRecord(error) ? error.context : null;
+    if (hasJsonMethod(context)) {
+      const body = await context.json();
+      if (isRecord(body) && typeof body.error === 'string') {
+        const stage = typeof body.stage === 'string' && body.stage ? ` (${body.stage})` : '';
+        return `${body.error}${stage}`;
+      }
+    }
   } catch { /* ignore */ }
-  return (error as any)?.message ?? 'Unknown error';
+  return isRecord(error) && typeof error.message === 'string' ? error.message : 'Unknown error';
 };
 
 export const createSubmissionWithFile = async (data: CreateSubmissionData): Promise<CreateSubmissionResult> => {
   const { assignmentId, studentName, essay, file } = data;
 
-  let submissionData: any = {
+  const submissionData: SubmissionInsert = {
     assignment_id: assignmentId,
     student_name: studentName,
     status: 'uploaded',
@@ -88,7 +107,7 @@ export const createSubmissionWithFile = async (data: CreateSubmissionData): Prom
 };
 
 export const updateSubmissionStatus = async (submissionId: string, status: string, processingStatus?: string) => {
-  const updates: any = { status };
+  const updates: SubmissionUpdate = { status };
   if (processingStatus) {
     updates.processing_status = processingStatus;
   }

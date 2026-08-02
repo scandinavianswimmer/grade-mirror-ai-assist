@@ -50,8 +50,7 @@ export type BillingInterval = 'monthly' | 'annual';
 
 // Start Stripe Checkout for a plan; returns a URL the caller should redirect to.
 // `interval` is forwarded so the edge function can pick the monthly vs annual Stripe price.
-// The function ignores unknown body fields, so passing it is safe even before the founder
-// wires the annual price id (see VITE_STRIPE_PRICE_PRO_* in pricingPlans.ts).
+// Price IDs remain server-only secrets; configuration failures are returned by the function.
 export const startCheckout = async (
   plan: Plan = 'pro',
   interval: BillingInterval = 'monthly',

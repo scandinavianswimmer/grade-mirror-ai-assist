@@ -3,6 +3,8 @@
 > Autonomous 20-min loop (cron `701fe3ba`). Branch: `aita-launch-prep`. Tracks execution of `.planning/LAUNCH-PLAN.md`.
 > Guardrails: no push/deploy/migrations/secret-rotation/DB-Auth-cutover. Commit locally; keep build green.
 
+> **2026-08-01 audit correction:** this log records implementation work, not deployment proof. The public repository and first commits date to June 2025, before the contest's May 19, 2026 cutoff. The Firebase URL currently returns 404, the legacy Supabase project is inactive, and no live Vertex/Cloud Run or revenue evidence has been verified. Google Cloud scaffolding does not establish contest eligibility or a production deployment.
+
 ## Status legend
 ✅ done · 🔨 in progress · ⛔ founder-gated · ⏭ next
 
@@ -65,7 +67,7 @@
 ## Iteration 3 — 2026-06-08
 **Done (committed):**
 - ✅ **Dead-page cleanup (frontend):** deleted 8 dead/duplicate files (`Upload.tsx`, `GradingPreview.tsx`, `Index.tsx`, `Onboarding.tsx`, `OnboardingFlow.tsx`, `PodcastDetail.tsx`, `PodcastGenerator.tsx`, `components/GeminiSetup.tsx`); removed 7 lazy imports + 6 routes from `App.tsx`. Onboarding consolidated to the single `TeacherOnboarding` flow. No dangling nav. tsc + build verified green by the agent.
-- ✅ **M2 Cloud Run proof (non-destructive):** hardened `worker/` for Cloud Run (`$PORT` bind, `.dockerignore`); new `deploy/cloud-run/` — generic Deno Dockerfile + `serve-edge-function.ts` shim that runs an **unmodified** Supabase edge function on Cloud Run ($PORT), worked example `grade-submission`, + README with exact `gcloud run deploy` commands and Supabase→Cloud Run secret mapping. Strangler-fig: Supabase path keeps working. **This is the Google Cloud product that locks XPRIZE eligibility** (alongside Vertex AI from M1).
+- ✅ **M2 Cloud Run proof (non-destructive):** hardened `worker/` for Cloud Run (`$PORT` bind, `.dockerignore`); new `deploy/cloud-run/` — generic Deno Dockerfile + `serve-edge-function.ts` shim that runs an **unmodified** Supabase edge function on Cloud Run ($PORT), worked example `grade-submission`, + README with exact `gcloud run deploy` commands and Supabase→Cloud Run secret mapping. Strangler-fig: Supabase path keeps working. This is deployable scaffolding only; a verified live deployment is still required and would not cure the project's date-eligibility issue.
 - ✅ Build green, `tsc` clean.
 
 **New founder-gated (added):**

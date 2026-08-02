@@ -1,12 +1,11 @@
 // Shared "start Pro checkout" behaviour for the Pricing page and the in-app paywall.
-// Centralises the logged-out → sign-up-then-checkout flow and the Stripe-price gating so
-// both call sites behave identically (DRY). UX-only — server enforces identity + price.
+// Centralises the logged-out → sign-up-then-checkout flow so both call sites behave
+// identically (DRY). The server enforces identity and resolves private Stripe price IDs.
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/components/AuthProvider';
 import { startCheckout, type BillingInterval } from '@/lib/billingApi';
-import { isProPriceConfigured } from '@/lib/pricingPlans';
 import { analytics } from '@/lib/analytics';
 
 interface UseUpgradeCheckout {
@@ -29,15 +28,9 @@ export function useUpgradeCheckout(): UseUpgradeCheckout {
         return;
       }
 
-      // Guard against a silently-broken checkout when the founder hasn't wired the price id.
-      if (!isProPriceConfigured(interval)) {
-        toast.error('Pro checkout isn’t available yet — please check back shortly.');
-        return;
-      }
-
       try {
         setStarting(true);
-        // Funnel: the Stripe redirect is being initiated (guards passed, user authed).
+        // Funnel: the Stripe redirect is being initiated for an authenticated teacher.
         analytics.capture('checkout_started', { plan: 'pro', interval });
         const url = await startCheckout('pro', interval);
         window.location.href = url; // redirect to Stripe-hosted Checkout

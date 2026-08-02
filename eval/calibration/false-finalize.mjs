@@ -1,9 +1,9 @@
-// aiTA Auto-Finalize Calibration — false-auto-finalize rate on a holdout (PURE, no I/O at module level).
+// Mr Selby Auto-Finalize Calibration — false-auto-finalize rate on a holdout (PURE, no I/O at module level).
 // ─────────────────────────────────────────────────────────────────────────────
 // WHY THIS EXISTS
 // Auto-finalize publishes grades UNATTENDED on the model's self-reported confidence. That signal is
 // weak and poorly calibrated, so "the AI operates the business" is only a safe claim if, on real
-// held-out data, the grades aiTA WOULD HAVE auto-published rarely disagree with what the teacher
+// held-out data, the grades Mr Selby WOULD HAVE auto-published rarely disagree with what the teacher
 // finally decided. This tool measures exactly that: the FALSE-AUTO-FINALIZE RATE — the share of
 // would-have-been-auto-published grades the teacher changed beyond a tolerance — at a given threshold.
 //
@@ -80,7 +80,7 @@ function validatePair(p, i) {
  *
  * A pair contributes to the denominator only when it WOULD have auto-finalized (eligible). It counts
  * as a false auto-finalize when the teacher's final grade differs from the auto grade by MORE than
- * `tolerance` points — i.e. aiTA published a grade the teacher would have changed.
+ * `tolerance` points — i.e. Mr Selby published a grade the teacher would have changed.
  *
  * @param {Array<{autoGrade:number, teacherGrade:number, confidence:number, disposition?:string, flags?:string[], id?:string}>} pairs
  * @param {{threshold?: number, tolerance?: number}} [opts]

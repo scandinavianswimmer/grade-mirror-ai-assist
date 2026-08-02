@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import TypewriterText from '@/components/TypewriterText';
+import { SCHOOL_CONTACT_EMAIL, SCHOOL_CONTACT_SUBJECT } from '@/lib/pricingPlans';
 import { 
   Clock, 
   CheckCircle2, 
@@ -14,12 +14,16 @@ import {
   MessageSquare,
   Download,
   Play,
+  Feather,
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
 
+const salesContactHref = SCHOOL_CONTACT_EMAIL
+  ? `mailto:${SCHOOL_CONTACT_EMAIL}?subject=${encodeURIComponent(SCHOOL_CONTACT_SUBJECT)}`
+  : null;
+
 const Pitch = () => {
-  const [beforeAfter, setBeforeAfter] = useState<'before' | 'after'>('before');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const navigate = useNavigate();
 
@@ -37,11 +41,22 @@ const Pitch = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <a href="#pitch-main" className="skip-link">Skip to main content</a>
+
       {/* Navigation */}
-      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 animate-fade-in">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-8">
-            <div className="text-2xl font-bold text-primary hover:scale-105 transition-transform duration-300 cursor-pointer">aiTA</div>
+      <nav aria-label="Primary" className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 animate-fade-in">
+        <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-4">
+          <div className="flex items-center gap-5 lg:gap-8">
+            <Link
+              to="/"
+              className="flex items-center gap-2 text-primary transition-colors hover:text-primary/80"
+              aria-label="Mr Selby overview"
+            >
+              <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+                <Feather className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <span className="whitespace-nowrap font-display text-2xl font-semibold tracking-tight">Mr Selby</span>
+            </Link>
             <div className="hidden md:flex space-x-6 text-sm">
               <a href="#product" className="story-link text-muted-foreground hover:text-foreground transition-colors">Product</a>
               <a href="#how-it-works" className="story-link text-muted-foreground hover:text-foreground transition-colors">How it works</a>
@@ -51,33 +66,33 @@ const Pitch = () => {
               <a href="#faq" className="story-link text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-1 sm:gap-3">
             <Button onClick={handleSignIn} variant="ghost" size="sm" className="hover-scale">Sign in</Button>
             <Button onClick={handleStartFree} size="sm" className="hover-scale relative overflow-hidden">
-              <span className="relative z-10">Start free</span>
+              <span className="relative z-10">Try free</span>
             </Button>
           </div>
         </div>
       </nav>
 
+      <main id="pitch-main" tabIndex={-1}>
       {/* Hero Section */}
-      <section className="py-20 px-4">
+      <section id="product" className="py-20 px-4">
         <div className="container mx-auto max-w-4xl text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 min-h-[8rem] md:min-h-[12rem] flex items-center justify-center">
-            <TypewriterText 
-              text={'You\'re not "falling behind." You\'re carrying the weight of a whole classroom.'}
-              wordsPerMinute={91}
-              className="text-4xl md:text-6xl font-bold text-foreground"
-            />
-          </h1>
-          
-          <p className="text-xl text-muted-foreground mb-8 leading-relaxed animate-fade-in">
-            The late‑night grading. The copy‑and‑paste feedback. The guilt when family time loses to the stack on your desk. 
-            It's not that you're not enough—you're being asked to do the work of three people.
+          <p className="mb-5 text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+            Teacher-controlled grading co-pilot
           </p>
-          
-          <p className="text-2xl font-semibold text-foreground mb-12 animate-fade-in">
-            aiTA gives you your evenings back—without compromising the feedback your students deserve.
+          <h1 className="mb-6 text-4xl font-bold text-foreground md:text-6xl">
+            Thoughtful grading support, shaped by how you teach.
+          </h1>
+
+          <p className="mx-auto mb-6 max-w-3xl text-xl leading-relaxed text-muted-foreground animate-fade-in">
+            Mr Selby reads the assignment, follows your rubric, and drafts clear feedback in your
+            voice—so you can spend less time on repetitive grading and more time teaching.
+          </p>
+
+          <p className="mb-12 text-2xl font-semibold text-foreground animate-fade-in">
+            You review every comment, adjust every score, and stay the final word.
           </p>
           
           <div className="grid md:grid-cols-2 gap-4 mb-12 text-left max-w-2xl mx-auto">
@@ -99,17 +114,25 @@ const Pitch = () => {
             <Button onClick={handleStartFree} size="lg" className="text-lg px-8 hover-scale relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <span className="relative z-10 flex items-center">
-                Start free
+                Grade your first assignment
                 <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
               </span>
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 hover-scale relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <span className="relative z-10">Book a 10‑minute walkthrough</span>
-            </Button>
+            {salesContactHref ? (
+              <Button asChild variant="outline" size="lg" className="text-lg px-8 hover-scale relative overflow-hidden group">
+                <a href={salesContactHref}>
+                  <span className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" aria-hidden="true" />
+                  <span className="relative z-10">Book a 10‑minute walkthrough</span>
+                </a>
+              </Button>
+            ) : (
+              <Button disabled variant="outline" size="lg" className="text-lg px-8">
+                Walkthroughs opening soon
+              </Button>
+            )}
           </div>
           
-          <p className="text-sm text-muted-foreground mb-8 animate-fade-in">No credit card.</p>
+          <p className="text-sm text-muted-foreground mb-8 animate-fade-in">Start with sample work. No credit card.</p>
           
           <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
             {[
@@ -127,6 +150,30 @@ const Pitch = () => {
         </div>
       </section>
 
+      {/* Origin story */}
+      <section aria-labelledby="why-the-name" className="border-y border-border/70 bg-card/65 px-4 py-14">
+        <div className="container mx-auto grid max-w-4xl gap-6 md:grid-cols-[12rem_minmax(0,1fr)] md:gap-10">
+          <div>
+            <span className="grid h-12 w-12 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <Feather className="h-6 w-6" aria-hidden="true" />
+            </span>
+            <p className="mt-4 text-sm font-semibold uppercase tracking-[0.16em] text-primary">Why the name?</p>
+          </div>
+          <div>
+            <h2 id="why-the-name" className="text-3xl font-semibold text-foreground md:text-4xl">
+              Named for a teacher who made the work matter.
+            </h2>
+            <p className="mt-5 text-lg leading-8 text-muted-foreground">
+              Mr Selby is named in gratitude for a favorite teacher whose care in teaching,
+              designing assignments, and grading them set the standard behind this product.
+            </p>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              The name is a personal tribute, not a claim of affiliation or endorsement.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Scroll Story */}
       <section className="py-20 px-4 bg-muted/50">
         <div className="container mx-auto max-w-4xl text-center">
@@ -140,7 +187,7 @@ const Pitch = () => {
           </p>
           
           <p className="text-2xl font-semibold text-primary mb-12 animate-fade-in animate-pulse">
-            aiTA shoulders the repetitive work so you can show up where you matter most.
+            Mr Selby shoulders the repetitive work so you can show up where you matter most.
           </p>
           
           <div className="flex flex-wrap justify-center gap-6">
@@ -158,41 +205,16 @@ const Pitch = () => {
         </div>
       </section>
 
-      {/* Before/After Switcher */}
+      {/* Before/After comparison */}
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-4xl">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-foreground mb-12">
             The Day Feels Different
           </h2>
           
-          <div className="flex justify-center mb-12">
-            <div className="bg-muted rounded-full p-1 flex animate-fade-in">
-              <button
-                onClick={() => setBeforeAfter('before')}
-                className={`px-6 py-2 rounded-full transition-all duration-300 hover-scale ${
-                  beforeAfter === 'before' 
-                    ? 'bg-primary text-primary-foreground shadow-lg' 
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Before aiTA
-              </button>
-              <button
-                onClick={() => setBeforeAfter('after')}
-                className={`px-6 py-2 rounded-full transition-all duration-300 hover-scale ${
-                  beforeAfter === 'after' 
-                    ? 'bg-primary text-primary-foreground shadow-lg' 
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                After aiTA
-              </button>
-            </div>
-          </div>
-          
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold mb-4 text-center">Before aiTA</h3>
+              <h3 className="text-lg font-semibold mb-4 text-center">Before Mr Selby</h3>
               {[
                 { icon: Clock, text: "10:14 PM: still grading" },
                 { icon: MessageSquare, text: "Same comment, different student" },
@@ -208,9 +230,9 @@ const Pitch = () => {
             </div>
             
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold mb-4 text-center">After aiTA</h3>
+              <h3 className="text-lg font-semibold mb-4 text-center">With Mr Selby</h3>
               {[
-                { icon: CheckCircle2, text: "4:30 PM: laptop closed" },
+                { icon: CheckCircle2, text: "A review queue instead of a blank page" },
                 { icon: MessageSquare, text: "Comments drafted in your voice" },
                 { icon: Star, text: "Rubric‑aligned score proposals ready" },
                 { icon: Download, text: "Downloadable, annotated essays + summary" }
@@ -242,17 +264,17 @@ const Pitch = () => {
               {
                 step: "1",
                 title: "Upload",
-                description: "Add the student files; aiTA extracts the text—no retyping, no extra tabs."
+                description: "Add the student files; Mr Selby extracts the text—no retyping, no extra tabs."
               },
               {
                 step: "2", 
                 title: "Align",
-                description: "aiTA finds your instructions and rubric, then drafts inline comments and proposes rubric-aligned scores."
+                description: "Mr Selby finds your instructions and rubric, then drafts inline comments and proposes rubric-aligned scores."
               },
               {
                 step: "3",
                 title: "Review", 
-                description: "Approve, tweak, or dismiss. aiTA learns your tone and tightens its drafts every time."
+                description: "Approve, tweak, or dismiss. Mr Selby learns your tone and tightens its drafts every time."
               },
               {
                 step: "4",
@@ -274,7 +296,7 @@ const Pitch = () => {
           </div>
           
           <p className="text-center text-lg text-muted-foreground mt-12">
-            You stay the teacher. aiTA does the heavy lifting.
+            You stay the teacher. Mr Selby does the heavy lifting.
           </p>
         </div>
       </section>
@@ -283,7 +305,7 @@ const Pitch = () => {
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-6xl">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-foreground mb-16">
-            Benefits that map to feelings
+            Built for the way teachers work
           </h2>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -306,12 +328,12 @@ const Pitch = () => {
               {
                 icon: CheckCircle2,
                 title: "All in one place.",
-                description: "No juggling tabs or tools. aiTA lives inside your app."
+                description: "No juggling tabs or tools. Mr Selby lives inside your app."
               },
               {
                 icon: ArrowRight,
                 title: "Learns from you.",
-                description: "Every tweak teaches aiTA your style and standards."
+                description: "Every tweak teaches Mr Selby your style and standards."
               },
               {
                 icon: Download,
@@ -333,10 +355,10 @@ const Pitch = () => {
         </div>
       </section>
 
-      {/* Demo Section */}
+      {/* Demo Section — intentionally non-interactive until a real release recording exists. */}
       <section className="py-20 px-4 bg-muted/50">
         <div className="container mx-auto max-w-4xl text-center">
-          <h2 className="text-xl font-semibold text-foreground mb-8 animate-fade-in">45‑second demo</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-8 animate-fade-in">Product walkthrough</h2>
           
           <p className="text-xl text-muted-foreground mb-8 animate-fade-in">
             "Remember when teaching felt like teaching—not triage at midnight?"
@@ -344,13 +366,12 @@ const Pitch = () => {
           
           <div className="bg-card rounded-lg p-8 shadow-lg hover-scale transition-all duration-300 animate-fade-in group relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div className="bg-muted rounded-lg aspect-video flex items-center justify-center mb-6 relative group/play cursor-pointer">
+            <div className="bg-muted rounded-lg aspect-video flex items-center justify-center mb-6 relative">
               <div className="text-center">
-                <Play className="w-16 h-16 text-primary mx-auto mb-4 group-hover/play:scale-110 transition-transform duration-300" />
-                <p className="text-lg font-medium">Watch the demo</p>
-                <p className="text-sm text-muted-foreground">Upload → Align → Review → Deliver</p>
+                <Play className="w-16 h-16 text-primary mx-auto mb-4" />
+                <p className="text-lg font-medium">Live-release recording pending</p>
+                <p className="text-sm text-muted-foreground">The demo will show Upload → Align → Review → Deliver.</p>
               </div>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover/play:opacity-100 transition-opacity duration-1000 transform -skew-x-12 group-hover/play:translate-x-full"></div>
             </div>
             <p className="text-muted-foreground relative z-10">Your voice. Your standards. Your evening back.</p>
           </div>
@@ -365,15 +386,15 @@ const Pitch = () => {
           </h2>
           
           <h3 className="text-xl font-semibold text-center text-muted-foreground mb-12">
-            What teachers say they notice first
+            What the workflow is designed to improve
           </h3>
           
           <div className="grid md:grid-cols-2 gap-8">
             {[
               "Time back for planning, feedback conferences, and life outside school",
-              "Better student uptake because feedback is clear and in your voice", 
+              "Feedback organized for quicker student review",
               "Less decision fatigue with strong drafts and aligned score proposals",
-              "Confidence that grading aligns with expectations and is documented"
+              "A consistent place to inspect alignment and the supporting evidence"
             ].map((outcome, index) => (
               <div key={index} className="flex items-start space-x-3 animate-fade-in hover-scale transition-all duration-300"
                    style={{ animationDelay: `${index * 0.15}s` }}>
@@ -384,7 +405,7 @@ const Pitch = () => {
           </div>
           
           <p className="text-center text-xl text-foreground mt-12">
-            No hype—just meaningful hours returned to your week.
+            Measure these outcomes against your own baseline; Mr Selby keeps the underlying activity auditable.
           </p>
         </div>
       </section>
@@ -400,8 +421,8 @@ const Pitch = () => {
             {[
               {
                 icon: Shield,
-                title: "You approve every comment and score.",
-                description: "aiTA suggests; you decide."
+                title: "By default, you approve every comment and score.",
+                description: "Unattended publishing remains off unless you explicitly opt in."
               },
               {
                 icon: Shield,
@@ -431,7 +452,7 @@ const Pitch = () => {
           </div>
           
           <p className="text-center text-lg text-muted-foreground mt-12">
-            If you have requirements, we'll meet them. That's our job.
+            Before a school rollout, validate the deployed configuration against your district's requirements.
           </p>
         </div>
       </section>
@@ -449,13 +470,13 @@ const Pitch = () => {
               <CardContent className="p-6 text-center relative z-10">
                 <h3 className="text-2xl font-bold mb-4 group-hover:text-primary transition-colors">Free</h3>
                 <p className="text-muted-foreground mb-6">
-                  Try aiTA with your real assignments. No credit card.
+                  Start with synthetic or de-identified assignments. No credit card.
                 </p>
                 <Button onClick={handleStartFree} className="w-full hover-scale relative overflow-hidden group/button">
                   <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover/button:opacity-100 transition-opacity duration-300"></div>
                   <span className="relative z-10">Start free</span>
                 </Button>
-                <p className="text-sm text-muted-foreground mt-4">Cancel anytime</p>
+                <p className="text-sm text-muted-foreground mt-4">Upgrade only when you're ready</p>
               </CardContent>
             </Card>
             
@@ -467,10 +488,18 @@ const Pitch = () => {
                 <p className="text-muted-foreground mb-6">
                   Volume pricing + onboarding support.
                 </p>
-                <Button variant="outline" className="w-full hover-scale relative overflow-hidden group/button">
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover/button:opacity-100 transition-opacity duration-300"></div>
-                  <span className="relative z-10">Contact Sales</span>
-                </Button>
+                {salesContactHref ? (
+                  <Button asChild variant="outline" className="w-full hover-scale relative overflow-hidden group/button">
+                    <a href={salesContactHref}>
+                      <span className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover/button:opacity-100 transition-opacity duration-300" aria-hidden="true" />
+                      <span className="relative z-10">Contact sales</span>
+                    </a>
+                  </Button>
+                ) : (
+                  <Button disabled variant="outline" className="w-full">
+                    School inquiries opening soon
+                  </Button>
+                )}
                 <p className="text-sm text-muted-foreground mt-4">Custom terms</p>
               </CardContent>
             </Card>
@@ -488,20 +517,20 @@ const Pitch = () => {
           <div className="space-y-4">
             {[
                {
-                question: "Will aiTA replace me?",
-                answer: "No. aiTA drafts; you approve. It's a power tool that accelerates your workflow—not a substitute for your judgment."
+                question: "Does Mr Selby replace the teacher?",
+                answer: "No. Mr Selby drafts; you decide. It supports your workflow rather than substituting for your judgment."
               },
               {
                 question: "Will comments sound generic?",
-                answer: "aiTA learns from your edits, so feedback keeps sounding like you and gets closer to your voice over time."
+                answer: "Mr Selby learns from your edits, so feedback keeps sounding like you and gets closer to your voice over time."
               },
               {
                 question: "Can I use my own rubrics?",
-                answer: "Yes. aiTA finds your rubric and proposes rubric‑aligned scores that you can accept or adjust."
+                answer: "Yes. Mr Selby finds your rubric and proposes rubric‑aligned scores that you can accept or adjust."
               },
               {
                 question: "Does it work for ELA and History?",
-                answer: "Yes—aiTA is built for essay‑driven courses first, with broader subject support planned."
+                answer: "Yes—Mr Selby is built for essay‑driven courses first, with broader subject support planned."
               },
               {
                 question: "What about privacy?",
@@ -509,25 +538,35 @@ const Pitch = () => {
               },
               {
                 question: "How hard is it to start?",
-                answer: "Upload, review, export. Most teachers feel comfortable within minutes."
+                answer: "The core workflow is three steps: upload, review, and export."
               }
             ].map((faq, index) => (
               <Card key={index} className="hover:shadow-sm transition-shadow">
                 <CardContent className="p-6">
                   <button
+                    id={`faq-trigger-${index}`}
+                    type="button"
                     onClick={() => toggleFaq(index)}
-                    className="flex items-center justify-between w-full text-left"
+                    aria-expanded={expandedFaq === index}
+                    aria-controls={`faq-panel-${index}`}
+                    className="flex min-h-11 w-full items-center justify-between gap-4 rounded-sm text-left"
                   >
                     <h3 className="text-lg font-semibold">{faq.question}</h3>
                     {expandedFaq === index ? (
-                      <ChevronUp className="w-5 h-5" />
+                      <ChevronUp className="w-5 h-5 shrink-0" aria-hidden="true" />
                     ) : (
-                      <ChevronDown className="w-5 h-5" />
+                      <ChevronDown className="w-5 h-5 shrink-0" aria-hidden="true" />
                     )}
                   </button>
-                  {expandedFaq === index && (
-                    <p className="text-muted-foreground mt-4">{faq.answer}</p>
-                  )}
+                  <p
+                    id={`faq-panel-${index}`}
+                    role="region"
+                    aria-labelledby={`faq-trigger-${index}`}
+                    hidden={expandedFaq !== index}
+                    className="text-muted-foreground mt-4"
+                  >
+                    {faq.answer}
+                  </p>
                 </CardContent>
               </Card>
             ))}
@@ -539,21 +578,27 @@ const Pitch = () => {
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-4xl text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-            Stop choosing between great feedback and a life outside school.
+            Give thoughtful feedback without giving up every evening.
           </h2>
           
           <p className="text-xl text-muted-foreground mb-12">
-            Teach with a full heart—aiTA carries the stack.
+            You stay the teacher. Mr Selby helps carry the stack.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <Button onClick={handleStartFree} size="lg" className="text-lg px-8">
-              Start free
+              Create your teacher workspace
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8">
-              Book a 10‑minute walkthrough
-            </Button>
+            {salesContactHref ? (
+              <Button asChild variant="outline" size="lg" className="text-lg px-8">
+                <a href={salesContactHref}>Book a 10‑minute walkthrough</a>
+              </Button>
+            ) : (
+              <Button disabled variant="outline" size="lg" className="text-lg px-8">
+                Walkthroughs opening soon
+              </Button>
+            )}
           </div>
           
           <p className="text-muted-foreground">
@@ -561,22 +606,25 @@ const Pitch = () => {
           </p>
         </div>
       </section>
+      </main>
 
       {/* Footer */}
       <footer className="border-t py-12 px-4 bg-muted/30">
         <div className="container mx-auto">
-          <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground mb-8">
+          <nav aria-label="Footer" className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground mb-8">
             <a href="#product" className="hover:text-foreground transition-colors">Product</a>
             <a href="#security" className="hover:text-foreground transition-colors">Security</a>
             <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
             <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
-            <a href="#contact" className="hover:text-foreground transition-colors">Contact</a>
-            <a href="#terms" className="hover:text-foreground transition-colors">Terms</a>
-            <a href="#privacy" className="hover:text-foreground transition-colors">Privacy</a>
-          </div>
+            <Link to="/privacy" className="underline-offset-4 hover:text-foreground hover:underline transition-colors">Privacy</Link>
+            <Link to="/terms" className="underline-offset-4 hover:text-foreground hover:underline transition-colors">Terms</Link>
+            {salesContactHref && (
+              <a href={salesContactHref} className="hover:text-foreground transition-colors">Contact</a>
+            )}
+          </nav>
           
           <div className="text-center text-sm text-muted-foreground">
-            Copyright © aiTA
+            Mr Selby · Teacher-controlled grading support · Launch preview
           </div>
         </div>
       </footer>

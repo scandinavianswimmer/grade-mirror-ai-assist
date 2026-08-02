@@ -1,4 +1,4 @@
-# aiTA Evaluation Harness (Phase 10)
+# Mr Selby Evaluation Harness (Phase 10)
 
 A self-contained, one-command evaluation harness that proves grading quality and **catches
 regressions** like the bug that scored a motor-oil maintenance guide 100/100 on a literature
@@ -126,7 +126,7 @@ the safety-critical off-topic/injection failures do.
 > uninterpretable as a headline claim. This mode is retained only as a **deprecated corroborator**.
 > The PRIMARY proof is now the **GPT-judge voice-fidelity harness** — see _Judge mode_ below.
 
-`node eval/run.mjs --convergence` answers a different question: **does aiTA learn an individual
+`node eval/run.mjs --convergence` answers a different question: **does Mr Selby learn an individual
 teacher's feedback voice over successive grading batches?** It replays a teacher's ordered batches,
 rebuilding the binary-signal few-shot exemplar store between batches (the same store
 `rebuild-exemplars` builds and `grade-submission` injects), and measures whether the per-batch
@@ -163,7 +163,7 @@ closer to the teacher's voice. The run prints the per-batch edit-rate, the batch
 ## Judge mode (Phase 15 v2 — PRIMARY voice-fidelity proof)
 
 `node eval/run.mjs --judge` runs the **pre-registered PRIMARY proof** (`docs/recruiting/osf-prereg.md`):
-a **blinded GPT-judge** scores each piece of aiTA feedback against the teacher's reference-voice corpus
+a **blinded GPT-judge** scores each piece of Mr Selby feedback against the teacher's reference-voice corpus
 on the **LOCKED 5-dimension rubric** (`eval/convergence/judge-rubric.md` v1.0 — frozen prompt, model,
 and 0–100 scale), then a **within-teacher holdout** (with-profile vs without-profile) and the
 **pre-registered kill criterion** decide the verdict.
@@ -198,7 +198,7 @@ GEMINI_API_KEY=... LUAR_FLAT_THRESHOLD_PCT=<pre-registered X> node eval/run.mjs 
 
 Auto-finalize is **default OFF and opt-in** (GOAL #1: human-in-the-loop). Before recommending it as a
 default-on setting — i.e. before claiming "the AI operates the business" — the **false-auto-finalize
-rate** on a real holdout must be **< 5%**. That is the share of grades aiTA *would have published
+rate** on a real holdout must be **< 5%**. That is the share of grades Mr Selby *would have published
 unattended* that the teacher then changed beyond a points tolerance.
 
 ```bash

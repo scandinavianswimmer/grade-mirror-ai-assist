@@ -24,7 +24,7 @@ interface StatusMeta {
 
 const META: Record<string, StatusMeta> = {
   uploaded: { label: 'Uploaded', badgeClass: 'bg-blue-100 text-blue-800', description: 'Text extracted and ready to grade.' },
-  grading: { label: 'Grading…', badgeClass: 'bg-blue-100 text-blue-800', description: 'aiTA is drafting rubric-aligned notes.' },
+  grading: { label: 'Grading…', badgeClass: 'bg-blue-100 text-blue-800', description: 'Mr Selby is drafting rubric-aligned notes.' },
   graded: { label: 'AI draft ready', badgeClass: 'bg-amber-100 text-amber-800', description: 'AI draft is ready for your review.' },
   needs_review: { label: 'Needs review', badgeClass: 'bg-red-100 text-red-800', description: 'Low-confidence extraction — review before grading.' },
   grade_error: { label: 'Grading failed', badgeClass: 'bg-red-100 text-red-800', description: 'Grading errored. Try again.' },
@@ -48,7 +48,7 @@ export const statusDescription = (status: string | null | undefined): string => 
 export const isFinalized = (status: string | null | undefined): boolean =>
   status === 'finalized' || status === 'exported';
 
-// True when aiTA published this grade unattended (auto-finalize / On-the-Loop), vs. a teacher
+// True when Mr Selby published this grade unattended (auto-finalize / On-the-Loop), vs. a teacher
 // approving it by hand. Drives provenance labels and the AI-native evidence count.
 export const isAutoFinalized = (finalizedBy: string | null | undefined): boolean =>
   finalizedBy === 'ai';
@@ -64,7 +64,7 @@ export const statusMetaWithProvenance = (
     return {
       label: 'Auto-finalized',
       badgeClass: 'bg-green-100 text-green-800',
-      description: 'aiTA published this high-confidence grade for you. Open it to review or adjust.',
+      description: 'Mr Selby published this high-confidence grade for you. Open it to review or adjust.',
     };
   }
   return statusMeta(status);

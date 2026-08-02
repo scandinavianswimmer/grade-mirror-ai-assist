@@ -9,6 +9,12 @@ export type AnchorRange = {
   comment: string;
 };
 
+type AnchorMetadata = {
+  startIndex?: unknown;
+  length?: unknown;
+  occurrence?: unknown;
+};
+
 export function resolveAnchors(essayText: string, comments: AIComment[]): AnchorRange[] {
   const usedRanges: [number, number][] = [];
   const results: AnchorRange[] = [];
@@ -28,18 +34,19 @@ export function resolveAnchors(essayText: string, comments: AIComment[]): Anchor
   }
 
   comments.forEach((c, i) => {
+    const metadata = c as AIComment & AnchorMetadata;
     let start = -1; 
     let len = c.text.length;
     
     // Priority 1: Use startIndex if available
-    if (typeof (c as any).startIndex === 'number') {
-      start = (c as any).startIndex;
-      if ((c as any).length) len = (c as any).length;
+    if (typeof metadata.startIndex === 'number') {
+      start = metadata.startIndex;
+      if (typeof metadata.length === 'number' && metadata.length) len = metadata.length;
     }
     
     // Priority 2: Use occurrence if available
-    if (start === -1 && typeof (c as any).occurrence === 'number') {
-      start = nthIndexOf(essayText, c.text, (c as any).occurrence);
+    if (start === -1 && typeof metadata.occurrence === 'number') {
+      start = nthIndexOf(essayText, c.text, metadata.occurrence);
     }
     
     // Priority 3: Find first occurrence

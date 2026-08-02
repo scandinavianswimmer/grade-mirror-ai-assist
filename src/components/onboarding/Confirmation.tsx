@@ -20,7 +20,7 @@ const Confirmation = ({ userId, onComplete }: ConfirmationProps) => {
     try {
       await completeOnboarding(userId);
       toast({
-        title: "Welcome to aiTA!",
+        title: "Welcome to Mr Selby!",
         description: "Your account is now fully set up and ready to use."
       });
       onComplete();

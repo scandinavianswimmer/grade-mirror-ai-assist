@@ -4,9 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
+export interface AccountSetupData {
+  inviteColleagues?: string;
+  syncLMS?: string;
+}
+
 interface AccountSetupStepProps {
-  data: any;
-  onNext: (data: any) => void;
+  data?: AccountSetupData;
+  onNext: (data: AccountSetupData) => void;
   onBack?: () => void;
 }
 
@@ -41,7 +46,7 @@ const AccountSetupStep: React.FC<AccountSetupStepProps> = ({ data, onNext, onBac
 
       <div>
         <Label className="text-base font-medium mb-4 block">
-          How would you like to use aiTA?
+          How would you like to use Mr Selby?
         </Label>
         <RadioGroup value={syncLMS} onValueChange={setSyncLMS}>
           <div className="flex items-center space-x-2">

@@ -1,4 +1,4 @@
-# aiTA grading worker — Cloud Run service (Phase 4).
+# Mr Selby grading worker — Cloud Run service (Phase 4).
 FROM node:20-slim
 WORKDIR /app
 COPY package.json ./

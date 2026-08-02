@@ -64,7 +64,7 @@ export function PricingCard({ tier, interval, cta, badge }: PricingCardProps) {
       <CardHeader>
         <CardTitle className="flex items-center justify-between gap-2">
           <span className="flex items-center gap-2 font-display text-xl">
-            {tier.highlighted && <Sparkles className="h-4 w-4 text-accent" />}
+            {tier.highlighted && <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />}
             {tier.name}
           </span>
           <span className="flex items-center gap-2">
@@ -80,7 +80,7 @@ export function PricingCard({ tier, interval, cta, badge }: PricingCardProps) {
         <ul className="space-y-2.5 text-sm">
           {tier.features.map((feature) => (
             <li key={feature} className="flex items-start gap-2">
-              <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
               <span>{feature}</span>
             </li>
           ))}

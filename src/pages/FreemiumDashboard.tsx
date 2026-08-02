@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,16 +19,8 @@ const FreemiumDashboard = () => {
   const [trainingExamples, setTrainingExamples] = useState<TrainingExample[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      loadDashboardData();
-    }
-  }, [user]);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     if (!user) return;
-    
-    console.log('FreemiumDashboard: Loading data for user', user.id);
     
     try {
       const [limitsData, submissionsData, trainingData] = await Promise.all([
@@ -36,12 +28,6 @@ const FreemiumDashboard = () => {
         getSubmissions(user.id),
         getTrainingExamples(user.id)
       ]);
-
-      console.log('FreemiumDashboard: Data loaded', { 
-        limits: limitsData, 
-        submissions: submissionsData.length, 
-        training: trainingData.length 
-      });
 
       setLimits(limitsData);
       setSubmissions(submissionsData.slice(0, 5));
@@ -56,15 +42,21 @@ const FreemiumDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast, user]);
+
+  useEffect(() => {
+    if (user) {
+      loadDashboardData();
+    }
+  }, [loadDashboardData, user]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <Navbar />
-        <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+        <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8 flex items-center justify-center">
           <div className="text-lg font-medium">Loading dashboard...</div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -73,12 +65,12 @@ const FreemiumDashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              Welcome to <span className="text-blue-600">aiTA</span>
+              Welcome to <span className="text-blue-600">Mr Selby</span>
             </h1>
             <p className="text-gray-600">
               Your AI-powered grading assistant. Upload training examples and start generating personalized feedback.
@@ -122,7 +114,7 @@ const FreemiumDashboard = () => {
                   <div>
                     <p className="font-medium text-yellow-800">Limit Reached</p>
                     <p className="text-sm text-yellow-700">
-                      Upgrade to continue using aiTA with unlimited training examples and feedback generation.
+                      Upgrade to continue using Mr Selby with unlimited training examples and feedback generation.
                     </p>
                     <Button className="mt-2" size="sm">Upgrade Plan</Button>
                   </div>
@@ -230,7 +222,7 @@ const FreemiumDashboard = () => {
             </Card>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

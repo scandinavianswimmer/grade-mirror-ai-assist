@@ -134,7 +134,7 @@ export async function fetchMetricsSummary(): Promise<MetricsSummary> {
 }
 
 // --- On-the-Loop throughput (auto-finalize differentiator) -------------------------------
-// Aggregate, across every submission this teacher owns, how many grades aiTA published
+// Aggregate, across every submission this teacher owns, how many grades Mr Selby published
 // unattended (high-confidence, clean) vs. routed to the teacher's exception queue. Reuses the
 // two tables we already query elsewhere — no new backend call, column-tolerant by design.
 

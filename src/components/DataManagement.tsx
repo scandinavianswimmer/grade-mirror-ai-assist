@@ -28,7 +28,7 @@ const DataManagement = () => {
       
       const link = document.createElement('a')
       link.href = url
-      link.download = `aita-data-export-${new Date().toISOString().split('T')[0]}.json`
+      link.download = `mr-selby-data-export-${new Date().toISOString().split('T')[0]}.json`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -55,16 +55,18 @@ const DataManagement = () => {
 
     setIsDeleting(true)
     try {
-      await deleteAllUserData(user.id)
+      const result = await deleteAllUserData()
       
       toast({
-        title: "Data deletion initiated",
-        description: "All your data has been permanently deleted."
+        title: "Product data permanently deleted",
+        description: `${result.deletedSubmissions} submission${result.deletedSubmissions === 1 ? '' : 's'} and ${result.filesRemoved} stored file${result.filesRemoved === 1 ? '' : 's'} were removed. Your sign-in account remains active.`
       })
     } catch (error) {
       toast({
-        title: "Deletion failed",
-        description: "There was an error deleting your data.",
+        title: "Deletion could not be verified",
+        description: error instanceof Error
+          ? error.message
+          : "The request did not return a verified completion. Please retry.",
         variant: "destructive"
       })
     } finally {
@@ -106,9 +108,9 @@ const DataManagement = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-red-900">Delete All Data</p>
+              <p className="font-medium text-red-900">Delete All Product Data</p>
               <p className="text-sm text-red-700">
-                Permanently delete all your uploaded content, grades, and training data
+                Permanently delete your uploaded content, grades, and personalization data
               </p>
             </div>
             <AlertDialog>
@@ -120,13 +122,14 @@ const DataManagement = () => {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogTitle>Delete all your Mr Selby product data?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete all your data including:
+                    This action cannot be undone. Mr Selby will verify stored files are gone before deleting the related records, including:
                     <br />• All assignments and submissions
                     <br />• All rubrics and training data
                     <br />• All LMS integrations
                     <br />• All privacy settings
+                    <br /><br />Your sign-in account and billing records will remain active.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -135,7 +138,7 @@ const DataManagement = () => {
                     onClick={handleDeleteAllData}
                     className="bg-red-600 hover:bg-red-700"
                   >
-                    Delete Everything
+                    Permanently Delete Data
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

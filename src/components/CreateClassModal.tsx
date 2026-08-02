@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, type RefObject } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,9 +13,10 @@ interface CreateClassModalProps {
   isOpen: boolean;
   onClose: () => void;
   onClassCreated: () => void;
+  returnFocusRef?: RefObject<HTMLElement>;
 }
 
-const CreateClassModal = ({ isOpen, onClose, onClassCreated }: CreateClassModalProps) => {
+const CreateClassModal = ({ isOpen, onClose, onClassCreated, returnFocusRef }: CreateClassModalProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -61,11 +62,10 @@ const CreateClassModal = ({ isOpen, onClose, onClassCreated }: CreateClassModalP
     e.preventDefault();
     if (!user) return;
 
-    console.log('Submitting class creation with data:', formData);
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('create-class', {
+      const { error } = await supabase.functions.invoke('create-class', {
         body: {
           className: formData.className,
           gradeLevel: formData.gradeLevel,
@@ -79,8 +79,6 @@ const CreateClassModal = ({ isOpen, onClose, onClassCreated }: CreateClassModalP
         console.error('Supabase function error:', error);
         throw error;
       }
-
-      console.log('Class created successfully:', data);
 
       toast({
         title: "Class created successfully!",
@@ -123,8 +121,15 @@ const CreateClassModal = ({ isOpen, onClose, onClassCreated }: CreateClassModalP
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent
+        className="sm:max-w-md"
+        onCloseAutoFocus={(event) => {
+          if (!returnFocusRef?.current) return;
+          event.preventDefault();
+          returnFocusRef.current.focus();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Create a New Class</DialogTitle>
         </DialogHeader>
@@ -144,7 +149,7 @@ const CreateClassModal = ({ isOpen, onClose, onClassCreated }: CreateClassModalP
           <div className="space-y-2">
             <Label htmlFor="gradeLevel">Grade Level</Label>
             <Select value={formData.gradeLevel} onValueChange={(value) => handleInputChange('gradeLevel', value)}>
-              <SelectTrigger>
+              <SelectTrigger id="gradeLevel">
                 <SelectValue placeholder="Select grade level" />
               </SelectTrigger>
               <SelectContent>
@@ -160,7 +165,7 @@ const CreateClassModal = ({ isOpen, onClose, onClassCreated }: CreateClassModalP
           <div className="space-y-2">
             <Label htmlFor="classTime">Class Time</Label>
             <Select value={formData.classTime} onValueChange={(value) => handleInputChange('classTime', value)}>
-              <SelectTrigger>
+              <SelectTrigger id="classTime">
                 <SelectValue placeholder="Select class time" />
               </SelectTrigger>
               <SelectContent>
@@ -189,7 +194,7 @@ const CreateClassModal = ({ isOpen, onClose, onClassCreated }: CreateClassModalP
           <div className="space-y-2">
             <Label htmlFor="classLevel">Class Level</Label>
             <Select value={formData.classLevel} onValueChange={(value) => handleInputChange('classLevel', value)}>
-              <SelectTrigger>
+              <SelectTrigger id="classLevel">
                 <SelectValue placeholder="Select class level" />
               </SelectTrigger>
               <SelectContent>

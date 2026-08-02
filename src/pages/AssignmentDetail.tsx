@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, FileText, Download, Pencil, Check, X } from 'lucide-react';
@@ -34,7 +34,7 @@ interface Submission {
   created_at: string;
   hasGrade?: boolean;
   confidence?: number | null;
-  finalized_by?: string | null; // 'ai' = auto-finalized by aiTA; absent pre-migration
+  finalized_by?: string | null; // 'ai' = auto-finalized by Mr Selby; absent pre-migration
   auto_finalized_at?: string | null;
 }
 
@@ -98,13 +98,7 @@ const AssignmentDetail = () => {
     setRenamingId(null);
   };
 
-  useEffect(() => {
-    if (id && user) {
-      fetchAssignmentData();
-    }
-  }, [id, user]);
-
-  const fetchAssignmentData = async () => {
+  const fetchAssignmentData = useCallback(async () => {
     try {
       // Fetch assignment details
       const { data: assignmentData, error: assignmentError } = await supabase
@@ -128,7 +122,7 @@ const AssignmentDetail = () => {
 
       // Mark which submissions actually have a grade so the status badge can reconcile a stale
       // value (e.g. a failed re-grade left `grade_error` while a valid grade still stands), and
-      // carry the latest grade's confidence so we can show aiTA's auto-finalize disposition.
+      // carry the latest grade's confidence so we can show Mr Selby's auto-finalize disposition.
       const subs = (submissionsData || []) as Submission[];
       const subIds = subs.map((s) => s.id);
       const gradedIds = new Set<string>();
@@ -165,7 +159,13 @@ const AssignmentDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, toast, user]);
+
+  useEffect(() => {
+    if (id && user) {
+      fetchAssignmentData();
+    }
+  }, [fetchAssignmentData, id, user]);
 
   const handleFileSelect = async (file: File, content: string) => {
     if (!assignment || !user) return;
@@ -203,7 +203,7 @@ const AssignmentDetail = () => {
         toast({
           title: "Uploaded & ready to grade",
           description: pct != null
-            ? `${file.name} extracted (${pct}% confidence). Open it to grade with aiTA.`
+            ? `${file.name} extracted (${pct}% confidence). Open it to grade with Mr Selby.`
             : `${file.name} uploaded and ready for grading.`
         });
       }
@@ -226,11 +226,11 @@ const AssignmentDetail = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
+        <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
           <div className="text-center py-12">
             <div className="text-lg font-medium">Loading assignment...</div>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -239,19 +239,19 @@ const AssignmentDetail = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
+        <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
           <div className="text-center py-12">
             <div className="text-lg font-medium text-red-600">Assignment not found</div>
             <Link to="/dashboard">
               <Button className="mt-4">Back to Dashboard</Button>
             </Link>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
 
-  // On-the-Loop disposition per submission — what aiTA published unattended vs. what it routed
+  // On-the-Loop disposition per submission — what Mr Selby published unattended vs. what it routed
   // to the teacher. Column-tolerant (reads optional provenance off the row if present).
   const dispositions = new Map<string, Disposition>();
   for (const s of submissions) {
@@ -262,7 +262,6 @@ const AssignmentDetail = () => {
         s.id,
         dispositionFor(
           { id: s.id, status: s.status, finalized_by: s.finalized_by, auto_finalized_at: s.auto_finalized_at },
-          typeof s.confidence === 'number' ? s.confidence : null,
         ),
       );
     }
@@ -283,7 +282,7 @@ const AssignmentDetail = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-4 mb-8">
             <Link to="/dashboard">
@@ -362,7 +361,7 @@ const AssignmentDetail = () => {
                     <CheckCircle2 className="h-4 w-4" /> {loopSummary.graded} graded
                   </span>
                   <span className="flex items-center gap-1.5 font-medium text-emerald-700">
-                    <Bot className="h-4 w-4" /> {loopSummary.autoFinalized} auto-finalized by aiTA
+                    <Bot className="h-4 w-4" /> {loopSummary.autoFinalized} auto-finalized by Mr Selby
                   </span>
                   <span className={`flex items-center gap-1.5 font-medium ${loopSummary.needsReview > 0 ? 'text-amber-700' : 'text-gray-400'}`}>
                     <Inbox className="h-4 w-4" /> {loopSummary.needsReview} need your review
@@ -437,7 +436,7 @@ const AssignmentDetail = () => {
                       <div className="flex items-center gap-2">
                         {isAuto ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-800">
-                            <Bot className="h-3 w-3" /> Auto-finalized by aiTA
+                            <Bot className="h-3 w-3" /> Auto-finalized by Mr Selby
                           </span>
                         ) : (
                           <span className={`px-2 py-1 rounded-full text-xs ${statusBadgeClass(effectiveStatus(submission.status, !!submission.hasGrade))}`}>
@@ -458,7 +457,7 @@ const AssignmentDetail = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

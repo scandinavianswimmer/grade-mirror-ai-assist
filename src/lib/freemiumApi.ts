@@ -1,5 +1,8 @@
 
 import { supabase } from './supabase';
+import type { AIComment, ParsedAIFeedback } from './aiParser';
+
+export type AIFeedbackResponse = ParsedAIFeedback;
 
 export interface TrainingExample {
   id: string;
@@ -18,7 +21,7 @@ export interface FreemiumSubmission {
   rubric: string;
   ai_feedback?: string;
   ai_grade?: string;
-  inline_comments?: any;
+  inline_comments?: AIComment[] | null;
   created_at: string;
 }
 
@@ -47,7 +50,7 @@ export const getTrainingExamples = async (userId: string): Promise<TrainingExamp
 export const createTrainingExample = async (example: Omit<TrainingExample, 'id' | 'created_at'>): Promise<TrainingExample> => {
   // A style exemplar is only meaningful with the teacher's own feedback (H22).
   if (!example.feedback || !example.feedback.trim()) {
-    throw new Error('A training exemplar requires your feedback so aiTA can learn your style.');
+    throw new Error('A training exemplar requires your feedback so Mr Selby can learn your style.');
   }
   const { data, error } = await supabase
     .from('training_examples')
@@ -148,7 +151,11 @@ export const incrementFeedbackCount = async (userId: string): Promise<void> => {
 
 // Generate AI Feedback. Training exemplars are fetched server-side, scoped to the
 // authenticated teacher (C3) — the client no longer supplies training data.
-export const generateAIFeedback = async (essay: string, rubric: string, userId: string) => {
+export const generateAIFeedback = async (
+  essay: string,
+  rubric: string,
+  userId: string,
+): Promise<AIFeedbackResponse> => {
   const { data, error } = await supabase.functions.invoke('generate-grading-feedback', {
     body: {
       essayText: essay,
@@ -174,5 +181,5 @@ export const generateAIFeedback = async (essay: string, rubric: string, userId: 
   // Increment feedback count only after a successful grade.
   await incrementFeedbackCount(userId);
 
-  return data;
+  return data as AIFeedbackResponse;
 };

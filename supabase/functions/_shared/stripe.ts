@@ -6,6 +6,33 @@ import { ENV } from "./env.ts";
 
 const STRIPE_API = "https://api.stripe.com/v1";
 
+interface StripeResource {
+  id?: string | null;
+  customer?: string | null;
+  client_reference_id?: string | null;
+  subscription?: string | null;
+  status?: string | null;
+  current_period_end?: number | null;
+  metadata?: Record<string, string | undefined> | null;
+  items?: {
+    data?: Array<{ price?: { id?: string | null } | null }>;
+  } | null;
+}
+
+export interface StripeEvent {
+  type: string;
+  data: { object: StripeResource };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object";
+}
+
+function responseString(response: unknown, field: string): string {
+  if (isRecord(response) && typeof response[field] === "string") return response[field];
+  throw new AppError(502, "stripe", `Stripe response missing ${field}`);
+}
+
 // Flatten { a: 1, b: { c: 2 }, d: [1,2] } -> a=1, b[c]=2, d[0]=1, d[1]=2 (Stripe's format).
 function toForm(params: Record<string, unknown>, prefix = ""): [string, string][] {
   const out: [string, string][] = [];
@@ -29,7 +56,7 @@ function toForm(params: Record<string, unknown>, prefix = ""): [string, string][
   return out;
 }
 
-async function stripePost(path: string, params: Record<string, unknown>): Promise<any> {
+async function stripePost(path: string, params: Record<string, unknown>): Promise<unknown> {
   const body = new URLSearchParams(toForm(params)).toString();
   const res = await fetch(`${STRIPE_API}${path}`, {
     method: "POST",
@@ -39,10 +66,13 @@ async function stripePost(path: string, params: Record<string, unknown>): Promis
     },
     body,
   });
-  const json = await res.json().catch(() => ({}));
+  const json: unknown = await res.json().catch(() => ({}));
   if (!res.ok) {
     // Surface Stripe's message but never the request body (may contain identifiers).
-    const msg = json?.error?.message ?? "Stripe request failed";
+    const stripeError = isRecord(json) && isRecord(json.error) ? json.error : null;
+    const msg = stripeError && typeof stripeError.message === "string"
+      ? stripeError.message
+      : "Stripe request failed";
     throw new AppError(res.status === 400 ? 400 : 502, "stripe", msg);
   }
   return json;
@@ -68,7 +98,7 @@ export async function createCheckoutSession(opts: {
     ...(opts.customerId ? {} : opts.customerEmail ? { "customer_email": opts.customerEmail } : {}),
     ...(opts.metadata ? { metadata: opts.metadata } : {}),
   });
-  return { id: session.id, url: session.url };
+  return { id: responseString(session, "id"), url: responseString(session, "url") };
 }
 
 // Create a Customer Portal session so a teacher can manage/cancel their plan.
@@ -80,7 +110,7 @@ export async function createPortalSession(opts: {
     customer: opts.customerId,
     "return_url": opts.returnUrl,
   });
-  return { url: session.url };
+  return { url: responseString(session, "url") };
 }
 
 // Verify a Stripe webhook signature (the `Stripe-Signature` header) WITHOUT the SDK.
@@ -92,7 +122,7 @@ export async function verifyWebhook(
   sigHeader: string,
   secret: string,
   toleranceSeconds = 300,
-): Promise<any> {
+): Promise<StripeEvent> {
   const parts = Object.fromEntries(
     sigHeader.split(",").map((p) => p.split("=").map((s) => s.trim()) as [string, string]),
   );
@@ -121,7 +151,16 @@ export async function verifyWebhook(
   if (!timingSafeEqual(computed, expected)) {
     throw new AppError(400, "webhook", "Invalid webhook signature");
   }
-  return JSON.parse(rawBody);
+  const event: unknown = JSON.parse(rawBody);
+  if (
+    !isRecord(event)
+    || typeof event.type !== "string"
+    || !isRecord(event.data)
+    || !isRecord(event.data.object)
+  ) {
+    throw new AppError(400, "webhook", "Malformed Stripe event payload");
+  }
+  return event as unknown as StripeEvent;
 }
 
 // Constant-time string compare to avoid leaking signature info via timing.

@@ -134,7 +134,7 @@ The war officially ended in 1783 with the Treaty of Paris. This established the 
             <div className="border-t pt-4">
               <p className="text-sm text-gray-600 mb-4">
                 How does this feedback match your grading style? You can continue to the dashboard 
-                to start using aiTA with real assignments.
+                to start using Mr Selby with real assignments.
               </p>
               
               <Button onClick={onComplete} className="w-full">

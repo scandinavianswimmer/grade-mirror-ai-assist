@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import Navbar from "@/components/Navbar";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
+import type { AppTableUpdate } from "@/integrations/supabase/app-database";
 import { generateCanvasAuthUrl, disconnectCanvas } from "@/lib/canvasOAuth";
 import { syncCanvasAssignments, getCanvasClient } from "@/lib/canvasApi";
 
@@ -28,12 +29,7 @@ const LMSIntegration = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  useEffect(() => {
-    checkConnectionStatus();
-    loadSyncStats();
-  }, [user]);
-
-  const checkConnectionStatus = async () => {
+  const checkConnectionStatus = useCallback(async () => {
     if (!user) return;
 
     const { data } = await supabase
@@ -48,9 +44,9 @@ const LMSIntegration = () => {
     if (data?.canvas_url) {
       setCanvasUrl(data.canvas_url);
     }
-  };
+  }, [user]);
 
-  const loadSyncStats = async () => {
+  const loadSyncStats = useCallback(async () => {
     if (!user) return;
 
     // Get assignments count
@@ -81,7 +77,12 @@ const LMSIntegration = () => {
       gradesCount: gradesCount || 0,
       lastSync: lastAssignment?.created_at || null
     });
-  };
+  }, [user]);
+
+  useEffect(() => {
+    checkConnectionStatus();
+    loadSyncStats();
+  }, [checkConnectionStatus, loadSyncStats]);
 
   const handleConnect = () => {
     if (!canvasUrl.trim()) {
@@ -144,9 +145,13 @@ const LMSIntegration = () => {
   const updateSyncSettings = async (setting: 'auto_sync' | 'auto_push', value: boolean) => {
     if (!user) return;
 
+    const updates: AppTableUpdate<'lms_integrations'> = setting === 'auto_sync'
+      ? { auto_sync: value }
+      : { auto_push: value };
+
     await supabase
       .from('lms_integrations')
-      .update({ [setting]: value })
+      .update(updates)
       .eq('user_id', user.id)
       .eq('platform', 'canvas');
   };
@@ -167,7 +172,7 @@ const LMSIntegration = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">LMS Integration</h1>
@@ -355,7 +360,7 @@ const LMSIntegration = () => {
             </div>
           </Card>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

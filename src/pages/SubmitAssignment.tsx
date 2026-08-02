@@ -8,7 +8,7 @@ import { Brain, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import FileUpload from '@/components/FileUpload';
 import { useAuth } from '@/components/AuthProvider';
-import { generateAIFeedback, createSubmission, getUserLimits } from '@/lib/freemiumApi';
+import { generateAIFeedback, createSubmission, getUserLimits, type AIFeedbackResponse } from '@/lib/freemiumApi';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,7 +19,7 @@ const SubmitAssignment = () => {
   const [loading, setLoading] = useState(false);
   const [essay, setEssay] = useState('');
   const [rubric, setRubric] = useState('');
-  const [feedback, setFeedback] = useState<any>(null);
+  const [feedback, setFeedback] = useState<AIFeedbackResponse | null>(null);
   const [step, setStep] = useState<'input' | 'processing' | 'results'>('input');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -113,7 +113,7 @@ const SubmitAssignment = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Grade Student Essay</h1>
@@ -269,7 +269,7 @@ const SubmitAssignment = () => {
                   <div className="mt-6 p-4 bg-orange-50 rounded-lg">
                     <h4 className="font-semibold text-orange-800 mb-3">Specific Comments</h4>
                     <div className="space-y-3">
-                      {feedback.inlineComments.map((comment: any, index: number) => (
+                      {feedback.inlineComments.map((comment, index) => (
                         <div key={index} className="border-l-3 border-orange-300 pl-3">
                           <p className="font-medium text-orange-700 text-sm">"{comment.text}"</p>
                           <p className="text-orange-600 text-sm mt-1">{comment.comment}</p>
@@ -307,7 +307,7 @@ const SubmitAssignment = () => {
             </div>
           </Card>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

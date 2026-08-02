@@ -51,7 +51,7 @@ const mean = (xs: number[]): number | null =>
 
 /**
  * Normalized Levenshtein distance in [0,1]: 0 = identical, 1 = maximally different.
- * Used by Task 1B to score how much a teacher changed aiTA's feedback (ai_comment → comment).
+ * Used by Task 1B to score how much a teacher changed Mr Selby's feedback (ai_comment → comment).
  */
 export function normalizedEditDistance(original: string, final: string): number {
   const a = original ?? '';

@@ -23,13 +23,15 @@ interface EditClassModalProps {
       students?: string;
     };
   } | null;
+  returnFocusRef?: React.RefObject<HTMLElement>;
 }
 
 const EditClassModal: React.FC<EditClassModalProps> = ({
   isOpen,
   onClose,
   onClassUpdated,
-  classData
+  classData,
+  returnFocusRef,
 }) => {
   const [formData, setFormData] = useState({
     className: '',
@@ -118,8 +120,16 @@ const EditClassModal: React.FC<EditClassModalProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md" data-tour="edit-class-modal">
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent
+        className="sm:max-w-md"
+        data-tour="edit-class-modal"
+        onCloseAutoFocus={(event) => {
+          if (!returnFocusRef?.current) return;
+          event.preventDefault();
+          returnFocusRef.current.focus();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Edit Class</DialogTitle>
         </DialogHeader>
@@ -140,7 +150,7 @@ const EditClassModal: React.FC<EditClassModalProps> = ({
           <div className="space-y-2">
             <Label htmlFor="grade">Grade Level</Label>
             <Select value={formData.grade} onValueChange={(value) => handleInputChange('grade', value)}>
-              <SelectTrigger>
+              <SelectTrigger id="grade">
                 <SelectValue placeholder="Select grade level" />
               </SelectTrigger>
               <SelectContent>
@@ -159,7 +169,7 @@ const EditClassModal: React.FC<EditClassModalProps> = ({
           <div className="space-y-2">
             <Label htmlFor="size">Class Size</Label>
             <Select value={formData.size} onValueChange={(value) => handleInputChange('size', value)}>
-              <SelectTrigger>
+              <SelectTrigger id="size">
                 <SelectValue placeholder="Select class size" />
               </SelectTrigger>
               <SelectContent>
@@ -173,7 +183,7 @@ const EditClassModal: React.FC<EditClassModalProps> = ({
           <div className="space-y-2">
             <Label htmlFor="level">Class Level</Label>
             <Select value={formData.level} onValueChange={(value) => handleInputChange('level', value)}>
-              <SelectTrigger>
+              <SelectTrigger id="level">
                 <SelectValue placeholder="Select class level" />
               </SelectTrigger>
               <SelectContent>

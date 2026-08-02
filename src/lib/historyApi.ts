@@ -70,6 +70,31 @@ interface LlmSessionRow {
   timestamp: string | null;
 }
 
+interface GradeHistoryQueryRow {
+  id: string;
+  submission_id: string;
+  model_id: string | null;
+  overall_score: number | null;
+  overall_max: number | null;
+  confidence: number | null;
+  flags: unknown;
+  created_at: string;
+  submissions: {
+    student_name: string | null;
+    assignments: {
+      id: string;
+      title: string;
+      classes: { id: string; class_name: string } | null;
+    } | null;
+  } | null;
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === 'object'
+    ? value as Record<string, unknown>
+    : {};
+}
+
 // Window (ms) within which an llm_session is considered to belong to a grade.
 const SESSION_MATCH_WINDOW_MS = 5 * 60 * 1000;
 
@@ -111,26 +136,28 @@ export async function fetchGradingHistory(): Promise<HistoryRow[]> {
     return best;
   };
 
-  return (data as unknown as any[]).map((g) => {
-    const sub = g.submissions ?? {};
-    const asg = sub.assignments ?? {};
-    const cls = asg.classes ?? {};
+  return (data as unknown as GradeHistoryQueryRow[]).map((g) => {
+    const sub = g.submissions;
+    const asg = sub?.assignments;
+    const cls = asg?.classes;
     const sess = matchSession(g.created_at);
-    const usage = sess ? { ...(sess.input_data as object ?? {}), ...(sess.output_data as object ?? {}) } : null;
+    const usage = sess ? { ...asRecord(sess.input_data), ...asRecord(sess.output_data) } : null;
 
     return {
       gradeId: g.id,
       submissionId: g.submission_id,
-      studentName: sub.student_name ?? null,
-      assignmentId: asg.id ?? null,
-      assignmentTitle: asg.title ?? null,
-      classId: cls.id ?? null,
-      className: cls.class_name ?? null,
+      studentName: sub?.student_name ?? null,
+      assignmentId: asg?.id ?? null,
+      assignmentTitle: asg?.title ?? null,
+      classId: cls?.id ?? null,
+      className: cls?.class_name ?? null,
       modelId: g.model_id ?? str(usage, ['model', 'model_id', 'modelId']),
       overallScore: g.overall_score,
       overallMax: g.overall_max,
       confidence: g.confidence,
-      flags: Array.isArray(g.flags) ? (g.flags as string[]) : [],
+      flags: Array.isArray(g.flags)
+        ? g.flags.filter((flag): flag is string => typeof flag === 'string')
+        : [],
       gradedAt: g.created_at,
       inputTokens: num(usage, ['input_tokens', 'inputTokens', 'promptTokenCount', 'prompt_tokens']),
       outputTokens: num(usage, ['output_tokens', 'outputTokens', 'candidatesTokenCount', 'completion_tokens']),

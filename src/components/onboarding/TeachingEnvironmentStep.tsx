@@ -5,9 +5,14 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+export interface TeachingEnvironmentData {
+  environment?: string;
+  studentCount?: string;
+}
+
 interface TeachingEnvironmentStepProps {
-  data: any;
-  onNext: (data: any) => void;
+  data?: TeachingEnvironmentData;
+  onNext: (data: TeachingEnvironmentData) => void;
   onBack?: () => void;
 }
 

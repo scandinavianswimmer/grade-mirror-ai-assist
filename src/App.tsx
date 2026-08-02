@@ -4,10 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/components/AuthProvider";
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import AuthGuard from "@/components/AuthGuard";
-import LoginOverlay from "@/components/LoginOverlay";
 import TeacherOnboarding from "@/components/onboarding/TeacherOnboarding";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
@@ -27,37 +26,104 @@ const SubmitAssignment = lazy(() => import("./pages/SubmitAssignment"));
 const PdfSubmission = lazy(() => import("./pages/PdfSubmission").then((m) => ({ default: m.PdfSubmission })));
 const Pitch = lazy(() => import("./pages/Pitch"));
 const Pricing = lazy(() => import("./pages/Pricing"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const ForgotPassword = lazy(() =>
+  import("./pages/PasswordRecovery").then((module) => ({ default: module.ForgotPassword })),
+);
+const ResetPassword = lazy(() =>
+  import("./pages/PasswordRecovery").then((module) => ({ default: module.ResetPassword })),
+);
 const Billing = lazy(() => import("./pages/Billing"));
 const Metrics = lazy(() => import("./pages/Metrics"));
 const History = lazy(() => import("./pages/History"));
 
 const queryClient = new QueryClient();
 
+const getDocumentTitle = (pathname: string) => {
+  if (pathname === "/") return "Mr Selby · Thoughtful grading support";
+  if (pathname === "/pitch") return "Mr Selby for teachers · grading co-pilot";
+  if (pathname === "/pricing") return "Pricing · Mr Selby";
+  if (pathname === "/privacy") return "Privacy preview · Mr Selby";
+  if (pathname === "/terms") return "Terms preview · Mr Selby";
+  if (pathname === "/auth") return "Sign in or create an account · Mr Selby";
+  if (pathname === "/auth/callback") return "Completing sign-in · Mr Selby";
+  if (pathname === "/auth/forgot-password") return "Reset your password · Mr Selby";
+  if (pathname === "/auth/reset-password") return "Choose a new password · Mr Selby";
+
+  const workspaceRoute =
+    pathname === "/" ||
+    [
+      "/dashboard",
+      "/create-assignment",
+      "/upload-training",
+      "/submit-assignment",
+      "/training",
+      "/lms",
+      "/lms/callback",
+      "/profile",
+      "/billing",
+      "/metrics",
+      "/history",
+    ].includes(pathname) ||
+    pathname.startsWith("/assignment/") ||
+    pathname.startsWith("/submission/") ||
+    pathname.startsWith("/pdf/submission/");
+
+  return workspaceRoute ? "Grading workspace · Mr Selby" : "Page not found · Mr Selby";
+};
+
 const AppContent = () => {
   const { user, session, loading } = useAuth();
   const location = useLocation();
-  const [showLoginOverlay, setShowLoginOverlay] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
-
-  console.log('AppContent: Auth state:', { user: !!user, session: !!session, loading });
+  const previousPathname = useRef(location.pathname);
+  const [routeAnnouncement, setRouteAnnouncement] = useState("");
 
   useEffect(() => {
-    if (loading) return;
+    const title = getDocumentTitle(location.pathname);
+    document.title = title;
 
-    if (!user && !session) {
-      setShowLoginOverlay(true);
-      setShowOnboarding(false);
-      setCheckingOnboarding(false);
-    } else if (user && session) {
-      setShowLoginOverlay(false);
-      checkOnboardingStatus();
+    let scrollAnimationFrame = 0;
+    let focusAnimationFrame = 0;
+    if (location.hash) {
+      scrollAnimationFrame = window.requestAnimationFrame(() => {
+        document.getElementById(location.hash.slice(1))?.scrollIntoView();
+      });
+    } else {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }
-  }, [user, session, loading]);
 
-  const checkOnboardingStatus = async () => {
+    if (previousPathname.current !== location.pathname) {
+      setRouteAnnouncement(`Navigated to ${title}`);
+
+      let attempts = 0;
+      const focusPageHeading = () => {
+        const heading = document.querySelector<HTMLElement>("main h1, [role='main'] h1, h1");
+        if (heading) {
+          heading.tabIndex = -1;
+          heading.focus({ preventScroll: true });
+          return;
+        }
+
+        attempts += 1;
+        if (attempts < 12) focusAnimationFrame = window.requestAnimationFrame(focusPageHeading);
+      };
+
+      focusAnimationFrame = window.requestAnimationFrame(focusPageHeading);
+    }
+
+    previousPathname.current = location.pathname;
+    return () => {
+      window.cancelAnimationFrame(scrollAnimationFrame);
+      window.cancelAnimationFrame(focusAnimationFrame);
+    };
+  }, [location.hash, location.pathname]);
+
+  const checkOnboardingStatus = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -97,12 +163,19 @@ const AppContent = () => {
     } finally {
       setCheckingOnboarding(false);
     }
-  };
+  }, [user]);
 
-  const handleLoginSuccess = () => {
-    setShowLoginOverlay(false);
-    // Onboarding status will be checked in the useEffect
-  };
+  useEffect(() => {
+    if (loading) return;
+
+    if (!user || !session) {
+      setShowOnboarding(false);
+      setIsNewUser(false);
+      setCheckingOnboarding(false);
+    } else {
+      checkOnboardingStatus();
+    }
+  }, [user, session, loading, checkOnboardingStatus]);
 
   const handleOnboardingComplete = async () => {
     setShowOnboarding(false);
@@ -113,20 +186,46 @@ const AppContent = () => {
 
   if (loading || checkingOnboarding) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-lg font-medium">Loading...</div>
-      </div>
+      <>
+        <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{routeAnnouncement}</p>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+          <div className="text-lg font-medium" role="status" aria-live="polite">Loading…</div>
+        </div>
+      </>
     );
   }
 
-  // Allow public marketing pages to be viewed without authentication.
-  if (location.pathname === '/pitch' || location.pathname === '/pricing') {
+  // Show the public overview at the canonical root for signed-out visitors. Signed-in teachers
+  // keep the established `/` workspace route below.
+  if (location.pathname === '/' && !user && !session) {
     return (
-      <Routes>
-        <Route path="/pitch" element={<Pitch />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <>
+        <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{routeAnnouncement}</p>
+        <Routes>
+          <Route path="/" element={<Pitch />} />
+        </Routes>
+      </>
+    );
+  }
+
+  // Allow public product, legal, and account-recovery pages without authentication.
+  if (
+    ['/pitch', '/pricing', '/privacy', '/terms', '/auth/forgot-password', '/auth/reset-password']
+      .includes(location.pathname)
+  ) {
+    return (
+      <>
+        <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{routeAnnouncement}</p>
+        <Routes>
+          <Route path="/pitch" element={<Pitch />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+          <Route path="/auth/reset-password" element={<ResetPassword />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </>
     );
   }
 
@@ -148,28 +247,15 @@ const AppContent = () => {
     );
   }
 
-  // Show login overlay for unauthenticated users (except /pitch)
-  if (showLoginOverlay) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        {/* Background content (blurred) */}
-        <div className="opacity-50 blur-sm">
-          <FreemiumDashboard />
-        </div>
-        
-        {/* Login overlay */}
-        <LoginOverlay onLoginSuccess={handleLoginSuccess} />
-      </div>
-    );
-  }
-
   // Show onboarding for new users
   if (showOnboarding && isNewUser) {
     return <TeacherOnboarding onComplete={handleOnboardingComplete} />;
   }
 
   return (
-    <Routes>
+    <>
+      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{routeAnnouncement}</p>
+      <Routes>
       {/* Protected routes */}
       <Route path="/" element={
         <AuthGuard>
@@ -262,16 +348,19 @@ const AppContent = () => {
       } />
       <Route path="/pitch" element={<Pitch />} />
       <Route path="/pricing" element={<Pricing />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+      <Route path="/auth/reset-password" element={<ResetPassword />} />
       <Route path="*" element={<NotFound />} />
-    </Routes>
+      </Routes>
+    </>
   );
 };
 
 const App = () => {
-  console.log('App: Starting application');
-  
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -280,7 +369,7 @@ const App = () => {
         <BrowserRouter>
           <AuthProvider>
             <Suspense fallback={
-              <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+              <div className="min-h-screen flex items-center justify-center text-muted-foreground" role="status" aria-live="polite">
                 Loading…
               </div>
             }>
