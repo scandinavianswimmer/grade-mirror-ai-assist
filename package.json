@@ -20,7 +20,9 @@
     "test:watch": "vitest",
     "test:ci": "vitest run",
     "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit",
-    "verify": "npm run lint && npm run typecheck && npm run test:ci && npm run build && npm run eval:dry && npm run eval:dry:dataset && npm run eval:calibrate",
+    "verify": "npm run lint && npm run typecheck && npm run test:ci && npm run build && npm run a11y:ci && npm run eval:dry && npm run eval:dry:dataset && npm run eval:calibrate",
+    "a11y": "npm run build && npm run a11y:ci",
+    "a11y:ci": "node qa-scripts/a11y.mjs",
     "eval:dry": "EVAL_DRY_RUN=1 node eval/run.mjs --judge",
     "eval:dry:dataset": "EVAL_DRY_RUN=1 node eval/run.mjs",
     "eval:calibrate": "node eval/calibration/false-finalize.mjs eval/calibration/holdout.sample.json --threshold 0.85 --tolerance 2",
@@ -86,6 +88,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^9.9.0",
     "@playwright/test": "^1.60.0",
     "@tailwindcss/typography": "^0.5.15",

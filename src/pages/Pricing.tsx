@@ -20,6 +20,7 @@ import {
 } from '@/lib/pricingPlans';
 import type { BillingInterval } from '@/lib/billingApi';
 import { analytics } from '@/lib/analytics';
+import PublicFooter from '@/components/public/PublicFooter';
 
 const schoolContactHref = SCHOOL_CONTACT_EMAIL
   ? `mailto:${SCHOOL_CONTACT_EMAIL}?subject=${encodeURIComponent(SCHOOL_CONTACT_SUBJECT)}`
@@ -107,7 +108,7 @@ const Pricing = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="flex min-h-screen flex-col">
       <a href="#pricing-main" className="skip-link">Skip to main content</a>
 
       {/* Lightweight public header (the app chrome is auth-gated). */}
@@ -125,7 +126,7 @@ const Pricing = () => {
         </nav>
       </header>
 
-      <main id="pricing-main" tabIndex={-1} className="container mx-auto px-4 py-14">
+      <main id="pricing-main" tabIndex={-1} className="container mx-auto flex-1 px-4 py-14">
         <div className="mx-auto max-w-2xl text-center animate-fade-up">
           <h1 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
             Grade in your voice. Pay for what you grade.
@@ -159,16 +160,7 @@ const Pricing = () => {
         </p>
       </main>
 
-      <footer className="border-t border-border/70 px-4 py-8">
-        <div className="container mx-auto flex max-w-5xl flex-col gap-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>Mr Selby launch preview · Final legal details pending review</p>
-          <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2">
-            <Link to="/" className="underline underline-offset-4 hover:text-foreground">Overview</Link>
-            <Link to="/privacy" className="underline underline-offset-4 hover:text-foreground">Privacy</Link>
-            <Link to="/terms" className="underline underline-offset-4 hover:text-foreground">Terms</Link>
-          </nav>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 };

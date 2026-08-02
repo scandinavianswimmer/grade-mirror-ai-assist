@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SCHOOL_CONTACT_EMAIL, SCHOOL_CONTACT_SUBJECT } from '@/lib/pricingPlans';
+import PublicFooter from '@/components/public/PublicFooter';
 import { 
   Clock, 
   CheckCircle2, 
@@ -111,18 +112,16 @@ const Pitch = () => {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
-            <Button onClick={handleStartFree} size="lg" className="text-lg px-8 hover-scale relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <span className="relative z-10 flex items-center">
+            <Button onClick={handleStartFree} size="lg" className="text-lg px-8 hover-scale group">
+              <span className="flex items-center">
                 Grade your first assignment
                 <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
               </span>
             </Button>
             {salesContactHref ? (
-              <Button asChild variant="outline" size="lg" className="text-lg px-8 hover-scale relative overflow-hidden group">
+              <Button asChild variant="outline" size="lg" className="text-lg px-8 hover-scale">
                 <a href={salesContactHref}>
-                  <span className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" aria-hidden="true" />
-                  <span className="relative z-10">Book a 10‑minute walkthrough</span>
+                  Book a 10‑minute walkthrough
                 </a>
               </Button>
             ) : (
@@ -608,26 +607,7 @@ const Pitch = () => {
       </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t py-12 px-4 bg-muted/30">
-        <div className="container mx-auto">
-          <nav aria-label="Footer" className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground mb-8">
-            <a href="#product" className="hover:text-foreground transition-colors">Product</a>
-            <a href="#security" className="hover:text-foreground transition-colors">Security</a>
-            <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
-            <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
-            <Link to="/privacy" className="underline-offset-4 hover:text-foreground hover:underline transition-colors">Privacy</Link>
-            <Link to="/terms" className="underline-offset-4 hover:text-foreground hover:underline transition-colors">Terms</Link>
-            {salesContactHref && (
-              <a href={salesContactHref} className="hover:text-foreground transition-colors">Contact</a>
-            )}
-          </nav>
-          
-          <div className="text-center text-sm text-muted-foreground">
-            Mr Selby · Teacher-controlled grading support · Launch preview
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 };
