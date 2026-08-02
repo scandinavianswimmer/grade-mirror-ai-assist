@@ -15,10 +15,11 @@ Judge package: [`../../JUDGES.md`](../../JUDGES.md) ·
 [`TEACHER-TIME-LEDGER.md`](./TEACHER-TIME-LEDGER.md) ·
 [`DEVPOST-GALLERY-BRIEF.md`](./DEVPOST-GALLERY-BRIEF.md)
 
-> **Release identity warning:** commit `119d109`, tag `mr-selby-public-preview-2026-08-01`, and
-> Worker `94fc5cfb-941f-4d95-b50e-7de49d9b7066` identify the historical public preview. They do not
-> prove the final Teacher’s Desk release. Until the final deployed commit, Worker version, Gemini/GCP
-> operation, and persistence evidence are captured, each missing field must read exactly
+> **Release identity warning:** commit `ded09a610998ae79bfdd5d9fd21d8a464d6b5ab2`, tag
+> `mr-selby-public-queue-2026-08-01`, and Worker `ab130f6c-4cc7-449f-bc8e-3f732b735e34` identify the
+> current signed-out Teacher's Desk release. They prove the public interface and build identity, not a
+> protected Gemini/GCP operation or persisted teacher workflow. Until those exact-release artifacts
+> are captured, each missing field must read exactly
 > **“Not captured for this release.”**
 
 ## 0. Eligibility gate: organizer approval received
@@ -105,9 +106,11 @@ The ignored `.submission-evidence/` directory contains the historical preview ma
 JSON. Its commit `119d109`, tag `mr-selby-public-preview-2026-08-01`, Worker
 `94fc5cfb-941f-4d95-b50e-7de49d9b7066`, [release CI run 30728937099](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30728937099),
 and [main run 30729106237](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30729106237)
-are baseline history, not identifiers for the final Teacher’s Desk release. Capture a new manifest and
-exact-release Lighthouse/accessibility evidence after the final deployment. Do not relabel or copy the
-historical values into final fields.
+are baseline history. The current public release is commit `ded09a610998ae79bfdd5d9fd21d8a464d6b5ab2`,
+tag `mr-selby-public-queue-2026-08-01`, Worker `ab130f6c-4cc7-449f-bc8e-3f732b735e34`, and
+[main run 30736141654](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30736141654).
+Capture its live QA and accessibility artifacts in a new manifest; do not relabel or copy historical
+values into current fields.
 
 The private bundle must cover the organizer ruling, final repository/license identity, corporate ID
 when applicable, protected release, continuous day-to-day AI business operations, Gemini and Google
@@ -179,7 +182,7 @@ Tonight produced a merged, tagged, and live-QA-verified public preview plus the 
 - [x] Complete the local VoiceOver, exact 200% zoom, Increase Contrast, keyboard, dialog-focus, and responsive-layout beta pass; restore all host settings afterward.
 - [x] Prepare the local Teacher’s Test Judge Mode, original fictional strong/off-topic pair, fail-closed release-proof model, judge guide, video script, teacher-time protocol, gallery brief, and humanized Devpost draft.
 - [x] Wire `/judge` into both public routing modes and include it in automated accessibility coverage.
-- [ ] Deploy `/judge` and verify the signed-out final-release surface.
+- [x] Deploy `/judge` and verify the signed-out final-release surface.
 - [ ] Archive the written ruling in the private submission evidence folder and note any conditions.
 - [ ] Verify the historical Google API key identified by GitHub, restrict or revoke it if active, and resolve the alert with a documented disposition.
 - [x] Merge PR #30 and tag the exact verified public-preview release.
