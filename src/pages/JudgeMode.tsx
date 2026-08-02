@@ -28,7 +28,7 @@ const TEACHERS_TEST_QUESTIONS = [
     inspection: 'Open the deliberately off-topic response and confirm that the interface proposes no score.',
   },
   {
-    title: 'Can the teacher change every consequential result?',
+    title: 'Can the teacher revise every margin note before approval?',
     inspection: 'Accept, edit, or dismiss the fictional draft note; then compare that demo with the release proof rail.',
   },
 ] as const;

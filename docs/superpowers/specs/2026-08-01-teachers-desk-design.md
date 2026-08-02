@@ -132,7 +132,7 @@ Judge Mode is a separate, clearly labeled evidence surface. It uses fictional st
 1. Does the draft follow the assignment and rubric?
 2. Can it point to evidence in the paper?
 3. Does it stop when the work should not be graded?
-4. Can the teacher change every consequential result?
+4. Can the teacher revise every margin note before approval?
 
 Its proof rail may show only facts available from the current release: release SHA, deployed version, Gemini model, Google Cloud service, UTC timestamp, trace/job ID, agent states, persisted result, and reload proof. Missing production evidence is displayed as “Not captured for this release,” never substituted with illustrative values.
 

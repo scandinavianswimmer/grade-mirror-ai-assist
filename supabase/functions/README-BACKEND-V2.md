@@ -2,7 +2,7 @@
 
 A clean rewrite of the aiTA backend in TypeScript (Deno) on Supabase. Same platform (Postgres + Auth + RLS + Storage — the React frontend depends on it), but the logic is rebuilt around a shared core instead of v1's copy-pasted, fragmented functions. Grounded in `docs/v2-planning/` (architecture, AI grading pipeline, security review) and the `supabase-rls-security`, `document-parsing-pdf-docx`, `ai-grading-rubric-evaluation`, and `privacy-ferpa-student-data` skills.
 
-**LLM provider: Google Gemini.** Grading uses `gemini-2.5-pro` (primary) → `gemini-2.5-flash` (fallback) via the REST `generateContent` API with `responseMimeType=application/json` + `responseSchema` for guaranteed-shape JSON, `temperature: 0` for determinism. Override the primary with the `GEMINI_GRADING_MODEL` secret (e.g. `gemini-3.5-flash`). Gemini 2.5+ does implicit prompt caching, so the stable system+rubric prefix is reused cheaply across a class's submissions.
+**LLM provider: Google Gemini.** Grading uses `gemini-2.5-pro` (primary) → `gemini-2.5-flash` (fallback) via the REST `generateContent` API with `responseMimeType=application/json` + `responseSchema` for schema-shaped JSON, `temperature: 0` for determinism. Override the primary with the `GEMINI_GRADING_MODEL` secret only after the replacement passes the grading, relevance, calibration, and structured-output gates. Gemini 2.5+ supports implicit prompt caching, so the stable system+rubric prefix can be reused across a class's submissions.
 
 ## Layout
 

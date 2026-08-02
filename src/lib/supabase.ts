@@ -76,7 +76,7 @@ export interface PrivacySettings {
   allow_training_on_content: boolean;
   auto_delete_training_data: boolean;
   retention_days: number | null;
-  // Auto-finalize (On-the-Loop): publish high-confidence grades unattended. Optional because the
+  // Auto-finalize (On-the-Loop): approve eligible high-confidence grades automatically. Optional because the
   // columns are absent until migration 0020 (migrations_v2) is applied; UI falls back to the defaults.
   auto_finalize_enabled?: boolean;
   auto_finalize_threshold?: number;

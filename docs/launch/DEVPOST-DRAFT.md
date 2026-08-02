@@ -18,12 +18,12 @@
 | Release identity | `[FINAL_RELEASE_SHA_AND_TAG]` |
 | Video | `[PUBLIC_UNDER_3_MINUTE_VIDEO_URL]` |
 | Gallery | `[DEVPOST_3_BY_2_THUMBNAIL_AND_THREE_PROOF_PANELS]` |
-| One-line summary | Mr Selby gives teachers a rubric-grounded first pass on essay feedback, shows its evidence, and leaves every consequential decision in the teacher’s hands. |
+| One-line summary | Mr Selby gives teachers a rubric-grounded first pass on essay feedback, points margin notes back to the paper, and keeps approval in teacher hands. |
 
 Suggested social copy:
 
 > Grading still needs a teacher. Mr Selby handles the first pass: follow the assignment, point to
-> the paper, stop when the work does not fit, and let the teacher change everything that matters.
+> the paper, stop when the work does not fit, and let the teacher revise each note before approval.
 
 ## Project description — target 750–900 words
 
@@ -44,7 +44,7 @@ We designed the judge journey around four questions we call the Teacher’s Test
 1. Does the draft follow the assignment and rubric?
 2. Can it point to evidence in the paper?
 3. Does it stop when the work should not be graded?
-4. Can the teacher change every consequential result?
+4. Can the teacher revise every margin note before approval?
 
 The public Judge Mode answers those questions with an original fictional fixture, “The Beacon
 Ledger.” One response offers a strong, on-topic analysis. A second is deliberately unrelated to the
@@ -72,9 +72,10 @@ mistaken for proof that this business began inside the submission period.
 
 The division of responsibility is deliberate. The model may draft a score, explanation, evidence
 anchor, or comment. It may also recommend withholding when the work is incomplete or off assignment.
-The teacher can accept, edit, or dismiss every suggestion and decides when a result is final. Teacher
-decisions leave an audit trail. Style learning uses only explicitly consented examples and edits.
-Unattended publication is separate and opt-in; it is claimed only when the exact release records
+The teacher can accept, edit, or dismiss each margin note, inspect the proposed rubric result, and
+decide when manual review is complete. The workspace persists the current review state and who
+approved the result. Style learning uses only explicitly consented examples and edits. Automatic
+approval is separate and opt-in; it is claimed only when the exact release records
 persisted provenance. The implementation also includes owner-isolated data policies, private storage,
 masking before model calls, retention controls, erasure logic, rate limits, and fail-closed secret
 handling. Those are implementation facts, not a blanket compliance certification.

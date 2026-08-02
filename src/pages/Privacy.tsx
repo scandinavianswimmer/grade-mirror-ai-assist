@@ -41,7 +41,7 @@ const Privacy = () => (
         <li><strong className="text-foreground">Student submissions</strong>, including uploaded files, student names supplied by the teacher, and text extracted from those files.</li>
         <li><strong className="text-foreground">Grading records</strong>, including proposed grades, annotations, feedback, teacher edits, approvals, dismissals, and status history.</li>
         <li><strong className="text-foreground">Optional learning examples</strong> saved through consent-based controls to help personalize grading style.</li>
-        <li><strong className="text-foreground">Privacy and product settings</strong>, such as retention choices, name-masking preferences, and training consent.</li>
+        <li><strong className="text-foreground">Privacy and product settings</strong>, such as retention choices, name-masking preferences, and training consent. Turning training consent off stops saved style profiles and examples from being used in future grading prompts; it does not by itself erase stored rows.</li>
         <li><strong className="text-foreground">Billing metadata</strong> needed to manage a paid plan. Payment-card details are handled by the configured payment provider rather than entered into the service&apos;s application database.</li>
         <li><strong className="text-foreground">Product analytics</strong> only when an analytics service is configured for the deployment.</li>
       </ul>

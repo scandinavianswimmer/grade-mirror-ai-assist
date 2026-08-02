@@ -147,7 +147,7 @@ const FreemiumDashboard = () => {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Grade New Essay</h3>
                 <p className="text-gray-600 mb-4">Upload student essay for AI feedback</p>
-                <Link to="/submit-assignment">
+                <Link to="/create-assignment">
                   <Button className="w-full" disabled={limits?.weeklyFeedbackCount >= (limits?.maxWeeklyFeedback || 10)}>
                     Grade Essay
                   </Button>

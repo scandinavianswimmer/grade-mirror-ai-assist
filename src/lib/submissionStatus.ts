@@ -53,7 +53,7 @@ export const isFinalized = (status: string | null | undefined): boolean =>
 export const isApprovedStatus = isFinalized;
 export const isExportedStatus = (status: string | null | undefined): boolean => status === 'exported';
 
-// True when Mr Selby published this grade unattended (auto-finalize / On-the-Loop), vs. a teacher
+// True when Mr Selby approved this grade automatically (auto-finalize / On-the-Loop), vs. a teacher
 // approving it by hand. Drives provenance labels and the AI-native evidence count.
 export const isAutoFinalized = (finalizedBy: string | null | undefined): boolean =>
   finalizedBy === 'ai';

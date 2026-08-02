@@ -10,8 +10,8 @@ export interface ModelSpec {
 
 // Grading default = gemini-2.5-pro (strong rubric reasoning, mature responseSchema support).
 // Fallback = gemini-2.5-flash (cheaper/faster) for health failover and high-volume grading.
-// Newer GA option to consider swapping in for cost/quality: "gemini-3.5-flash".
-// Override the primary via the GEMINI_GRADING_MODEL secret without editing code.
+// Override the primary via the GEMINI_GRADING_MODEL secret without editing code. Any replacement
+// must be re-run through the grading, relevance, calibration, and structured-output gates first.
 export const GRADING_MODELS: ModelSpec[] = [
   { id: Deno.env.get("GEMINI_GRADING_MODEL") ?? "gemini-2.5-pro", priority: 0 },
   { id: "gemini-2.5-flash", priority: 1 },

@@ -11,7 +11,7 @@ describe('dispositionFor', () => {
     expect(dispositionFor({ id: '2', status: 'grade_error' })).toBe('needs_review');
   });
 
-  it('never infers unattended publication from a grade without provenance', () => {
+  it('never infers automatic approval from a grade without provenance', () => {
     expect(dispositionFor({ id: '1', status: 'graded' })).toBe('needs_review');
     expect(dispositionFor({ id: '2', status: 'finalized' })).toBe('pending');
   });
@@ -60,7 +60,7 @@ describe('computeOnTheLoopSummary', () => {
     expect(summary.autoFinalizedPct).toBeNull();
   });
 
-  it('does not convert high-confidence re-grades into unattended publication', () => {
+  it('does not convert high-confidence re-grades into automatic approval', () => {
     const summary = computeOnTheLoopSummary(
       [{ id: 'a', status: 'graded' }],
       [

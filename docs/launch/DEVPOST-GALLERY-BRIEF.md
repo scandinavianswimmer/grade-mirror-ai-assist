@@ -51,7 +51,7 @@ Suggested caption:
 - Decision receipt: release SHA, deployed version, Gemini model, Google Cloud service, UTC capture,
   trace/job locator, day-to-day business operation, key decision, human escalation, agent states,
   failures/skips, and final observed disposition.
-- Boundary sentence: `The AI drafts and may withhold. The teacher can change the consequential result.`
+- Boundary sentence: `The AI drafts and may withhold. The teacher can revise each margin note and controls approval.`
 
 Use the fictional response only as product content. The decision receipt must come from a real
 production run of that fixture on the exact release. If any field is absent, show

@@ -22,7 +22,7 @@ const base: FinalizationInput = {
   threshold: AUTO_FINALIZE_DEFAULT_THRESHOLD,
 };
 
-describe('safety defaults — unattended publishing is OFF until a teacher opts in (GOAL #1 HITL)', () => {
+describe('safety defaults — automatic approval is OFF until a teacher opts in (GOAL #1 HITL)', () => {
   it('defaults auto-finalize OFF (opt-in, never silently on)', () => {
     expect(AUTO_FINALIZE_DEFAULT_ENABLED).toBe(false);
   });
@@ -35,7 +35,7 @@ describe('safety defaults — unattended publishing is OFF until a teacher opts 
     expect(d.reason).toBe('disabled');
   });
 
-  it('reaches the unattended-publish path ONLY when a teacher has explicitly enabled it', () => {
+  it('reaches the automatic-approval path ONLY when a teacher has explicitly enabled it', () => {
     expect(decideFinalization({ ...base, enabled: false }).autoFinalize).toBe(false);
     expect(decideFinalization({ ...base, enabled: true }).autoFinalize).toBe(true);
   });
@@ -59,7 +59,7 @@ describe('safety defaults — unattended publishing is OFF until a teacher opts 
   });
 });
 
-describe('decideFinalization — the On-the-Loop unattended-publish gate', () => {
+describe('decideFinalization — the On-the-Loop automatic-approval gate', () => {
   it('auto-finalizes a high-confidence, on-topic, flag-free grade', () => {
     const d = decideFinalization(base);
     expect(d.autoFinalize).toBe(true);
@@ -90,7 +90,7 @@ describe('decideFinalization — the On-the-Loop unattended-publish gate', () =>
     expect(d.autoFinalize).toBe(true);
   });
 
-  it.each(['possible_injection', 'likely_ai_generated', 'off_topic', 'grade_withheld', 'low_confidence'])(
+  it.each(['possible_injection', 'likely_ai_generated', 'off_topic', 'grade_withheld', 'relevance_check_unavailable', 'low_confidence'])(
     'never auto-finalizes a high-confidence grade carrying the blocking flag %s',
     (flag) => {
       const d = decideFinalization({ ...base, flags: [flag] });
@@ -127,7 +127,7 @@ describe('normalizeThreshold — clamps teacher config into the safe band', () =
     expect(normalizeThreshold(0.9)).toBe(0.9);
   });
 
-  it('raises a too-low threshold to the hard floor (never auto-publish a coin flip)', () => {
+  it('raises a too-low threshold to the hard floor (never auto-approve a coin flip)', () => {
     expect(normalizeThreshold(0.2)).toBe(AUTO_FINALIZE_MIN_THRESHOLD);
   });
 
@@ -142,7 +142,7 @@ describe('normalizeThreshold — clamps teacher config into the safe band', () =
   });
 
   it('applies the clamped threshold inside decideFinalization', () => {
-    // A teacher who set 0.2 still cannot publish a 0.5-confidence grade — floor is 0.6.
+    // A teacher who set 0.2 still cannot auto-approve a 0.5-confidence grade — floor is 0.6.
     const d = decideFinalization({ ...base, threshold: 0.2, confidence: 0.5 });
     expect(d.appliedThreshold).toBe(AUTO_FINALIZE_MIN_THRESHOLD);
     expect(d.autoFinalize).toBe(false);

@@ -15,7 +15,7 @@ The video answers the same four questions as Judge Mode:
 1. Does the draft follow the assignment and rubric?
 2. Can it point to evidence in the paper?
 3. Does it stop when the work should not be graded?
-4. Can the teacher change every consequential result?
+4. Can the teacher revise every margin note before approval?
 
 The creative rule is simple: **show the decision, then show its receipt**. Keep brand animation under
 two seconds. Use live product footage for the core workflow, not a narrated slideshow.

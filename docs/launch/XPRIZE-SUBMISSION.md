@@ -155,7 +155,7 @@ Use the recording and redaction gates in [`PROOF-NOT-PITCH-VIDEO.md`](./PROOF-NO
 | 2:15–2:35 | Real metrics/revenue evidence | Use dated values; label small samples and related-party revenue |
 | 2:35–2:50 | Architecture + closing URL | Name only the Google Cloud services proven live |
 
-If opt-in unattended publication is actually enabled, show the setting and explicit provenance. Otherwise omit the auto-finalize claim entirely.
+If opt-in automatic approval is actually enabled, show the setting and explicit provenance. Otherwise omit the auto-finalize claim entirely.
 
 ## 6. Tonight's honest finish line
 

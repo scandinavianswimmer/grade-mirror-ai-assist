@@ -6,6 +6,8 @@ project_id = "mr-selby"
 # All functions verify the caller's JWT at the gateway by default (verify_jwt = true).
 # privacy-tasks is the exception: it is service-role/cron only and must NOT accept user JWTs —
 # it is gated by the x-cron-secret header (CRON_SECRET) in code.
+# Historical `generate-grading-feedback` and `test-ai-grading` source is intentionally retained,
+# but both entry points are retired and excluded from the reviewed CI runtime manifest.
 [functions.grade-submission]
 # Deployed with --no-verify-jwt so the internal Cloud Run worker can call it without a user JWT.
 # Auth IS enforced in code: getUserFromJWT for normal calls, OR a matching INTERNAL_GRADE_SECRET

@@ -18,6 +18,7 @@ import {
   AUTO_FINALIZE_DEFAULT_ENABLED,
   AUTO_FINALIZE_DEFAULT_THRESHOLD,
 } from "../_shared/grading/auto-finalize.ts";
+import { canUseTeacherPersonalization } from "../_shared/grading/teacher-personalization.ts";
 import type { RubricInput } from "../_shared/grading-schema.ts";
 
 Deno.serve((req) => {
@@ -114,10 +115,25 @@ Deno.serve((req) => {
       }
     }
 
-    // Teacher style profile (Phase 9 / LEARN-03): injected into the grader so feedback matches the
-    // teacher's voice + standards. Absent for new teachers (cold start) — grading proceeds rubric-only.
-    let styleProfile: string | undefined;
+    // Personalization is an active-consent capability, not a one-time ingestion permission. Recheck
+    // the teacher's current setting for every grading run and fail closed when the row/column cannot
+    // be read. Existing profile/exemplar rows may remain for audit/retention, but they must not enter
+    // a future model prompt after the teacher opts out.
+    let allowTeacherPersonalization = false;
     {
+      const { data: privacy } = await db
+        .from("privacy_settings")
+        .select("allow_training_on_content")
+        .eq("user_id", userId)
+        .maybeSingle();
+      allowTeacherPersonalization = canUseTeacherPersonalization(privacy);
+    }
+
+    // Teacher style profile (Phase 9 / LEARN-03): injected into the grader so feedback matches the
+    // teacher's voice + standards, but only while current consent remains enabled. Absent or opted
+    // out teachers proceed rubric-only.
+    let styleProfile: string | undefined;
+    if (allowTeacherPersonalization) {
       const { data: prof } = await db
         .from("teacher_style_profiles")
         .select("style_summary")
@@ -136,7 +152,7 @@ Deno.serve((req) => {
     let styleExemplars:
       | { kind: "positive" | "correction" | "negative"; annotationType?: string; aiText?: string; finalText?: string }[]
       | undefined;
-    {
+    if (allowTeacherPersonalization) {
       const { data: exs } = await db
         .from("teacher_feedback_exemplars")
         .select("kind, annotation_type, ai_text, final_text")
@@ -401,9 +417,9 @@ Deno.serve((req) => {
       if (annDelErr) console.error(`[grade-submission] annotation cleanup failed: ${annDelErr.message}`);
     }
 
+    let annotationPersistenceFailed = false;
     if (result.annotations.length) {
-      const { error: annErr } = await db.from("annotations").insert(
-        result.annotations.map((a) => ({
+      const annotationRows = result.annotations.map((a) => ({
           user_id: userId,
           submission_id: submissionId,
           start_index: a.matched ? a.startIndex : null,
@@ -413,21 +429,41 @@ Deno.serve((req) => {
           ai_comment: a.comment, // preserve the original AI wording for the edit audit trail (M50)
           type: a.type,
           matched: a.matched,
-        })),
-      );
-      // Surface (don't swallow) annotation-insert failures. Until migrations 0003-0011 are applied the
-      // `annotations.ai_comment` column is missing — log so it's visible, but keep the grade itself.
-      if (annErr) console.error(`[grade-submission] annotation insert failed: ${annErr.message}`);
+      }));
+      let annotationRes = await db.from("annotations").insert(annotationRows);
+      if (annotationRes.error && /ai_comment|column|schema cache/i.test(annotationRes.error.message)) {
+        // A pre-migration database can still show and persist the draft notes, but it cannot preserve
+        // their original wording for edit-distance history. Retry without only that unavailable field.
+        console.error("[grade-submission] ai_comment column missing; persisting annotations without original-wording history");
+        annotationRes = await db.from("annotations").insert(
+          annotationRows.map((row) => {
+            const legacyRow: Record<string, unknown> = { ...row };
+            delete legacyRow.ai_comment;
+            return legacyRow;
+          }),
+        );
+      }
+      if (annotationRes.error) {
+        annotationPersistenceFailed = true;
+        console.error(`[grade-submission] annotation insert failed: ${annotationRes.error.message}`);
+        const persistenceFlags = Array.from(new Set([...result.flags, "annotation_persist_failed"]));
+        result.flags = persistenceFlags;
+        const { error: flagErr } = await db
+          .from("submission_grades")
+          .update({ flags: persistenceFlags })
+          .eq("id", grade.id);
+        if (flagErr) console.error(`[grade-submission] could not persist annotation failure flag: ${flagErr.message}`);
+      }
     }
 
-    // Auto-finalize (XPRIZE #1 must-go-right): publish high-confidence, on-topic, flag-free grades
+    // Auto-finalize (XPRIZE #1 must-go-right): approve high-confidence, on-topic, flag-free grades
     // UNATTENDED — "On-the-Loop" — routing only exceptions (off-topic / low-confidence / integrity
     // flags) to the teacher's needs_review queue. The decision is a pure, unit-tested function so the
     // edge behavior matches the tests in src/lib/autoFinalize.test.ts.
     //
     // Load the teacher's preference best-effort: the auto_finalize_* columns are absent until
     // migration 0020 (migrations_v2) is applied, in which case we fall back to the product defaults
-    // (enabled, threshold 0.85). A read failure must never block grading.
+    // (disabled, threshold 0.85). A read failure must never block grading.
     let afEnabled = AUTO_FINALIZE_DEFAULT_ENABLED;
     let afThreshold = AUTO_FINALIZE_DEFAULT_THRESHOLD;
     {
@@ -442,8 +478,9 @@ Deno.serve((req) => {
       }
     }
 
+    const reviewDisposition = annotationPersistenceFailed ? "needs_review" : disposition;
     const decision = decideFinalization({
-      disposition,
+      disposition: reviewDisposition,
       confidence: result.overall.confidence,
       flags: result.flags,
       enabled: afEnabled,
@@ -452,34 +489,58 @@ Deno.serve((req) => {
 
     // Disposition: off-topic / low-confidence grades are surfaced for review, not presented as
     // settled. A clear, high-confidence grade is auto-finalized when the teacher allows it.
-    const finalStatus = decision.autoFinalize
+    let autoFinalized = decision.autoFinalize;
+    let finalizeReason: string = decision.reason;
+    let finalStatus = decision.autoFinalize
       ? "finalized"
-      : (disposition === "needs_review" ? "needs_review" : "graded");
+      : (reviewDisposition === "needs_review" ? "needs_review" : "graded");
 
-    // Update status, attaching provenance when we auto-publish. finalized_by/auto_finalized_at are
-    // absent pre-migration — retry without them on an unknown-column error (the status still lands).
+    // Update status, attaching provenance when we approve automatically. Automatic approval is not allowed to
+    // degrade to an unlabelled `finalized` row: if the provenance columns are unavailable, route the
+    // result to teacher review instead. This keeps the product's visible "You turned this on" promise
+    // true even against a database that has not received migration 0020 yet.
     const statusUpdate: Record<string, unknown> = { status: finalStatus };
-    if (decision.autoFinalize) {
+    if (autoFinalized) {
       statusUpdate.finalized_by = "ai";
       statusUpdate.auto_finalized_at = new Date().toISOString();
     }
+    let statusPersistenceFailed = false;
     let statusRes = await db.from("submissions").update(statusUpdate).eq("id", submissionId);
-    if (statusRes.error && /finalized_by|auto_finalized_at|column|schema cache/i.test(statusRes.error.message)) {
+    if (
+      autoFinalized
+      && statusRes.error
+      && /finalized_by|auto_finalized_at|column|schema cache/i.test(statusRes.error.message)
+    ) {
+      autoFinalized = false;
+      finalizeReason = "provenance_unavailable";
+      finalStatus = "needs_review";
       statusRes = await db.from("submissions").update({ status: finalStatus }).eq("id", submissionId);
     }
     if (statusRes.error) {
+      autoFinalized = false;
+      finalizeReason = "status_update_failed";
+      finalStatus = "needs_review";
+      statusPersistenceFailed = true;
+      result.flags = Array.from(new Set([...result.flags, "status_persist_failed"]));
+      const { error: statusFlagErr } = await db
+        .from("submission_grades")
+        .update({ flags: result.flags })
+        .eq("id", grade.id);
+      if (statusFlagErr) {
+        console.error(`[grade-submission] could not persist status failure flag: ${statusFlagErr.message}`);
+      }
       console.error(`[grade-submission] status update failed: ${statusRes.error.message}`);
     }
 
-    // Finalize agent step (AGENT-05): record the unattended-publish decision so the pipeline view and
-    // the AI-native evidence trail show the agent finalizing (or deferring to) each grade.
+    // Finalize agent step (AGENT-05): record the automatic-approval decision so the pipeline view and
+    // the AI-native evidence trail show the agent approving (or deferring to) each grade.
     trace.push({
       agent: "finalize",
-      status: "ok",
+      status: statusPersistenceFailed ? "error" : "ok",
       latencyMs: 0,
       detail: {
-        autoFinalized: decision.autoFinalize,
-        reason: decision.reason,
+        autoFinalized,
+        reason: finalizeReason,
         confidence: result.overall.confidence,
         threshold: decision.appliedThreshold,
         ...(decision.blockingFlag ? { blockingFlag: decision.blockingFlag } : {}),
@@ -503,8 +564,8 @@ Deno.serve((req) => {
       action: "grade_submission",
       resource: `submission:${submissionId}`,
     });
-    if (decision.autoFinalize) {
-      // Distinct audit row so the AI-native evidence trail can count agent-published grades.
+    if (autoFinalized) {
+      // Distinct audit row so the AI-native evidence trail can count automatically approved grades.
       await admin.from("access_audit_log").insert({
         actor_id: userId,
         action: "grade_auto_finalized",
@@ -530,14 +591,22 @@ Deno.serve((req) => {
     );
     if (traceErr) console.error(`[grade-submission] agent_events insert failed: ${traceErr.message}`);
 
+    if (statusPersistenceFailed) {
+      throw new AppError(
+        500,
+        "status_persist_failed",
+        "The draft was created, but its review status could not be saved. Nothing was approved automatically; retry before reviewing this submission.",
+      );
+    }
+
     return ok(req, {
       gradeId: grade?.id ?? null,
       result,
       jobId,
       trace,
       status: finalStatus,
-      autoFinalized: decision.autoFinalize,
-      finalizeReason: decision.reason,
+      autoFinalized,
+      finalizeReason,
     });
   });
 });

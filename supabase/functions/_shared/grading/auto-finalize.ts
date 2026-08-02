@@ -1,14 +1,14 @@
-// Auto-finalize decision — the "On-the-Loop" gate that lets Mr Selby publish high-confidence,
-// on-topic, rubric-aligned grades UNATTENDED, routing only exceptions to the teacher.
+// Auto-finalize decision — the "On-the-Loop" gate that lets Mr Selby approve eligible
+// high-confidence, on-topic, rubric-aligned drafts automatically, routing exceptions to the teacher.
 //
 // The agent grades every submission and produces an "AI draft ready" by default; a teacher who has
-// EXPLICITLY opted in can additionally let Mr Selby publish the clearest grades without manual approval,
+// EXPLICITLY opted in can additionally let Mr Selby approve the clearest drafts automatically,
 // while still monitoring the exception queue (needs_review). Keep this module PURE TypeScript (no
 // Deno/Supabase imports) so the same logic the edge function runs is unit-tested by vitest under
 // src/ — mirrors plan-limits.ts.
 //
 // NON-NEGOTIABLES this gate enforces (GOAL #1 human-in-the-loop, #5 trust > speed):
-//   - Unattended publishing is DEFAULT OFF and opt-in per teacher (AUTO_FINALIZE_DEFAULT_ENABLED).
+//   - Automatic approval is DEFAULT OFF and opt-in per teacher (AUTO_FINALIZE_DEFAULT_ENABLED).
 //   - Any signal-bearing case (off-topic / injection / likely-AI / withheld / low-confidence) is
 //     ALWAYS routed to the human, even when the teacher has opted in (BLOCKING_FLAGS).
 //   - A hard confidence floor applies regardless of the teacher's configured threshold.
@@ -19,25 +19,26 @@
 // Lifecycle context: the grading engine already routes off-topic and confidence<0.5 grades to
 // disposition "needs_review". This gate is a SECOND, stricter bar on top of the "graded" outcome:
 // only grades that clear the teacher's auto-finalize threshold AND carry no integrity flags are
-// published without review. Everything else stays an "AI draft ready" the teacher finalizes by hand.
+// approved automatically. Everything else stays an "AI draft ready" for teacher review.
 
 /** Default confidence floor for unattended finalize. Conservative: a grade must be clearly settled. */
 export const AUTO_FINALIZE_DEFAULT_THRESHOLD = 0.85;
 
 /** Auto-finalize is OPT-IN (default OFF). Human-in-the-loop is the product's #1 non-negotiable:
  *  Mr Selby always produces an "AI draft ready" the teacher reviews. Only a teacher who has explicitly
- *  enabled this setting lets the clearest grades publish unattended ("On-the-Loop"). The toggle is
+ *  enabled this setting lets the clearest drafts be approved automatically ("On-the-Loop"). The toggle is
  *  per-teacher and never silently flips on. */
 export const AUTO_FINALIZE_DEFAULT_ENABLED = false;
 
-/** Hard floor regardless of a teacher's configured threshold — never auto-publish a coin-flip grade. */
+/** Hard floor regardless of a teacher's configured threshold — never auto-approve a coin-flip grade. */
 export const AUTO_FINALIZE_MIN_THRESHOLD = 0.6;
 
 /** Flags that ALWAYS force teacher review even on a high-confidence grade. An integrity concern
- *  (prompt injection, AI-generated, off-topic withholding) is never something to publish silently. */
+ *  (prompt injection, AI-generated, off-topic withholding) is never eligible for automatic approval. */
 export const BLOCKING_FLAGS = [
   "off_topic",
   "grade_withheld",
+  "relevance_check_unavailable",
   "possible_injection",
   "likely_ai_generated",
   "low_confidence",
@@ -51,7 +52,7 @@ export type FinalizationReason =
   | "blocking_flag";
 
 export interface FinalizationDecision {
-  /** When true, the grade is published unattended (status → finalized, finalized_by → ai). */
+  /** When true, the draft is approved automatically (status → finalized, finalized_by → ai). */
   autoFinalize: boolean;
   reason: FinalizationReason;
   /** The threshold actually applied (after clamping to the hard floor). */

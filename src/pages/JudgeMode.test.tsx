@@ -19,7 +19,7 @@ describe('JudgeMode', () => {
     expect(markup).toContain('Four questions before you trust a grading draft.');
     expect(markup).toContain('Can it point to evidence in the paper?');
     expect(markup).toContain('Does it stop when the work should not be graded?');
-    expect(markup).toContain('Can the teacher change every consequential result?');
+    expect(markup).toContain('Can the teacher revise every margin note before approval?');
   });
 
   it('labels every example as fictional and separates fixture UI from production proof', () => {

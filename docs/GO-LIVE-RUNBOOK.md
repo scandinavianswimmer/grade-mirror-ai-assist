@@ -114,16 +114,21 @@ rg -n "functions\.invoke|/functions/v1/" src worker deploy
 find supabase/functions -mindepth 1 -maxdepth 1 -type d -not -name _shared -exec basename {} \; | sort
 ```
 
-The reviewed manifest must resolve these current call sites:
+The reviewed manifest must account for these current call sites and retained historical entry points:
 
 - core grading and ingestion: `grade-submission`, `grade-enqueue`, `ingest-document`;
 - style and learning: `build-style-profile`, `rebuild-exemplars`, `generate-style-summary`;
 - account/data controls: `create-class`, `delete-data`;
 - entitlements and billing: `increment-feedback-count`, `stripe-checkout`, `stripe-portal`, and `stripe-webhook` when billing is enabled;
 - scheduled operations: `privacy-tasks` with its secret-gated schedule; and
-- legacy callers: `generate-grading-feedback` and `test-ai-grading`, which must either be reviewed and deployed or removed from the protected release.
+- retired historical entry points: `generate-grading-feedback` and `test-ai-grading` remain in the repository for auditability, but have no active protected route and are explicitly excluded from the reviewed CI deployment manifest. Do not add either function back to the runtime manifest.
 
 Also review `record-feedback-usage` and any worker-only internal route. Do not deploy every repository directory by default, and do not leave a live frontend caller pointing to an absent function.
+
+The historical Canvas client is not part of the reviewed product boundary. `/lms` and
+`/lms/callback` redirect to the canonical dashboard, and their legacy source remains only for
+auditability. Do not restore those routes or claim LMS sync, grade return, or student delivery until
+the integration has its own server-side credential design and production acceptance evidence.
 
 For each approved function, record source commit, JWT policy, required migrations, secrets, caller, deployment version, and rollback command. Deploy by explicit project reference or a verified link, one reviewed function at a time.
 

@@ -3,8 +3,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'react-router-dom';
 import type { OnTheLoopSummary } from '@/lib/onTheLoop';
 
-// The headline "monitoring console" surface: Mr Selby grades on-the-loop — it publishes the
-// high-confidence work unattended and only routes exceptions to the teacher. This calm strip
+// The headline "monitoring console" surface: Mr Selby grades on-the-loop — it approves eligible
+// high-confidence work automatically and routes exceptions to the teacher. This calm strip
 // makes that story legible on camera: "N graded · M auto-finalized by Mr Selby · K need review".
 
 interface Props {
@@ -97,7 +97,7 @@ const OnTheLoopSummary = ({ summary, loading = false, className = '', reviewHref
       </div>
 
       <p className="mt-4 text-sm text-muted-foreground">
-        Mr Selby published {summary.autoFinalized} high-confidence grade{summary.autoFinalized === 1 ? '' : 's'} unattended.
+        Mr Selby approved {summary.autoFinalized} high-confidence grade{summary.autoFinalized === 1 ? '' : 's'} automatically.
         {needsReview > 0
           ? ` You only need to touch the ${needsReview} exception${needsReview === 1 ? '' : 's'} below.`
           : ' Nothing is waiting on you.'}
