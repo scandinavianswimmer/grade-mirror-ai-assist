@@ -8,10 +8,20 @@ import { History as HistoryIcon } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/components/AuthProvider';
 import { fetchGradingHistory, deriveFilterOptions, type HistoryRow } from '@/lib/historyApi';
+import { presentHistoryScore } from '@/lib/historyScore';
 
 // Queryable teacher activity per class and assignment. Operator/model evidence lives in Judge Mode.
 
 const ALL = '__all__';
+
+const HistoryScoreCell = ({ row }: { row: HistoryRow }) => {
+  const score = presentHistoryScore(row);
+  return (
+    <td className={`whitespace-nowrap py-2 pr-4 ${score.withheld ? 'text-muted-foreground' : 'metric'}`}>
+      {score.label}
+    </td>
+  );
+};
 
 const HistoryPage = () => {
   const { user } = useAuth();
@@ -115,7 +125,7 @@ const HistoryPage = () => {
                         </td>
                         <td className="py-2 pr-4 text-muted-foreground">{r.assignmentTitle || '—'}</td>
                         <td className="py-2 pr-4 text-muted-foreground">{r.className || '—'}</td>
-                        <td className="metric py-2 pr-4">{r.overallScore ?? '—'}{r.overallMax ? <span className="text-muted-foreground">/{r.overallMax}</span> : null}</td>
+                        <HistoryScoreCell row={r} />
                         <td className="py-2 pr-4">
                           <div className="flex flex-wrap gap-1">
                             {r.flags.length === 0 ? <span className="text-muted-foreground">No exception flags</span> :
