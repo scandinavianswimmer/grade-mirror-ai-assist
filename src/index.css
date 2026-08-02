@@ -114,15 +114,6 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: "ss01", "cv01", "liga";
-    background-image:
-      radial-gradient(120% 120% at 100% 0%, hsl(34 60% 90% / 0.35) 0%, transparent 45%),
-      radial-gradient(100% 100% at 0% 100%, hsl(168 40% 88% / 0.28) 0%, transparent 50%);
-    background-attachment: fixed;
-  }
-  .dark body {
-    background-image:
-      radial-gradient(120% 120% at 100% 0%, hsl(168 40% 30% / 0.18) 0%, transparent 45%),
-      radial-gradient(100% 100% at 0% 100%, hsl(34 50% 30% / 0.12) 0%, transparent 50%);
   }
 
   h1, h2, h3, h4 {
@@ -186,6 +177,9 @@
   .manuscript {
     @apply font-display text-[1.075rem] leading-[1.85] text-foreground/90;
     font-optical-sizing: auto;
+  }
+  .teacher-kicker {
+    @apply text-sm font-semibold normal-case tracking-normal text-primary;
   }
   .rule { @apply border-b border-border/70; }
   .metric { @apply font-mono tabular-nums tracking-tight; }

@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, FileText, Download, Pencil, Check, X } from 'lucide-react';
+import { ArrowLeft, FileText, Download, Pencil, Check, X, AlertTriangle, ClipboardCheck, Hourglass, CheckCircle2, Upload } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
@@ -14,9 +14,7 @@ import Navbar from '@/components/Navbar';
 import FileUpload from '@/components/FileUpload';
 import { UpgradePaywall } from '@/components/pricing/UpgradePaywall';
 import { useGradingGate } from '@/hooks/useGradingGate';
-import { statusBadgeClass, statusLabel, effectiveStatus } from '@/lib/submissionStatus';
-import { Bot, Inbox, CheckCircle2 } from 'lucide-react';
-import { dispositionFor, computeOnTheLoopSummary, type Disposition } from '@/lib/onTheLoop';
+import { effectiveStatus, isApprovedStatus, isAutoFinalized, statusMetaWithProvenance } from '@/lib/submissionStatus';
 
 interface Assignment {
   id: string;
@@ -52,7 +50,7 @@ const AssignmentDetail = () => {
   const { atCap: gradingAtCap } = useGradingGate();
   const [showPaywall, setShowPaywall] = useState(false);
 
-  // Phase 4: bulk-enqueue every not-yet-graded submission for async grading by the Cloud Run worker.
+  // Draft first-pass feedback for every eligible submission while preserving review/approval state.
   const gradeAll = async () => {
     // Free teacher at/over their monthly cap: surface the paywall instead of grading (fail-open —
     // within-limit and Pro/Enterprise teachers fall straight through).
@@ -60,9 +58,14 @@ const AssignmentDetail = () => {
       setShowPaywall(true);
       return;
     }
-    const targets = submissions.filter((s) => s.status !== 'graded' && s.status !== 'finalized').map((s) => s.id);
+    const targets = submissions
+      .filter((submission) => {
+        const status = effectiveStatus(submission.status, Boolean(submission.hasGrade));
+        return !['grading', 'graded', 'ai_graded', 'needs_review', 'finalized', 'exported'].includes(status);
+      })
+      .map((submission) => submission.id);
     if (targets.length === 0) {
-      toast({ title: 'Nothing to grade', description: 'Every submission is already graded or finalized.' });
+      toast({ title: 'Nothing to draft', description: 'Every eligible submission is already drafting, ready for review, or approved.' });
       return;
     }
     setEnqueuing(true);
@@ -74,14 +77,14 @@ const AssignmentDetail = () => {
           const b = await (error as { context?: { json?: () => Promise<{ error?: string; stage?: string }> } }).context?.json?.();
           if (b?.error) msg = `${b.error}${b.stage ? ` (${b.stage})` : ''}`;
         } catch { /* ignore */ }
-        toast({ title: 'Bulk grading unavailable', description: msg, variant: 'destructive' });
+        toast({ title: 'Could not start the drafts', description: msg, variant: 'destructive' });
       } else {
         const queued = (data as { queued?: number } | null)?.queued ?? targets.length;
         setSubmissions((prev) => prev.map((s) => (targets.includes(s.id) ? { ...s, status: 'grading' } : s)));
-        toast({ title: 'Queued for grading', description: `${queued} submission(s) queued — results appear as the worker grades them.` });
+        toast({ title: 'Feedback drafts started', description: `${queued} ${queued === 1 ? 'submission is' : 'submissions are'} in progress. Drafts will appear here when ready.` });
       }
     } catch (e) {
-      toast({ title: 'Bulk grading unavailable', description: e instanceof Error ? e.message : 'Unexpected error', variant: 'destructive' });
+      toast({ title: 'Could not start the drafts', description: e instanceof Error ? e.message : 'Unexpected error', variant: 'destructive' });
     } finally {
       setEnqueuing(false);
     }
@@ -189,22 +192,19 @@ const AssignmentDetail = () => {
 
       if (ingestError) {
         toast({
-          title: "Uploaded, but extraction failed",
-          description: `${file.name} was saved, but text extraction failed (${ingestError}). It needs manual review before grading.`,
+          title: "Added, but needs a closer look",
+          description: `${file.name} was saved, but Mr Selby could not read it clearly enough to draft feedback.`,
           variant: "destructive"
         });
       } else if (ingest?.status === 'needs_review') {
         toast({
-          title: "Uploaded — needs review",
-          description: `Low-confidence extraction (${Math.round((ingest.confidence ?? 0) * 100)}%). Likely a scanned PDF; review before grading.`
+          title: "Added — needs a closer look",
+          description: 'The document may be a scan or image. Check the text before asking Mr Selby to draft feedback.'
         });
       } else {
-        const pct = ingest ? Math.round((ingest.confidence ?? 0) * 100) : null;
         toast({
-          title: "Uploaded & ready to grade",
-          description: pct != null
-            ? `${file.name} extracted (${pct}% confidence). Open it to grade with Mr Selby.`
-            : `${file.name} uploaded and ready for grading.`
+          title: "Student work added",
+          description: `${file.name} is ready for a first-pass feedback draft.`
         });
       }
 
@@ -224,11 +224,11 @@ const AssignmentDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen">
         <Navbar />
         <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
           <div className="text-center py-12">
-            <div className="text-lg font-medium">Loading assignment...</div>
+            <div className="text-lg font-medium text-muted-foreground">Opening assignment…</div>
           </div>
         </main>
       </div>
@@ -237,13 +237,13 @@ const AssignmentDetail = () => {
 
   if (!assignment) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen">
         <Navbar />
         <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
           <div className="text-center py-12">
-            <div className="text-lg font-medium text-red-600">Assignment not found</div>
-            <Link to="/dashboard">
-              <Button className="mt-4">Back to Dashboard</Button>
+            <div className="text-lg font-medium text-critique">Assignment not found</div>
+            <Link to="/">
+              <Button className="mt-4">Back to Today</Button>
             </Link>
           </div>
         </main>
@@ -251,206 +251,181 @@ const AssignmentDetail = () => {
     );
   }
 
-  // On-the-Loop disposition per submission — what Mr Selby published unattended vs. what it routed
-  // to the teacher. Column-tolerant (reads optional provenance off the row if present).
-  const dispositions = new Map<string, Disposition>();
-  for (const s of submissions) {
-    if (!s.hasGrade) {
-      dispositions.set(s.id, s.status === 'needs_review' || s.status === 'grade_error' ? 'needs_review' : 'pending');
-    } else {
-      dispositions.set(
-        s.id,
-        dispositionFor(
-          { id: s.id, status: s.status, finalized_by: s.finalized_by, auto_finalized_at: s.auto_finalized_at },
-        ),
-      );
-    }
-  }
-
-  const loopSummary = computeOnTheLoopSummary(
-    submissions.map((s) => ({ id: s.id, status: s.status, finalized_by: s.finalized_by, auto_finalized_at: s.auto_finalized_at })),
-    submissions.filter((s) => s.hasGrade).map((s) => ({ submission_id: s.id, confidence: s.confidence ?? null })),
-  );
-
-  // Exceptions first so the teacher's eye lands on what needs a human; then auto-finalized; then the rest.
-  const dispositionRank: Record<Disposition, number> = { needs_review: 0, pending: 1, auto_finalized: 2 };
-  const orderedSubmissions = [...submissions].sort(
-    (a, b) => dispositionRank[dispositions.get(a.id) ?? 'pending'] - dispositionRank[dispositions.get(b.id) ?? 'pending'],
-  );
+  const withEffectiveStatus = submissions.map((submission) => ({
+    submission,
+    status: effectiveStatus(submission.status, Boolean(submission.hasGrade)),
+  }));
+  const closerLookCount = withEffectiveStatus.filter(({ status }) => status === 'needs_review' || status === 'grade_error').length;
+  const draftsReadyCount = withEffectiveStatus.filter(({ status }) => status === 'graded' || status === 'ai_graded').length;
+  const draftingCount = withEffectiveStatus.filter(({ status }) => status === 'grading').length;
+  const approvedCount = withEffectiveStatus.filter(({ status }) => isApprovedStatus(status)).length;
+  const exportedCount = withEffectiveStatus.filter(({ status }) => status === 'exported').length;
+  const automaticallyApprovedCount = withEffectiveStatus.filter(({ status, submission }) => (
+    isApprovedStatus(status) && (isAutoFinalized(submission.finalized_by) || Boolean(submission.auto_finalized_at))
+  )).length;
+  const rank: Record<string, number> = {
+    needs_review: 0,
+    grade_error: 0,
+    graded: 1,
+    ai_graded: 1,
+    uploaded: 2,
+    pending: 2,
+    grading: 3,
+    finalized: 4,
+    exported: 5,
+  };
+  const orderedSubmissions = [...submissions].sort((a, b) => (
+    (rank[effectiveStatus(a.status, Boolean(a.hasGrade))] ?? 6)
+    - (rank[effectiveStatus(b.status, Boolean(b.hasGrade))] ?? 6)
+  ));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen">
       <Navbar />
 
       <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-4 mb-8">
-            <Link to="/dashboard">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
+        <div className="mx-auto max-w-6xl">
+          <header className="mb-8">
+            <Link to="/" className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+              <ArrowLeft aria-hidden="true" className="h-4 w-4" /> Back to Today
             </Link>
-            <h1 className="text-3xl font-bold text-gray-900">{assignment.title}</h1>
+            <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">Assignment</p>
+                <h1 className="mt-1 font-display text-4xl font-semibold tracking-tight">{assignment.title}</h1>
+                <p className="mt-2 text-sm text-muted-foreground">{submissions.length} {submissions.length === 1 ? 'submission' : 'submissions'} in this stack</p>
+              </div>
+              {submissions.length > 0 && (
+                <Button size="lg" onClick={gradeAll} disabled={enqueuing} className="gap-2">
+                  <ClipboardCheck aria-hidden="true" className="h-4 w-4" />
+                  {enqueuing ? 'Starting drafts…' : 'Draft eligible feedback'}
+                </Button>
+              )}
+            </div>
+          </header>
+
+          <section aria-label="Assignment progress" className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle aria-hidden="true" className="h-5 w-5 text-critique" />
+                <div><p className="text-2xl font-semibold">{closerLookCount}</p><p className="text-xs text-muted-foreground">Need a closer look</p></div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <ClipboardCheck aria-hidden="true" className="h-5 w-5 text-suggestion" />
+                <div><p className="text-2xl font-semibold">{draftsReadyCount}</p><p className="text-xs text-muted-foreground">Drafts ready</p></div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <Hourglass aria-hidden="true" className="h-5 w-5 text-primary" />
+                <div><p className="text-2xl font-semibold">{draftingCount}</p><p className="text-xs text-muted-foreground">Drafting now</p></div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 aria-hidden="true" className="mt-1 h-5 w-5 text-praise" />
+                <div>
+                  <p className="text-2xl font-semibold">{approvedCount}</p>
+                  <p className="text-xs text-muted-foreground">Approved{exportedCount > 0 ? ` · ${exportedCount} exported` : ''}</p>
+                </div>
+              </div>
+            </Card>
+          </section>
+
+          {automaticallyApprovedCount > 0 && (
+            <Card className="mb-8 border-praise/40 bg-praise-soft/40 p-4 text-sm">
+              <p className="font-medium text-praise">{automaticallyApprovedCount} approved automatically · You turned this on.</p>
+              <p className="mt-1 text-muted-foreground">Automatic approval is not the same as export. Exported work is labeled separately.</p>
+            </Card>
+          )}
+
+          {showPaywall && gradingAtCap && (
+            <div className="mb-8"><UpgradePaywall source="assignment_detail" /></div>
+          )}
+
+          <div className="mb-8 grid gap-6 lg:grid-cols-[1fr_360px]">
+            <Card>
+              <CardHeader className="rule"><CardTitle className="font-display text-xl">Assignment prompt</CardTitle></CardHeader>
+              <CardContent className="pt-5">
+                <p className="whitespace-pre-wrap leading-relaxed text-foreground/85">{assignment.description || 'No assignment prompt was saved.'}</p>
+              </CardContent>
+            </Card>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader className="rule"><CardTitle className="font-display text-xl">Rubric</CardTitle></CardHeader>
+                <CardContent className="pt-5">
+                  {assignment.rubric_url ? (
+                    <a href={assignment.rubric_url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 font-medium text-primary hover:underline">
+                      <Download aria-hidden="true" className="h-4 w-4" /> Open rubric
+                    </a>
+                  ) : <p className="text-sm text-muted-foreground">No rubric file is attached.</p>}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="rule"><CardTitle className="font-display text-xl">Add student work</CardTitle></CardHeader>
+                <CardContent className="pt-5">
+                  <FileUpload
+                    onFileSelect={handleFileSelect}
+                    acceptedTypes={['.pdf', '.docx', '.txt']}
+                    multiple
+                    maxSize={10}
+                    placeholder="Add PDF, DOCX, or TXT files"
+                    showTextExtraction={false}
+                  />
+                  {uploading && <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground"><Upload aria-hidden="true" className="h-4 w-4" /> Adding student work…</p>}
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
-          {/* Assignment Details */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>Assignment Prompt & Rubric</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Assignment Prompt:</h3>
-                <p className="text-gray-700 whitespace-pre-wrap">{assignment.description}</p>
-              </div>
-              
-              {assignment.rubric_url && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Grading Rubric:</h3>
-                  <a 
-                    href={assignment.rubric_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800"
-                  >
-                    <Download className="w-4 h-4" />
-                    View Rubric
-                  </a>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Essay Upload Section */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>Upload Student Essays for Feedback</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FileUpload
-                onFileSelect={handleFileSelect}
-                acceptedTypes={['.pdf', '.docx', '.txt']}
-                multiple
-                maxSize={10}
-                placeholder="Upload student essays (PDF, DOCX, or TXT files)"
-                showTextExtraction={false}
-              />
-              {uploading && (
-                <div className="mt-4 text-center">
-                  <div className="text-sm text-gray-600">Processing file...</div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Submissions List */}
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between gap-2">
-                <CardTitle>Student Submissions ({submissions.length})</CardTitle>
-                {submissions.length > 0 && (
-                  <Button size="sm" onClick={gradeAll} disabled={enqueuing}>
-                    {enqueuing ? 'Queuing…' : 'Grade all ungraded'}
-                  </Button>
-                )}
-              </div>
-              {loopSummary.graded > 0 && (
-                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg bg-gray-50 px-3 py-2 text-sm">
-                  <span className="flex items-center gap-1.5 text-gray-600">
-                    <CheckCircle2 className="h-4 w-4" /> {loopSummary.graded} graded
-                  </span>
-                  <span className="flex items-center gap-1.5 font-medium text-emerald-700">
-                    <Bot className="h-4 w-4" /> {loopSummary.autoFinalized} auto-finalized by Mr Selby
-                  </span>
-                  <span className={`flex items-center gap-1.5 font-medium ${loopSummary.needsReview > 0 ? 'text-amber-700' : 'text-gray-400'}`}>
-                    <Inbox className="h-4 w-4" /> {loopSummary.needsReview} need your review
-                  </span>
-                </div>
-              )}
+            <CardHeader className="rule">
+              <CardTitle className="font-display text-2xl">Submissions</CardTitle>
+              <p className="text-sm text-muted-foreground">Exceptions and ready drafts appear first, so the next decision is easy to find.</p>
             </CardHeader>
-            <CardContent>
-              {showPaywall && gradingAtCap && (
-                <div className="mb-4">
-                  <UpgradePaywall source="assignment_detail" />
-                </div>
-              )}
+            <CardContent className="p-0">
               {submissions.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  No student submissions yet. Upload essays above to get started.
-                </div>
+                <div className="p-10 text-center text-muted-foreground">No student work yet. Add files above when the stack is ready.</div>
               ) : (
-                <div className="space-y-4">
+                <div className="divide-y divide-border">
                   {orderedSubmissions.map((submission) => {
-                  const disposition = dispositions.get(submission.id) ?? 'pending';
-                  const isException = disposition === 'needs_review';
-                  const isAuto = disposition === 'auto_finalized';
-                  const rowClass = isException
-                    ? 'border-amber-300 bg-amber-50/60 hover:bg-amber-50'
-                    : 'hover:bg-gray-50';
-                  return (
-                    <div
-                      key={submission.id}
-                      className={`flex items-center justify-between p-4 border rounded-lg ${rowClass}`}
-                      data-disposition={disposition}
-                    >
-                      <div className="flex items-center gap-3">
-                        <FileText className={`w-5 h-5 ${isException ? 'text-amber-500' : 'text-gray-400'}`} />
-                        <div>
-                          {renamingId === submission.id ? (
-                            <div className="flex items-center gap-1">
-                              <Input
-                                value={draftName}
-                                onChange={(e) => setDraftName(e.target.value)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') saveStudentName(submission.id); if (e.key === 'Escape') setRenamingId(null); }}
-                                className="h-8 w-48"
-                                autoFocus
-                                aria-label="Student name"
-                              />
-                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => saveStudentName(submission.id)} aria-label="Save name">
-                                <Check className="w-4 h-4" />
-                              </Button>
-                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setRenamingId(null)} aria-label="Cancel rename">
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-medium">{submission.student_name}</span>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-6 w-6 text-gray-400"
-                                onClick={() => { setRenamingId(submission.id); setDraftName(submission.student_name || ''); }}
-                                aria-label="Edit student name"
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          )}
-                          <div className="text-sm text-gray-500">
-                            Uploaded {new Date(submission.created_at).toLocaleDateString()}
+                    const status = effectiveStatus(submission.status, Boolean(submission.hasGrade));
+                    const meta = statusMetaWithProvenance(status, submission.finalized_by);
+                    const needsAttention = status === 'needs_review' || status === 'grade_error';
+                    const readyForReview = status === 'graded' || status === 'ai_graded';
+                    const automaticallyApproved = isApprovedStatus(status) && (isAutoFinalized(submission.finalized_by) || Boolean(submission.auto_finalized_at));
+                    const action = needsAttention ? 'Review now' : readyForReview ? 'Review draft' : status === 'exported' ? 'View export' : isApprovedStatus(status) ? 'View approved' : 'Open submission';
+                    return (
+                      <div key={submission.id} className={`flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between ${needsAttention ? 'bg-critique-soft/30' : ''}`} data-status={status}>
+                        <div className="flex min-w-0 items-start gap-3">
+                          <FileText aria-hidden="true" className={`mt-1 h-5 w-5 shrink-0 ${needsAttention ? 'text-critique' : 'text-muted-foreground'}`} />
+                          <div className="min-w-0">
+                            {renamingId === submission.id ? (
+                              <div className="flex flex-wrap items-center gap-1">
+                                <Input value={draftName} onChange={(event) => setDraftName(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') saveStudentName(submission.id); if (event.key === 'Escape') setRenamingId(null); }} className="h-10 w-56" autoFocus aria-label="Student name" />
+                                <Button size="icon" variant="ghost" className="h-11 w-11" onClick={() => saveStudentName(submission.id)} aria-label="Save name"><Check className="h-4 w-4" /></Button>
+                                <Button size="icon" variant="ghost" className="h-11 w-11" onClick={() => setRenamingId(null)} aria-label="Cancel rename"><X className="h-4 w-4" /></Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5">
+                                <span className="truncate font-medium">{submission.student_name || 'Student submission'}</span>
+                                <Button size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground" onClick={() => { setRenamingId(submission.id); setDraftName(submission.student_name || ''); }} aria-label={`Edit name for ${submission.student_name || 'student submission'}`}>
+                                  <Pencil aria-hidden="true" className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            )}
+                            <p className="text-xs text-muted-foreground">Added {new Date(submission.created_at).toLocaleDateString()}</p>
+                            {automaticallyApproved && <p className="mt-1 text-xs font-medium text-praise">You turned automatic approval on.</p>}
                           </div>
                         </div>
+                        <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+                          <span className={`rounded-md px-2.5 py-1 text-xs font-medium ${meta.badgeClass}`} title={meta.description}>{meta.label}</span>
+                          <Link to={`/submission/${submission.id}`}><Button variant={needsAttention || readyForReview ? 'default' : 'outline'}>{action}</Button></Link>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {isAuto ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-800">
-                            <Bot className="h-3 w-3" /> Auto-finalized by Mr Selby
-                          </span>
-                        ) : (
-                          <span className={`px-2 py-1 rounded-full text-xs ${statusBadgeClass(effectiveStatus(submission.status, !!submission.hasGrade))}`}>
-                            {statusLabel(effectiveStatus(submission.status, !!submission.hasGrade))}
-                          </span>
-                        )}
-                        <Link to={`/submission/${submission.id}`}>
-                          <Button variant={isException ? 'default' : 'outline'} size="sm">
-                            {isException ? 'Review' : 'View'}
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  );
+                    );
                   })}
                 </div>
               )}

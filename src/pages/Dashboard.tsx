@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, FileText, Calendar, Clock, Users, SortAsc, Trash2, MoreVertical, Edit, BookOpen, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, FileText, Calendar, Clock, Users, SortAsc, Trash2, MoreVertical, Edit, BookOpen, Loader2, AlertTriangle, ClipboardCheck, Hourglass, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
@@ -17,16 +17,29 @@ import { loadSampleEssays } from '@/lib/sampleEssaysApi';
 import { analytics } from '@/lib/analytics';
 import CreateClassModal from '@/components/CreateClassModal';
 import EditClassModal from '@/components/EditClassModal';
-import OnTheLoopSummary from '@/components/OnTheLoopSummary';
-import { fetchOnTheLoopSummary, type OnTheLoopSummary as OnTheLoopSummaryData } from '@/lib/metricsApi';
+import { buildTeacherQueue, type TeacherQueueGroup, type TeacherQueueRow } from '@/lib/teacherQueue';
 
 interface Assignment {
   id: string;
   title: string;
   description: string;
   created_at: string;
+  due_date?: string | null;
+  course_name?: string | null;
   submission_count?: number;
   class_id?: string;
+}
+
+interface SubmissionSummary {
+  id: string;
+  assignment_id: string;
+  student_name: string | null;
+  status: string | null;
+  created_at: string | null;
+  updated_at?: string | null;
+  finalized_by?: string | null;
+  auto_finalized_at?: string | null;
+  hasGrade: boolean;
 }
 
 interface Class {
@@ -63,7 +76,20 @@ const TONES = [
   { dot: 'bg-praise', icon: 'bg-praise/10 text-praise', bar: 'border-l-praise' },
 ];
 
-let dashboardCache: { assignments: Assignment[]; classes: Class[]; lastFetch: number } | null = null;
+const QUEUE_GROUPS: Array<{
+  key: TeacherQueueGroup;
+  title: string;
+  description: string;
+  icon: typeof AlertTriangle;
+  tone: string;
+}> = [
+  { key: 'needs_attention', title: 'Needs a closer look', description: 'Start with the work that needs your judgment.', icon: AlertTriangle, tone: 'text-critique bg-critique-soft' },
+  { key: 'drafts_ready', title: 'Drafts ready', description: 'First-pass feedback is waiting for you.', icon: ClipboardCheck, tone: 'text-suggestion bg-suggestion-soft' },
+  { key: 'keep_going', title: 'Keep going', description: 'Work being added or drafted now.', icon: Hourglass, tone: 'text-primary bg-primary/10' },
+  { key: 'approved_recently', title: 'Approved recently', description: 'Reviewed work, with exports called out separately.', icon: CheckCircle2, tone: 'text-praise bg-praise-soft' },
+];
+
+let dashboardCache: { assignments: Assignment[]; classes: Class[]; submissions: SubmissionSummary[]; lastFetch: number } | null = null;
 const CACHE_DURATION = 5 * 60 * 1000;
 
 const Dashboard = () => {
@@ -72,7 +98,9 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
+  const [submissions, setSubmissions] = useState<SubmissionSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [loadingSample, setLoadingSample] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -81,8 +109,6 @@ const Dashboard = () => {
   const editClassTriggerRef = useRef<HTMLElement | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('time');
   const [hasAnimated, setHasAnimated] = useState(false);
-  const [onTheLoop, setOnTheLoop] = useState<OnTheLoopSummaryData | null>(null);
-  const [onTheLoopLoading, setOnTheLoopLoading] = useState(true);
   const hasInitiallyLoaded = useRef(false);
 
   useEffect(() => {
@@ -95,23 +121,51 @@ const Dashboard = () => {
 
   const fetchData = useCallback(async () => {
     if (!user) return;
+    setLoadError(false);
     try {
       const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('assignments')
-        .select(`id, title, description, created_at, class_id`)
+        .select('id, title, description, created_at, due_date, course_name, class_id')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
       if (assignmentsError) throw assignmentsError;
 
-      // Single query for all submission counts instead of one-per-assignment (M42 N+1).
       const ids = (assignmentsData || []).map((a) => a.id);
+      let submissionRows: SubmissionSummary[] = [];
       const counts: Record<string, number> = {};
       if (ids.length > 0) {
-        const { data: subs } = await supabase
+        // One state query for the whole teacher desk keeps the queue truthful without an
+        // assignment-by-assignment request waterfall.
+        const { data: baseSubs, error: submissionsError } = await supabase
           .from('submissions')
-          .select('assignment_id')
+          .select('id, assignment_id, student_name, status, created_at, updated_at')
           .in('assignment_id', ids);
-        for (const s of subs || []) {
+        if (submissionsError) throw submissionsError;
+
+        submissionRows = ((baseSubs ?? []) as unknown as Omit<SubmissionSummary, 'hasGrade'>[])
+          .map((submission) => ({ ...submission, hasGrade: false }));
+
+        const submissionIds = submissionRows.map((submission) => submission.id);
+        if (submissionIds.length > 0) {
+          const [{ data: gradeRows }, { data: provenanceRows }] = await Promise.all([
+            supabase.from('submission_grades').select('submission_id').in('submission_id', submissionIds),
+            // Best effort for deployments still catching up to the provenance migration.
+            supabase.from('submissions').select('id, finalized_by, auto_finalized_at').in('id', submissionIds),
+          ]);
+          const gradedIds = new Set((gradeRows ?? []).map((row) => row.submission_id));
+          const provenance = new Map(
+            ((provenanceRows ?? []) as Array<{ id: string; finalized_by?: string | null; auto_finalized_at?: string | null }>)
+              .map((row) => [row.id, row] as const),
+          );
+          submissionRows = submissionRows.map((submission) => ({
+            ...submission,
+            hasGrade: gradedIds.has(submission.id),
+            finalized_by: provenance.get(submission.id)?.finalized_by ?? null,
+            auto_finalized_at: provenance.get(submission.id)?.auto_finalized_at ?? null,
+          }));
+        }
+
+        for (const s of submissionRows) {
           counts[s.assignment_id] = (counts[s.assignment_id] || 0) + 1;
         }
       }
@@ -135,7 +189,8 @@ const Dashboard = () => {
 
       setAssignments(assignmentsWithCounts);
       setClasses(typedClasses);
-      dashboardCache = { assignments: assignmentsWithCounts, classes: typedClasses, lastFetch: Date.now() };
+      setSubmissions(submissionRows);
+      dashboardCache = { assignments: assignmentsWithCounts, classes: typedClasses, submissions: submissionRows, lastFetch: Date.now() };
 
       if (!hasInitiallyLoaded.current) {
         setTimeout(() => setHasAnimated(true), 100);
@@ -146,6 +201,9 @@ const Dashboard = () => {
       if (dashboardCache) {
         setAssignments(dashboardCache.assignments);
         setClasses(dashboardCache.classes);
+        setSubmissions(dashboardCache.submissions);
+      } else {
+        setLoadError(true);
       }
     } finally {
       setLoading(false);
@@ -159,6 +217,7 @@ const Dashboard = () => {
       if (dashboardCache) {
         setAssignments(dashboardCache.assignments);
         setClasses(dashboardCache.classes);
+        setSubmissions(dashboardCache.submissions);
         setLoading(false);
         if (!hasInitiallyLoaded.current) {
           setTimeout(() => setHasAnimated(true), 100);
@@ -166,13 +225,6 @@ const Dashboard = () => {
         }
       }
       fetchData();
-      // Best-effort On-the-Loop throughput — degrades to hidden if it can't load (never blocks
-      // the dashboard, and column-tolerant for lagging cloud schemas).
-      setOnTheLoopLoading(true);
-      fetchOnTheLoopSummary()
-        .then(setOnTheLoop)
-        .catch(() => setOnTheLoop(null))
-        .finally(() => setOnTheLoopLoading(false));
     }
   }, [fetchData, user]);
 
@@ -214,6 +266,47 @@ const Dashboard = () => {
       ? [{ id: 'default', name: 'Unassigned', time: 'N/A', grade: 'N/A', level: 'N/A', size: 0, assignments: unassignedAssignments, tone: classSchedules.length % TONES.length }]
       : []),
   ];
+
+  const classNames = new Map(classes.map((cls) => [cls.id, cls.class_name]));
+  const teacherQueue = buildTeacherQueue(
+    assignments.map((assignment) => ({
+      id: assignment.id,
+      title: assignment.title,
+      classId: assignment.class_id,
+      courseName: assignment.course_name,
+      dueDate: assignment.due_date,
+      createdAt: assignment.created_at,
+    })),
+    submissions.map((submission) => ({
+      id: submission.id,
+      assignmentId: submission.assignment_id,
+      studentName: submission.student_name,
+      status: submission.status,
+      hasGrade: submission.hasGrade,
+      finalizedBy: submission.finalized_by,
+      autoFinalizedAt: submission.auto_finalized_at,
+      createdAt: submission.created_at,
+      updatedAt: submission.updated_at,
+    })),
+    classNames,
+  );
+  const queueRowCount = Object.values(teacherQueue).reduce((total, rows) => total + rows.length, 0);
+
+  const queueContext = (row: TeacherQueueRow) => {
+    if (row.dueDate) {
+      const due = new Date(row.dueDate);
+      if (!Number.isNaN(due.getTime())) {
+        return `Due ${due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+      }
+    }
+    if (row.activityAt) {
+      const activity = new Date(row.activityAt);
+      if (!Number.isNaN(activity.getTime())) {
+        return `Last activity ${activity.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+      }
+    }
+    return null;
+  };
 
   const handleClassCreated = () => { dashboardCache = null; fetchData(); };
   const handleClassUpdated = () => { dashboardCache = null; fetchData(); setShowEditModal(false); setClassToEdit(null); };
@@ -260,7 +353,7 @@ const Dashboard = () => {
       toast({
         title: created ? 'Synthetic demo loaded' : 'Opening your synthetic demo',
         description: created
-          ? 'Five original, role-labeled responses are ready. Grade them, then verify each result before review.'
+          ? 'Five fictional, role-labeled responses are ready. Draft feedback, then review every result.'
           : 'You already have the synthetic assignment — taking you to it.',
       });
       dashboardCache = null;
@@ -287,8 +380,9 @@ const Dashboard = () => {
         <TrialBanner />
         <div className={`mb-8 flex flex-wrap items-end justify-between gap-4 ${reveal()}`}>
           <div>
-            <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">Your workspace</p>
-            <h1 className="mt-1 font-display text-4xl font-semibold tracking-tight text-foreground">Classes &amp; assignments</h1>
+            <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">Teacher's desk</p>
+            <h1 id="today-heading" className="mt-1 font-display text-4xl font-semibold tracking-tight text-foreground">Today</h1>
+            <p className="mt-2 max-w-2xl text-muted-foreground">Start with the essay stacks that need your attention, then keep the rest moving.</p>
           </div>
           <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-2">
             <Button ref={createClassTriggerRef} size="lg" variant="outline" className="w-full gap-2" onClick={() => setShowCreateModal(true)} data-tour="create-class">
@@ -302,29 +396,104 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {(onTheLoopLoading || (onTheLoop && onTheLoop.graded > 0)) && (
-          <OnTheLoopSummary
-            summary={onTheLoop}
-            loading={onTheLoopLoading && !onTheLoop}
-            className={`mb-8 ${reveal('delay-75')}`}
-          />
+        {loadError && (
+          <Card className="mb-6 border-critique/40 bg-critique-soft/50 p-4 text-sm" role="alert">
+            <div className="flex items-start gap-3">
+              <AlertTriangle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-critique" />
+              <div>
+                <p className="font-medium">Today could not refresh.</p>
+                <p className="text-muted-foreground">Your last saved view is still here. Refresh the page to try again.</p>
+              </div>
+            </div>
+          </Card>
         )}
 
-        {classes.length > 0 && (
-          <div className={`mb-6 flex items-center gap-3 ${reveal('delay-100')}`}>
-            <SortAsc className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-muted-foreground">Sort by</span>
-            <Select value={sortBy} onValueChange={(v: SortOption) => setSortBy(v)}>
-              <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="time">Class time</SelectItem>
-                <SelectItem value="size">Class size</SelectItem>
-                <SelectItem value="grade">Grade level</SelectItem>
-                <SelectItem value="name">Class name</SelectItem>
-              </SelectContent>
-            </Select>
+        <section id="to-review" aria-label="To review" className={`mb-12 scroll-mt-36 ${reveal('delay-75')}`}>
+          {loading ? (
+            <div className="grid gap-4 lg:grid-cols-2" aria-busy="true" aria-label="Loading today's review queue">
+              {[0, 1, 2, 3].map((i) => (
+                <Card key={i} className="p-5">
+                  <Skeleton className="mb-3 h-5 w-40" />
+                  <Skeleton className="mb-2 h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                </Card>
+              ))}
+            </div>
+          ) : queueRowCount === 0 ? (
+            <Card className="border-dashed p-8 text-center">
+              <CheckCircle2 aria-hidden="true" className="mx-auto h-8 w-8 text-praise" />
+              <h2 className="mt-3 font-display text-xl font-semibold">Your desk is clear</h2>
+              <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">Add an assignment or open the fictional sample when you want to see the review flow.</p>
+            </Card>
+          ) : (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {QUEUE_GROUPS.map((group) => {
+                const rows = teacherQueue[group.key];
+                if (rows.length === 0) return null;
+                const Icon = group.icon;
+                return (
+                  <Card key={group.key} className="overflow-hidden shadow-sm">
+                    <CardHeader className="rule pb-4">
+                      <div className="flex items-start gap-3">
+                        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-md ${group.tone}`}>
+                          <Icon aria-hidden="true" className="h-5 w-5" />
+                        </span>
+                        <div>
+                          <CardTitle className="font-display text-lg">{group.title}</CardTitle>
+                          <p className="mt-0.5 text-sm text-muted-foreground">{group.description}</p>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="divide-y divide-border p-0">
+                      {rows.map((row) => {
+                        const context = queueContext(row);
+                        return (
+                          <div key={row.id} className="p-5">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{row.className}</p>
+                                <h3 className="mt-1 font-display text-lg font-semibold leading-tight">{row.assignmentTitle}</h3>
+                                <p className="mt-2 text-sm leading-relaxed text-foreground/80">{row.summary}</p>
+                                {context && <p className="mt-2 text-xs text-muted-foreground">{context}</p>}
+                              </div>
+                              <Link to={`/assignment/${row.assignmentId}`} className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                                {row.actionLabel}<ArrowRight aria-hidden="true" className="h-4 w-4" />
+                              </Link>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <section id="classes" aria-labelledby="classes-heading" className="scroll-mt-36">
+          <div className={`mb-6 flex flex-wrap items-end justify-between gap-4 ${reveal('delay-100')}`}>
+            <div>
+              <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">Your courses</p>
+              <h2 id="classes-heading" className="mt-1 font-display text-3xl font-semibold tracking-tight">Classes &amp; assignments</h2>
+            </div>
           </div>
-        )}
+
+          {classes.length > 0 && (
+            <div className={`mb-6 flex items-center gap-3 ${reveal('delay-100')}`}>
+              <SortAsc className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-muted-foreground">Sort classes by</span>
+              <Select value={sortBy} onValueChange={(v: SortOption) => setSortBy(v)}>
+                <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="time">Class time</SelectItem>
+                  <SelectItem value="size">Class size</SelectItem>
+                  <SelectItem value="grade">Grade level</SelectItem>
+                  <SelectItem value="name">Class name</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
         {loading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true" aria-label="Loading classes">
@@ -346,13 +515,13 @@ const Dashboard = () => {
             <p className="mx-auto mt-2 max-w-sm text-muted-foreground">
               The fastest way to see Mr Selby work is our clearly labeled synthetic set — original copy,
               no real student data, and no upload. Or
-              group your assignments by class and grade real student work in your voice.
+              group assignments by class and review real student work in your voice.
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <Button className="gap-2" onClick={handleLoadSamples} disabled={loadingSample}>
                 {loadingSample
                   ? <><Loader2 className="h-4 w-4 animate-spin" /> Loading…</>
-                  : <><Sparkles className="h-4 w-4" /> Try the synthetic demo</>}
+                  : <><BookOpen className="h-4 w-4" /> Open the fictional sample</>}
               </Button>
               <Button variant="outline" className="gap-2" onClick={() => setShowCreateModal(true)}>
                 <Plus className="h-4 w-4" /> Create a class
@@ -491,6 +660,7 @@ const Dashboard = () => {
             })}
           </div>
         )}
+        </section>
 
         <CreateClassModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} onClassCreated={handleClassCreated} returnFocusRef={createClassTriggerRef} />
         <EditClassModal isOpen={showEditModal} onClose={() => setShowEditModal(false)} onClassUpdated={handleClassUpdated} classData={classToEdit} returnFocusRef={editClassTriggerRef} />

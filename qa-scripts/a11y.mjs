@@ -12,7 +12,7 @@ const outDir = path.join(root, 'qa-artifacts');
 const port = 41000 + (process.pid % 10000);
 const baseUrl = `http://127.0.0.1:${port}`;
 const viteEntry = path.join(root, 'node_modules', 'vite', 'bin', 'vite.js');
-const routes = ['/', '/privacy', '/terms', '/accessibility', '/auth', '/not-a-real-page'];
+const routes = ['/', '/judge', '/privacy', '/terms', '/accessibility', '/auth', '/not-a-real-page'];
 const wcagTags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 await fs.mkdir(outDir, { recursive: true });
@@ -104,7 +104,7 @@ try {
     await page.setViewportSize({ width: 320, height: 900 });
     const mobileAxe = await new AxeBuilder({ page }).withTags(wcagTags).analyze();
     const ctaContrastChecks = await page
-      .getByRole('button', { name: /^(Grade your first assignment|Create your teacher workspace)$/ })
+      .getByRole('link', { name: 'Review a sample assignment', exact: true })
       .evaluateAll((buttons) => {
         const channel = (value) => {
           const normalized = value / 255;
@@ -145,7 +145,7 @@ try {
         check.nodes.every((node) =>
           node.target.some((target) => target.includes('hover\\:bg-primary\\/90.h-11.px-8')),
         ) &&
-        ctaContrastChecks.length === 2 &&
+        ctaContrastChecks.length >= 1 &&
         ctaContrastChecks.every((contrast) => contrast.passesAa);
       return !isKnownCtaContrastReview;
     });

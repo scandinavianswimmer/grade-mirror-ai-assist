@@ -67,10 +67,9 @@ The war officially ended in 1783 with the Treaty of Paris. This established the 
     <div className="space-y-6">
       <div className="text-center">
         <FileText className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold mb-2">Test Your AI Grading</h3>
+        <h3 className="text-lg font-semibold mb-2">Review a first pass</h3>
         <p className="text-gray-600">
-          Let's see how the AI grades using your personalized style. 
-          Upload a sample essay or use our provided example.
+          Use the fictional paper below to check a drafted score and feedback before adding student work.
         </p>
       </div>
 
@@ -84,14 +83,14 @@ The war officially ended in 1783 with the Treaty of Paris. This established the 
               size="sm"
               onClick={useSampleEssay}
             >
-              Use Sample Essay
+              Use fictional paper
             </Button>
           </div>
           <Textarea
             id="essay"
             value={essay}
             onChange={(e) => setEssay(e.target.value)}
-            placeholder="Paste the student essay here..."
+            placeholder="Paste a fictional or de-identified paper here…"
             rows={8}
           />
           <Button
@@ -99,7 +98,7 @@ The war officially ended in 1783 with the Treaty of Paris. This established the 
             disabled={loading || !essay.trim()}
             className="w-full"
           >
-            {loading ? 'Generating Feedback...' : 'Generate AI Feedback'}
+            {loading ? 'Drafting feedback…' : 'Draft score and feedback'}
           </Button>
         </div>
       </Card>
@@ -110,12 +109,12 @@ The war officially ended in 1783 with the Treaty of Paris. This established the 
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
               <CheckCircle className="w-5 h-5 text-green-600" />
-              <h4 className="font-semibold">AI Grading Results</h4>
+              <h4 className="font-semibold">First pass ready for review</h4>
             </div>
 
             {grade && (
               <div>
-                <Label className="text-sm font-medium">Suggested Grade</Label>
+                <Label className="text-sm font-medium">Draft score</Label>
                 <div className="mt-1">
                   <Badge variant="secondary" className="text-lg">
                     {grade}
@@ -125,7 +124,7 @@ The war officially ended in 1783 with the Treaty of Paris. This established the 
             )}
 
             <div>
-              <Label className="text-sm font-medium">AI Feedback</Label>
+              <Label className="text-sm font-medium">Draft feedback</Label>
               <div className="mt-2 bg-gray-50 p-4 rounded-lg">
                 <p className="text-gray-700 whitespace-pre-wrap">{feedback}</p>
               </div>
@@ -133,12 +132,12 @@ The war officially ended in 1783 with the Treaty of Paris. This established the 
 
             <div className="border-t pt-4">
               <p className="text-sm text-gray-600 mb-4">
-                How does this feedback match your grading style? You can continue to the dashboard 
-                to start using Mr Selby with real assignments.
+                Check this wording against the paper. In the review workspace, you can accept, edit,
+                or dismiss each note before approving the result.
               </p>
               
               <Button onClick={onComplete} className="w-full">
-                Looks Good - Complete Setup
+                Continue to Today
               </Button>
             </div>
           </div>

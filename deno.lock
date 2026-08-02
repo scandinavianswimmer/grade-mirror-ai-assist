@@ -2,6 +2,7 @@
   "version": "5",
   "specifiers": {
     "npm:@axe-core/playwright@^4.12.1": "4.12.1_playwright-core@1.62.1",
+    "npm:@cloudflare/workers-types@^5.20260801.1": "5.20260801.1",
     "npm:@eslint/js@^9.9.0": "9.39.5",
     "npm:@fontsource-variable/fraunces@^5.3.0": "5.3.0",
     "npm:@fontsource-variable/hanken-grotesk@^5.3.0": "5.3.0",
@@ -78,7 +79,7 @@
     "npm:vaul@~0.9.3": "0.9.9_react@18.3.1_react-dom@18.3.1__react@18.3.1_@types+react@18.3.31_@types+react-dom@18.3.7__@types+react@18.3.31",
     "npm:vite@6.4.3": "6.4.3_@types+node@22.20.1",
     "npm:vitest@3.2.6": "3.2.6_@types+node@22.20.1",
-    "npm:wrangler@^4.118.0": "4.118.0",
+    "npm:wrangler@^4.118.0": "4.118.0_@cloudflare+workers-types@5.20260801.1",
     "npm:zod@^3.23.8": "3.25.76"
   },
   "npm": {
@@ -132,6 +133,9 @@
       "integrity": "sha512-27fAN+vUECW1oYVc1KOcHYpkL8COM2Uxtxql7TL595kxbjoqS5yckw7NLz7bTf2pALFCZWjqXDjZGJ/xbG4ZKQ==",
       "os": ["win32"],
       "cpu": ["x64"]
+    },
+    "@cloudflare/workers-types@5.20260801.1": {
+      "integrity": "sha512-XCv5xWi47WQOK0LpLa6997Mrpz8Ct+nZmp/M5Xp8Z4BFsarf7nYjkznGOcOoYK5m1GfbMFEEuQ2OIZnbIWoe9A=="
     },
     "@cspotcode/source-map-support@0.8.1": {
       "integrity": "sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==",
@@ -4070,11 +4074,12 @@
       "scripts": true,
       "bin": true
     },
-    "wrangler@4.118.0": {
+    "wrangler@4.118.0_@cloudflare+workers-types@5.20260801.1": {
       "integrity": "sha512-9pkBw/b8zWqGx2S+oLhgHMR1M/4VOE8SynUFABnGWiSFGlcOQ4xiI/B71Xf66RYP2xzngU37IQFPtUruij3lYw==",
       "dependencies": [
         "@cloudflare/kv-asset-handler",
         "@cloudflare/unenv-preset",
+        "@cloudflare/workers-types",
         "blake3-wasm",
         "esbuild@0.28.1",
         "miniflare",
@@ -4084,6 +4089,9 @@
       ],
       "optionalDependencies": [
         "fsevents@2.3.3"
+      ],
+      "optionalPeers": [
+        "@cloudflare/workers-types"
       ],
       "bin": true
     },
@@ -4142,6 +4150,7 @@
     "packageJson": {
       "dependencies": [
         "npm:@axe-core/playwright@^4.12.1",
+        "npm:@cloudflare/workers-types@^5.20260801.1",
         "npm:@eslint/js@^9.9.0",
         "npm:@fontsource-variable/fraunces@^5.3.0",
         "npm:@fontsource-variable/hanken-grotesk@^5.3.0",

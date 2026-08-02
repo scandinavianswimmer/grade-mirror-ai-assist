@@ -517,13 +517,12 @@ const Profile = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <Label htmlFor="auto-finalize" className="text-base font-medium">
-                        Auto-finalize high-confidence grades (opt-in)
+                        Automatically approve eligible drafts (optional)
                       </Label>
                       <p className="text-sm text-gray-600">
-                        Off by default. Turn this on to let Mr Selby publish confident, rubric-aligned
-                        grades without manual approval. You stay On-the-Loop: low-confidence or
-                        off-topic essays, and anything with an integrity flag (possible AI-generated,
-                        off-topic, prompt injection), always come to you regardless of this setting.
+                        Off by default. When enabled, eligible work can be marked Approved automatically
+                        without manual review. That does not return or export anything to a student.
+                        Unclear, off-topic, unreadable, or flagged work still goes to Needs a closer look.
                       </p>
                     </div>
                     <Switch
@@ -536,11 +535,11 @@ const Profile = () => {
 
                   <div>
                     <Label htmlFor="auto-finalize-threshold" className="text-base font-medium">
-                      Confidence threshold
+                      Automatic approval threshold
                     </Label>
                     <p className="text-sm text-gray-600 mb-2">
-                      How sure Mr Selby must be before it finalizes on its own. Higher = more essays routed
-                      to your review.
+                      How strong the internal evidence signal must be before a draft is approved automatically.
+                      A higher threshold sends more papers to your review.
                     </p>
                     <Select
                       value={String(privacySettings?.auto_finalize_threshold ?? 0.85)}
@@ -551,9 +550,9 @@ const Profile = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
-                        <SelectItem value="0.75">75% — More automation</SelectItem>
+                        <SelectItem value="0.75">75% — More eligible drafts</SelectItem>
                         <SelectItem value="0.85">85% — Balanced (recommended)</SelectItem>
-                        <SelectItem value="0.95">95% — Cautious</SelectItem>
+                        <SelectItem value="0.95">95% — More drafts for review</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -585,10 +584,11 @@ const Profile = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <Label htmlFor="ai-training" className="text-base font-medium">
-                        Allow AI Training with Your Content
+                        Allow model training with your content
                       </Label>
                       <p className="text-sm text-gray-600">
-                        Use your grading examples to improve AI model accuracy
+                        Off by default. When enabled, your grading examples may be used for model training.
+                        Do not enable this for student work unless your school policy and permissions allow it.
                       </p>
                     </div>
                     <Switch
@@ -602,10 +602,10 @@ const Profile = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <Label htmlFor="auto-delete" className="text-base font-medium">
-                        Auto-delete Unfinalized Grades
+                        Delete unapproved drafts automatically
                       </Label>
                       <p className="text-sm text-gray-600">
-                        Automatically remove AI-generated content that hasn't been approved
+                        Automatically remove draft scores and feedback that you have not approved.
                       </p>
                     </div>
                     <Switch
@@ -642,9 +642,9 @@ const Profile = () => {
               {/* Learned grading style — inspect & reset (M52) */}
               <Card className="p-6">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold">Your AI Grading Style</h3>
+                  <h3 className="text-lg font-semibold">Your feedback style</h3>
                   {styleSummary && (
-                    <Button variant="outline" size="sm" onClick={handleResetStyle}>Reset learned style</Button>
+                    <Button variant="outline" size="sm" onClick={handleResetStyle}>Reset feedback style</Button>
                   )}
                 </div>
                 {styleSummary ? (

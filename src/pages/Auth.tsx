@@ -97,29 +97,25 @@ const Auth = () => {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       {/* Brand / value panel */}
-      <aside className="relative hidden flex-col justify-between overflow-hidden bg-primary p-12 text-primary-foreground lg:flex">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.07]"
-          style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)', backgroundSize: '22px 22px' }}
-        />
-        <div className="relative flex items-center gap-2.5">
+      <aside className="hidden flex-col justify-between border-r border-primary-foreground/15 bg-primary p-12 text-primary-foreground lg:flex">
+        <div className="flex items-center gap-2.5">
           <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary-foreground/15">
             <Feather className="h-5 w-5" aria-hidden="true" />
           </span>
           <span className="font-display text-2xl font-semibold tracking-tight">Mr Selby</span>
         </div>
-        <div className="relative max-w-md">
+        <div className="max-w-md">
           <h2 className="font-display text-4xl font-semibold leading-[1.1] tracking-tight">
-            Grade in your voice. Stay the final word.
+            A first pass, ready for your review.
           </h2>
           <p className="mt-5 text-lg leading-relaxed text-primary-foreground/80">
-            Mr Selby reads, annotates, and proposes rubric-aligned feedback — like a thoughtful TA in the margins.
-            You approve, edit, or reject every note.
+            Mr Selby drafts rubric scores and margin notes from the assignment and paper. You approve,
+            edit, or dismiss every consequential suggestion.
           </p>
         </div>
-        <div className="relative flex items-center gap-2 text-sm text-primary-foreground/80">
+        <div className="flex items-center gap-2 text-sm text-primary-foreground/80">
           <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-          Human-controlled by design — unattended publication is opt-in.
+          Teacher review is the default. Automatic approval is opt-in.
         </div>
       </aside>
 
@@ -139,7 +135,7 @@ const Auth = () => {
             {isLogin ? 'Welcome back' : 'Create your account'}
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            {isLogin ? 'Sign in to your grading workspace.' : 'Set up your teacher workspace in a minute.'}
+            {isLogin ? 'Open your grading desk.' : 'Start with a fictional sample assignment.'}
           </p>
 
           <Button

@@ -29,7 +29,9 @@ const PublicFooter = () => {
               <span className="font-display text-xl font-semibold tracking-tight">Mr Selby</span>
             </Link>
             <p className="mt-3 leading-6 text-foreground">
-              Teacher-controlled grading support. AI output stays a draft until a teacher reviews it.
+              Teacher-controlled grading support. Review is the default. If a teacher explicitly
+              enables eligible automatic approval, the workspace labels the result “Approved
+              automatically” and notes “You turned this on.”
             </p>
             <p className="mt-2 leading-6 text-muted-foreground">
               Public preview: account and student-data features remain closed until the production

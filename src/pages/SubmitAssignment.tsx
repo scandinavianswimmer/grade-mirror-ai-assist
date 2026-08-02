@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Brain, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { PenLine, Loader2, AlertCircle, CheckCircle, ShieldCheck } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import FileUpload from '@/components/FileUpload';
 import { useAuth } from '@/components/AuthProvider';
@@ -26,8 +26,8 @@ const SubmitAssignment = () => {
   const handleFileUpload = (file: File, content: string) => {
     setEssay(content);
     toast({
-      title: "Essay uploaded",
-      description: `${file.name} has been loaded successfully`
+      title: "Paper added",
+      description: `${file.name} is ready to review.`
     });
   };
 
@@ -38,7 +38,7 @@ const SubmitAssignment = () => {
     if (!essay.trim() || !rubric.trim()) {
       toast({
         title: "Missing information",
-        description: "Please provide both an essay and rubric",
+        description: "Add both the paper and the rubric.",
         variant: "destructive"
       });
       return;
@@ -54,7 +54,7 @@ const SubmitAssignment = () => {
       if (limits.weeklyFeedbackCount >= limits.maxWeeklyFeedback) {
         toast({
           title: "Weekly limit reached",
-          description: "You've reached your weekly AI feedback limit for the free plan.",
+          description: "You've reached this plan's weekly first-pass limit.",
           variant: "destructive"
         });
         setStep('input');
@@ -78,8 +78,8 @@ const SubmitAssignment = () => {
       setStep('results');
 
       toast({
-        title: "AI feedback generated!",
-        description: "Review the suggestions below and adjust as needed."
+        title: "First pass ready",
+        description: "Check the draft score and wording against the paper before you use it."
       });
     } catch (error) {
       // Surface the SPECIFIC, persistent reason (not an auto-dismissing generic toast), and
@@ -87,7 +87,7 @@ const SubmitAssignment = () => {
       const message =
         error instanceof Error && error.message
           ? error.message
-          : 'AI grading is temporarily unavailable. Please try again.';
+          : 'The first pass is temporarily unavailable. Please try again.';
       console.error('Feedback generation error:', message);
       setErrorMessage(message);
       toast({
@@ -110,15 +110,17 @@ const SubmitAssignment = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-background">
       <Navbar />
       
       <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Grade Student Essay</h1>
-            <p className="text-gray-600">
-              Upload a student essay and rubric to get AI-powered feedback suggestions.
+          <div className="mb-8 max-w-3xl">
+            <p className="text-sm font-semibold text-primary">One-paper review</p>
+            <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">Draft a first pass</h1>
+            <p className="mt-4 text-lg leading-8 text-muted-foreground">
+              Add one paper and the rubric it should follow. Mr Selby drafts a score and notes;
+              you check, revise, and decide what is ready.
             </p>
           </div>
 
@@ -129,7 +131,7 @@ const SubmitAssignment = () => {
                 <div>
                   <p className="text-sm font-semibold text-red-800">Grading didn't complete</p>
                   <p className="text-sm text-red-700 mt-1">{errorMessage}</p>
-                  <p className="text-xs text-red-600 mt-2">Your essay and rubric are still here — press <strong>Generate AI Feedback</strong> to retry.</p>
+                  <p className="text-xs text-red-600 mt-2">Your paper and rubric are still here — press <strong>Draft score and notes</strong> to retry.</p>
                 </div>
               </div>
             </Card>
@@ -140,10 +142,10 @@ const SubmitAssignment = () => {
               {/* Input Form */}
               <div className="space-y-6">
                 <Card className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Upload Essay</h3>
+                  <h2 className="font-display text-xl font-semibold mb-4">Add the paper</h2>
                   <FileUpload
                     onFileSelect={handleFileUpload}
-                    placeholder="Upload student essay..."
+                    placeholder="Upload a student paper…"
                     acceptedTypes={['.txt', '.docx', '.pdf']}
                   />
                 </Card>
@@ -151,32 +153,32 @@ const SubmitAssignment = () => {
                 <Card className="p-6">
                   <form onSubmit={handleGenerateFeedback} className="space-y-6">
                     <div>
-                      <Label htmlFor="essay">Student Essay *</Label>
+                      <Label htmlFor="essay">Student paper *</Label>
                       <Textarea
                         id="essay"
                         value={essay}
                         onChange={(e) => setEssay(e.target.value)}
-                        placeholder="Paste or type the student's essay text here..."
+                        placeholder="Paste the paper text here…"
                         className="mt-1 min-h-[200px]"
                         required
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="rubric">Grading Rubric *</Label>
+                      <Label htmlFor="rubric">Rubric *</Label>
                       <Textarea
                         id="rubric"
                         value={rubric}
                         onChange={(e) => setRubric(e.target.value)}
-                        placeholder="Enter the grading rubric or criteria..."
+                        placeholder="Enter the rubric or criteria…"
                         className="mt-1 min-h-[150px]"
                         required
                       />
                     </div>
 
                     <Button type="submit" className="w-full" disabled={loading}>
-                      <Brain className="w-4 h-4 mr-2" />
-                      Generate AI Feedback
+                      <PenLine className="w-4 h-4 mr-2" />
+                      Draft score and notes
                     </Button>
                   </form>
                 </Card>
@@ -184,31 +186,31 @@ const SubmitAssignment = () => {
 
               {/* Instructions */}
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">How it works</h3>
-                <div className="space-y-4 text-sm text-gray-600">
+                <h2 className="font-display text-xl font-semibold mb-4">What happens next</h2>
+                <div className="space-y-4 text-sm text-muted-foreground">
                   <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-blue-600 font-medium">1</span>
+                    <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-primary font-medium">1</span>
                     </div>
                     <p>Upload or paste the student's essay text</p>
                   </div>
                   <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-blue-600 font-medium">2</span>
+                    <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-primary font-medium">2</span>
                     </div>
                     <p>Provide the grading rubric or criteria</p>
                   </div>
                   <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-blue-600 font-medium">3</span>
+                    <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-primary font-medium">3</span>
                     </div>
-                    <p>AI analyzes the essay against your criteria</p>
+                    <p>Mr Selby drafts a score and notes tied to the rubric</p>
                   </div>
                   <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-blue-600 font-medium">4</span>
+                    <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-primary font-medium">4</span>
                     </div>
-                    <p>Review and customize the AI-generated feedback</p>
+                    <p>You check the evidence and revise or dismiss the draft</p>
                   </div>
                 </div>
               </Card>
@@ -218,14 +220,11 @@ const SubmitAssignment = () => {
           {step === 'processing' && (
             <Card className="p-12">
               <div className="text-center">
-                <Loader2 className="w-16 h-16 text-blue-600 mx-auto mb-6 animate-spin" />
-                <h3 className="text-xl font-semibold mb-4">Analyzing Essay</h3>
-                <p className="text-gray-600 mb-6">
-                  Our AI is carefully reviewing the essay against your rubric...
+                <Loader2 className="w-12 h-12 text-primary mx-auto mb-6 animate-spin" />
+                <h2 className="font-display text-xl font-semibold mb-4">Drafting the first pass</h2>
+                <p className="text-muted-foreground">
+                  Checking the paper against the rubric. Your paper stays here if the draft does not finish.
                 </p>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '70%' }}></div>
-                </div>
               </div>
             </Card>
           )}
@@ -235,44 +234,44 @@ const SubmitAssignment = () => {
               <Card className="p-6">
                 <div className="flex items-center gap-3 mb-6">
                   <CheckCircle className="w-6 h-6 text-green-600" />
-                  <h3 className="text-xl font-semibold">AI Feedback Complete</h3>
+                  <h2 className="font-display text-xl font-semibold">First pass ready for review</h2>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Suggested Grade */}
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-semibold text-blue-800 mb-2">Suggested Grade</h4>
-                    <p className="text-3xl font-bold text-blue-600">{feedback.suggestedGrade}</p>
-                    <p className="text-sm text-blue-700 mt-2">{feedback.reasoning}</p>
+                  {/* Draft score */}
+                  <div className="rounded-lg border border-border bg-card p-4">
+                    <h3 className="font-sans text-base font-semibold tracking-normal mb-2">Draft score</h3>
+                    <p className="metric text-3xl font-semibold text-primary">{feedback.suggestedGrade}</p>
+                    <p className="text-sm text-muted-foreground mt-2">{feedback.reasoning}</p>
                   </div>
 
-                  {/* AI completeness — real value only, never a fabricated default (H18/M66) */}
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-semibold text-gray-800 mb-2">AI Completeness</h4>
-                    <p className="text-2xl font-bold text-gray-600">
+                  {/* Evidence signal — real value only, never a fabricated default (H18/M66) */}
+                  <div className="rounded-lg border border-border bg-secondary/40 p-4">
+                    <h3 className="font-sans text-base font-semibold tracking-normal mb-2">Evidence signal</h3>
+                    <p className="metric text-2xl font-semibold text-foreground">
                       {typeof feedback.confidence === 'number'
                         ? `${Math.round(feedback.confidence * 100)}%`
                         : 'Review required'}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">How complete the AI draft is — your review is required</p>
+                    <p className="text-sm text-muted-foreground mt-1">An internal draft signal—not a substitute for your review.</p>
                   </div>
                 </div>
 
                 {/* Overall Feedback */}
-                <div className="mt-6 p-4 bg-green-50 rounded-lg">
-                  <h4 className="font-semibold text-green-800 mb-3">Overall Feedback</h4>
-                  <p className="text-sm text-green-700 whitespace-pre-wrap">{feedback.overallFeedback}</p>
+                <div className="mt-6 rounded-lg border border-border bg-card p-4">
+                  <h3 className="font-sans text-base font-semibold tracking-normal mb-3">Draft summary feedback</h3>
+                  <p className="text-sm leading-6 text-foreground whitespace-pre-wrap">{feedback.overallFeedback}</p>
                 </div>
 
                 {/* Inline Comments */}
                 {feedback.inlineComments && feedback.inlineComments.length > 0 && (
-                  <div className="mt-6 p-4 bg-orange-50 rounded-lg">
-                    <h4 className="font-semibold text-orange-800 mb-3">Specific Comments</h4>
+                  <div className="mt-6 rounded-lg border border-suggestion/30 bg-suggestion-soft/45 p-4">
+                    <h3 className="font-sans text-base font-semibold tracking-normal mb-3">Draft margin notes</h3>
                     <div className="space-y-3">
                       {feedback.inlineComments.map((comment, index) => (
-                        <div key={index} className="border-l-3 border-orange-300 pl-3">
-                          <p className="font-medium text-orange-700 text-sm">"{comment.text}"</p>
-                          <p className="text-orange-600 text-sm mt-1">{comment.comment}</p>
+                        <div key={index} className="border-l-2 border-suggestion pl-3">
+                          <p className="font-medium text-foreground text-sm">“{comment.text}”</p>
+                          <p className="text-muted-foreground text-sm mt-1">{comment.comment}</p>
                         </div>
                       ))}
                     </div>
@@ -281,10 +280,10 @@ const SubmitAssignment = () => {
 
                 <div className="flex gap-3 mt-6">
                   <Button onClick={() => navigate('/dashboard')} className="flex-1">
-                    Save & Return to Dashboard
+                    Save and return to Today
                   </Button>
                   <Button variant="outline" onClick={startOver}>
-                    Grade Another Essay
+                    Review another paper
                   </Button>
                   <Button variant="outline" onClick={() => window.print()}>
                     Print Feedback
@@ -294,18 +293,10 @@ const SubmitAssignment = () => {
             </div>
           )}
 
-          {/* Usage Warning */}
-          <Card className="mt-8 p-4 bg-yellow-50 border-yellow-200">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-yellow-600" />
-              <div>
-                <p className="text-sm text-yellow-800">
-                  <strong>Freemium Plan:</strong> You can generate up to 10 AI feedback reports per week. 
-                  Upgrade to unlimited for more advanced features.
-                </p>
-              </div>
-            </div>
-          </Card>
+          <div className="mt-8 flex items-start gap-3 rounded-lg border border-border bg-secondary/45 p-4 text-sm leading-6 text-muted-foreground">
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            <p>Use student work only when your school policy and permissions allow it. Remove identifying details whenever possible.</p>
+          </div>
         </div>
       </main>
     </div>

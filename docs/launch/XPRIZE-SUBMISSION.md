@@ -6,9 +6,20 @@ Track: **Education & Human Potential**
 
 Official deadline: **August 17, 2026 at 1:00 PM PDT**
 
-Official sources: [rules](https://www.geminixprize.com/rules) · [Devpost rules](https://xprize.devpost.com/rules) · [FAQ](https://xprize.devpost.com/details/faq) · [eligibility clarification](https://xprize.devpost.com/forum_topics/44047-clarification-on-eligibility-timeline) · [dates](https://xprize.devpost.com/details/dates)
+Official sources: [rules](https://www.geminixprize.com/rules) · [Devpost rules](https://xprize.devpost.com/rules) · [submission deep-dive](https://xprize.devpost.com/updates/45364-submission-deep-dive-exactly-what-to-include-and-how-judges-read-it) · [FAQ](https://xprize.devpost.com/details/faq) · [eligibility clarification](https://xprize.devpost.com/forum_topics/44047-clarification-on-eligibility-timeline) · [dates](https://xprize.devpost.com/details/dates)
 
 Protected-product activation: [`../GO-LIVE-RUNBOOK.md`](../GO-LIVE-RUNBOOK.md)
+
+Judge package: [`../../JUDGES.md`](../../JUDGES.md) ·
+[`PROOF-NOT-PITCH-VIDEO.md`](./PROOF-NOT-PITCH-VIDEO.md) ·
+[`TEACHER-TIME-LEDGER.md`](./TEACHER-TIME-LEDGER.md) ·
+[`DEVPOST-GALLERY-BRIEF.md`](./DEVPOST-GALLERY-BRIEF.md)
+
+> **Release identity warning:** commit `119d109`, tag `mr-selby-public-preview-2026-08-01`, and
+> Worker `94fc5cfb-941f-4d95-b50e-7de49d9b7066` identify the historical public preview. They do not
+> prove the final Teacher’s Desk release. Until the final deployed commit, Worker version, Gemini/GCP
+> operation, and persistence evidence are captured, each missing field must read exactly
+> **“Not captured for this release.”**
 
 ## 0. Eligibility gate: organizer approval received
 
@@ -25,19 +36,23 @@ Eligibility is therefore no longer the release stop gate. Deployment evidence, a
 | Gate | Status on Aug 1 | Evidence / next action |
 |---|---|---|
 | Date eligibility | **CLEARED — founder confirmed** | Organizer approval received Aug 1; archive the written ruling and follow any stated conditions |
-| Public code repository | **PUBLIC; PREVIEW RELEASE TAGGED** | `scandinavianswimmer/grade-mirror-ai-assist` is public. PR #30 is merged and deployed commit `119d109` is tagged `mr-selby-public-preview-2026-08-01`. A license or private-judge sharing decision remains required. |
+| Public code repository | **HISTORICAL PREVIEW PROVED; FINAL RELEASE PENDING** | `scandinavianswimmer/grade-mirror-ai-assist` is public. PR #30 and tag `mr-selby-public-preview-2026-08-01` prove the earlier preview only. Capture the final Teacher’s Desk SHA/tag after merge and deployment. A license or private-judge sharing decision remains required. |
 | License | **BLOCKED — OWNER DECISION** | The repository is currently all rights reserved and has no `LICENSE`. Choose relevant public-repository licensing, or use the contest's private-repository sharing path. |
-| Public live application | **PUBLIC PREVIEW LIVE; PRODUCT GATED** | Release `119d109` / Worker `94fc5cfb-941f-4d95-b50e-7de49d9b7066` serves the rebranded overview, legal previews, security headers, self-hosted fonts, and guarded setup state at `https://mrselby.app`. Accounts and classroom data remain closed until the backend is provisioned and verified. |
+| Public live application | **HISTORICAL PREVIEW LIVE; FINAL TEACHER’S DESK RELEASE PENDING** | The earlier preview serves at `https://mrselby.app`. Re-test the final overview, `/judge`, legal/support routes, protected path, headers, redirects, and release metadata in a signed-out browser after the Teacher’s Desk build is deployed. |
 | Working backend | **NO-GO** | No approved Mr Selby Supabase project is connected. The protected product bundle is intentionally excluded from the live preview. |
 | Google Cloud product in deployed app | **UNPROVEN** | Cloud Run/Firebase/Vertex paths exist in code; no live deployment evidence |
 | Gemini API call in deployed app | **UNPROVEN** | Gemini integration exists in code; no production request/log proof |
-| CI quality gate | **READY REMOTELY** | Exact release `119d109` passed lint, both TypeScript projects, the frozen Deno check for all 16 Edge Functions, 26 test files with 256 tests, the production build, deterministic evals, and the calibration gate in [run 30728937099](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30728937099). [Main run 30729106237](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30729106237) repeated the gate after merge and proved the disabled Supabase deploy path skipped safely. |
-| Test credentials / judge instructions | Missing | Create only against the exact live release; never include secrets in the repo |
-| Real users and testimonials | Unverified | Export timestamped, privacy-safe evidence; do not use seed/demo personas as users |
-| Real revenue and P&L | Unverified | Export Stripe revenue by month, costs excluding marketing, CAC, and related-party split |
+| Day-to-day AI business operations | **UNPROVEN** | Identify the production agents and key business decisions they execute, the human escalation boundary, request volume, failures/skips, and continuous evidence window. A one-time product demo is insufficient. |
+| CI quality gate | **HISTORICAL PASS; FINAL RUN PENDING** | Release `119d109` passed the complete remote gate in [run 30728937099](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30728937099), repeated by [main run 30729106237](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30729106237). Run and cite the same gate for the final Teacher’s Desk SHA; the historical run is not final-release proof. |
+| Public Judge Mode | **READY LOCALLY; DEPLOYMENT PENDING** | The four-question Teacher’s Test, fictional strong/off-topic pair, teacher controls, and fail-closed public proof rail are wired at `/judge` in both app modes and included in automated accessibility coverage. Deploy it and capture signed-out evidence from the final release. |
+| Test credentials / judge instructions | **PUBLIC GUIDE READY; PROTECTED CREDENTIALS MISSING** | `JUDGES.md` starts with the signed-out `/judge` path. Create credentials only against the exact live protected release; never include secrets in the repo. |
+| Real users and testimonials | Unverified | Export independent and paying-user counts, a consent-safe high-level user breakdown, consented feedback, and required customer contact records; do not use seed/demo personas as users. |
+| Real revenue and P&L | Unverified | Export earned arms-length revenue by month, related-party revenue, non-marketing expense, marketing/CAC spend, and total expense including marketing. |
 | Production execution logs | Missing | Capture Gemini/GCP request volume, agent traces, failures, and release identifiers |
-| Public demo video under 3:00 | Missing | Record only after the live build and evidence below are verified |
-| 500–1,000 word narrative | Draft only | Complete with measured figures and links; remove every placeholder |
+| Public demo video under 3:00 | **SCRIPT READY; RECORDING BLOCKED** | Follow `PROOF-NOT-PITCH-VIDEO.md` only after the final live build and evidence are verified. |
+| Devpost thumbnail/gallery | **BRIEF READY; ASSETS PENDING** | Produce the 3:2 thumbnail and three evidence panels from the exact final release; keep captions and alt text readable. |
+| Teacher-time evidence | **Not captured for this release** | `TEACHER-TIME-LEDGER.md` defines the matched-stack method. Do not claim causal time savings without two consented runs over the same original stack. |
+| 500–1,000 word narrative | **DRAFT UPDATED; FACTUAL GATES REMAIN** | Complete production, user, job/opportunity, business-model, five-year, profitability, revenue, cost, and customer-concentration fields; remove every placeholder. |
 | Repository/security hygiene | **PARTIAL — HISTORICAL ALERT OPEN** | GitHub secret scanning and push protection are enabled. One historical Google API-key alert remains open at commit `ef9b808`; the current `.env.example` value is empty, but the owner must verify the historical key, restrict or revoke it if active, and record the alert's resolution without reproducing the value. `npm audit --omit=dev` also reports the current React Router RSC advisory; the reviewed advisory applies only to unstable RSC APIs, and this Vite `BrowserRouter` SPA has no RSC package or API usage. Track and upgrade when a compatible patched release is published. |
 | Password recovery | **READY LOCALLY; LIVE GATE PENDING** | Dedicated request/update routes, account-enumeration-safe confirmation, expired-link handling, and recovery-intent tests pass. A real emailed link still requires the confirmed Supabase project and redirect allowlist. |
 | Right to erasure | **READY LOCALLY; LIVE GATE PENDING** | The authenticated Edge Function recursively removes and re-verifies all owned objects before deleting records, covers the current and legacy private buckets, rejects cross-owner paths, and fails closed on partial deletion. A seeded live deletion test still requires the confirmed Supabase project. |
@@ -61,36 +76,59 @@ The eligibility gate is cleared. Every remaining item still requires evidence fr
 
 - [x] Category selected: Education & Human Potential.
 - [x] Project name finalized: Mr Selby.
-- [x] Short tagline and image candidates prepared: “Thoughtful grading support, shaped by how you teach”; `public/mr-selby-mark.png` and `public/mr-selby-social.png`.
+- [x] Short tagline finalized: “Get through the essay stack without giving away the part that matters.”
+- [ ] Final 3:2 thumbnail and gallery panels produced from the exact release, with alt text and a source ledger.
 - [ ] Entrant or team membership and contact details finalized in Devpost.
-- [ ] 500–1,000 word description covers the problem, solution, AI-native operation, business viability, category impact, Google Cloud architecture, and measured evidence.
-- [ ] Public demo video is **under three minutes**, captioned, and shows the exact deployed release.
-- [x] Public repository URL points to reviewed commit `119d109` / tag `mr-selby-public-preview-2026-08-01` and includes setup instructions.
-- [x] Public-preview URL works over HTTPS in a clean browser session; protected product acceptance remains open.
+- [ ] 500–1,000 word description covers the build story, day-to-day AI business operation, human/AI boundary, pre-existing-work reuse, business viability, category impact, Google Cloud architecture, measured evidence, actual and potential economic opportunities, five-year goal, profitability path, and largest-customer concentration.
+- [ ] Public demo video is **under three minutes**, captioned, hosted publicly on YouTube, Vimeo, or Youku, and shows the exact deployed release operating with AI in production.
+- [ ] Public repository URL points to the final reviewed Teacher’s Desk SHA/tag and includes setup instructions. (`119d109` proves only the historical preview.)
+- [ ] Repository contains all source needed to understand/run the entry, and every reused SDK, API, dataset, mark, and media asset is authorized and license-compliant.
+- [ ] Final `/judge` route works while signed out, uses only the fictional fixture, and shows every absent proof value as “Not captured for this release.”
+- [ ] Final public URL works over HTTPS in a clean browser session; protected product acceptance remains open.
 - [x] Public and submission surfaces use `https://mrselby.app`; the Worker custom domain, HTTPS, canonical HTTP/`www` redirects, SPA routes, and static security headers are verified.
 - [ ] Judge account and test instructions reproduce the demonstrated path without exposing real student data.
 - [ ] At least one Google Cloud product and at least one Gemini API call are present in the deployed app and backed by timestamped logs.
+- [ ] Day-to-day AI business operations are named and backed by continuous production evidence, including the decisions executed, human escalation, failures, and skips.
 - [ ] Real-user counts, demographics, testimonials, and production usage are documented.
-- [ ] Revenue by month, operating costs excluding marketing, marketing spend/CAC, and related-party revenue are documented.
+- [ ] Paying-user count, a consent-safe high-level user breakdown, consented customer feedback, and required private customer name/email/phone records are documented.
+- [ ] Actual jobs/economic opportunities use verified counts; potential opportunities are clearly labeled as plans.
+- [ ] Total earned arms-length revenue in USD, May–August monthly breakdown, related-party revenue, non-marketing expense including labor, marketing/CAC spend, and total expense including marketing are documented.
+- [ ] Business model, five-year goal, profitability path, and whether one customer exceeds 40% of revenue are answered with source evidence.
+- [ ] If the entrant is an organization, its corporate ID is included; otherwise not applicable is recorded.
+- [ ] The working project remains free and unrestricted for testing through the end of judging.
 - [ ] Every factual claim maps to an evidence file or live dashboard capture.
 - [ ] Submission is entered before **August 17, 2026 at 1:00 PM PDT**.
 
 ## 3. Private submission evidence bundle
 
-The ignored `.submission-evidence/` directory now contains a current private manifest and the exact-release Lighthouse JSON. Continue filling it with primary evidence or explicit zero/not-yet-available statements. Current identifiers are commit `119d109`, tag `mr-selby-public-preview-2026-08-01`, Worker `94fc5cfb-941f-4d95-b50e-7de49d9b7066`, [release CI run 30728937099](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30728937099), [main run 30729106237](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30729106237), and `https://mrselby.app`.
+The ignored `.submission-evidence/` directory contains the historical preview manifest and Lighthouse
+JSON. Its commit `119d109`, tag `mr-selby-public-preview-2026-08-01`, Worker
+`94fc5cfb-941f-4d95-b50e-7de49d9b7066`, [release CI run 30728937099](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30728937099),
+and [main run 30729106237](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30729106237)
+are baseline history, not identifiers for the final Teacher’s Desk release. Capture a new manifest and
+exact-release Lighthouse/accessibility evidence after the final deployment. Do not relabel or copy the
+historical values into final fields.
 
-The private bundle must cover the organizer ruling, final repository/license identity, protected release, Gemini and Google Cloud proof, judge journey, users, May–August revenue, related-party revenue, expenses, exact-release media, and final narrative. For every artifact, record its capture time, release SHA, source, denominator, exclusions, and verifier. Redact credentials, student content, private correspondence, and unnecessary personal information before sharing.
+The private bundle must cover the organizer ruling, final repository/license identity, corporate ID
+when applicable, protected release, continuous day-to-day AI business operations, Gemini and Google
+Cloud proof, judge journey, independent/paying users, consented feedback and required customer contact
+records, May–August earned revenue, related-party revenue, total expenses including marketing,
+exact-release media, and final narrative. For every artifact, record its capture time, release SHA,
+source, denominator, exclusions, and verifier. Redact credentials, student content, private
+correspondence, and unnecessary personal information before sharing.
 
 ## 4. Evidence-safe narrative outline
 
 Target 650–850 words. Bracketed values are blocking placeholders, not claims.
 
 1. **Problem (80–120 words):** teacher grading time, generic feedback, and the risk of confidently grading off-assignment work. Cite a primary source for any market or bias statistic.
-2. **Product (120–160 words):** rubric-grounded grading, evidence anchors, refusal/exception paths, teacher voice, and accept/edit/dismiss controls. Say what is opt-in versus default.
-3. **AI-native operation (120–160 words):** describe the actual deployed Gemini pipeline and Google Cloud services. Insert `[PRODUCTION_REQUEST_COUNT]`, `[DATE_RANGE]`, and a link to privacy-safe logs.
-4. **Measured impact (100–140 words):** insert `[REAL_TEACHER_COUNT]`, `[REAL_SUBMISSION_COUNT]`, `[TIME_SAVED_METHOD]`, and `[VOICE_EVAL_RESULT]`. Report null or negative findings honestly.
-5. **Business viability (100–140 words):** insert monthly arms-length revenue, related-party revenue, active paid accounts, churn/retention, costs, and CAC. Seed accounts and founder payments do not count as independent traction.
-6. **Why this category / next step (60–100 words):** explain the education benefit without claiming student outcomes that were not measured.
+2. **Product (120–160 words):** use the four-question Teacher’s Test: assignment/rubric fidelity, evidence anchors, stopping when work should not be graded, and teacher control through accept/edit/dismiss. Say what is opt-in versus default.
+3. **Build story and provenance (80–120 words):** explain what business was built during the submission period, how the work happened, which pre-existing generic code or frameworks were reused, and how the entry follows the organizer ruling. Do not imply the older repository began after May 19.
+4. **AI-native operation (120–160 words):** describe the actual day-to-day business workflows run by AI, human escalation boundary, deployed Gemini pipeline, and Google Cloud services. Insert `[PRODUCTION_REQUEST_COUNT]`, `[DATE_RANGE]`, failures/skips, and a link to privacy-safe continuous logs.
+5. **Measured impact (100–140 words):** insert `[REAL_TEACHER_COUNT]`, `[PAYING_USER_COUNT]`, `[REAL_SUBMISSION_COUNT]`, a consent-safe role breakdown, `[TIME_SAVED_METHOD]`, and `[VOICE_EVAL_RESULT]`. Report null or negative findings honestly.
+6. **Business viability (120–170 words):** insert the business model, five-year goal, path to profitability, monthly arms-length and related-party revenue, active paid accounts, churn/retention, total expenses including marketing, CAC, and largest-customer revenue share. Answer the 40% concentration question directly. Seed accounts and founder payments do not count as independent traction.
+7. **Jobs and economic opportunity (60–100 words):** separate actual verified jobs/opportunities from potential plans. Use an explicit zero when appropriate; never convert an ambition into current impact.
+8. **Why this category / next step (60–100 words):** explain the education benefit without claiming student outcomes that were not measured.
 
 Claim rules:
 
@@ -99,11 +137,13 @@ Claim rules:
 - “In production” requires real production logs from that release.
 - “Auto-finalized” requires persisted `finalized_by = ai` or `auto_finalized_at` provenance; confidence alone is not proof.
 - “Paying users,” “revenue,” “time saved,” and “convergence” require dated primary evidence.
+- “Operated by AI” requires evidence of the real day-to-day business workflow, key decisions, and human handoff—not a one-time demo or an integration path in source.
 
-## 5. Conditional video plan — target 2:40, hard cap 3:00
+## 5. Proof-not-pitch video — target 2:40, hard cap 3:00
 
 Do not record against seed data and narrate it as production usage.
 Use an original, clearly synthetic assignment, rubric, and student response unless permission for every third-party work, mark, and recording element has been documented.
+Use the recording and redaction gates in [`PROOF-NOT-PITCH-VIDEO.md`](./PROOF-NOT-PITCH-VIDEO.md).
 
 | Time | Show | Evidence-safe narration |
 |---|---|---|
@@ -137,6 +177,9 @@ Tonight produced a merged, tagged, and live-QA-verified public preview plus the 
 - [x] Deploy the safe public preview to Cloudflare Workers at `https://mrselby.app` and verify DNS, TLS, SPA routes, assets, and security headers.
 - [x] Record release commit `119d109`, tag `mr-selby-public-preview-2026-08-01`, Worker version `94fc5cfb-941f-4d95-b50e-7de49d9b7066`, both remote CI runs, live QA, and Lighthouse evidence in the private manifest.
 - [x] Complete the local VoiceOver, exact 200% zoom, Increase Contrast, keyboard, dialog-focus, and responsive-layout beta pass; restore all host settings afterward.
+- [x] Prepare the local Teacher’s Test Judge Mode, original fictional strong/off-topic pair, fail-closed release-proof model, judge guide, video script, teacher-time protocol, gallery brief, and humanized Devpost draft.
+- [x] Wire `/judge` into both public routing modes and include it in automated accessibility coverage.
+- [ ] Deploy `/judge` and verify the signed-out final-release surface.
 - [ ] Archive the written ruling in the private submission evidence folder and note any conditions.
 - [ ] Verify the historical Google API key identified by GitHub, restrict or revoke it if active, and resolve the alert with a documented disposition.
 - [x] Merge PR #30 and tag the exact verified public-preview release.

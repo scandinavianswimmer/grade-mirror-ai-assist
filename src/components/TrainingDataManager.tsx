@@ -32,7 +32,7 @@ const TrainingDataManager = () => {
     } catch (error) {
       console.error('Error fetching training data:', error);
       toast({
-        title: "Error loading training data",
+        title: "Could not load feedback examples",
         description: "Please try again.",
         variant: "destructive"
       });
@@ -51,14 +51,14 @@ const TrainingDataManager = () => {
     try {
       await deleteTrainingData(id);
       toast({
-        title: "Training data deleted",
-        description: `${dataType} has been deleted successfully.`
+        title: "Feedback example deleted",
+        description: `${dataType} was removed from your library.`
       });
       fetchTrainingData(); // Refresh the list
     } catch (error) {
       console.error('Error deleting training data:', error);
       toast({
-        title: "Error deleting training data",
+        title: "Could not delete that example",
         description: "Please try again.",
         variant: "destructive"
       });
@@ -72,8 +72,8 @@ const TrainingDataManager = () => {
       // Rename sets the title label — never the data_type category (M51).
       await updateTrainingData(renameDialog.item.id, { title: newName.trim() });
       toast({
-        title: "Training data renamed",
-        description: "Name updated successfully."
+        title: "Feedback example renamed",
+        description: "The new name is saved."
       });
       setRenameDialog({ open: false, item: null });
       setNewName('');
@@ -81,7 +81,7 @@ const TrainingDataManager = () => {
     } catch (error) {
       console.error('Error renaming training data:', error);
       toast({
-        title: "Error renaming training data",
+        title: "Could not rename that example",
         description: "Please try again.",
         variant: "destructive"
       });
@@ -111,11 +111,11 @@ const TrainingDataManager = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Training Data</CardTitle>
+          <CardTitle>Feedback examples</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <div className="animate-pulse">Loading training data...</div>
+            <div role="status">Loading feedback examples…</div>
           </div>
         </CardContent>
       </Card>
@@ -127,7 +127,7 @@ const TrainingDataManager = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="w-5 h-5" />
-          Training Data ({trainingData.length})
+          Feedback examples ({trainingData.length})
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -135,10 +135,10 @@ const TrainingDataManager = () => {
           <div className="text-center py-8">
             <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-700 mb-2">
-              No training data uploaded yet
+              No feedback examples yet
             </h3>
             <p className="text-gray-600">
-              Upload training examples to improve AI grading accuracy
+              Add a graded paper or rubric above when you are ready.
             </p>
           </div>
         ) : (
@@ -168,7 +168,7 @@ const TrainingDataManager = () => {
                   }}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" aria-label={`Actions for ${item.title || item.data_type}`}>
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -190,7 +190,7 @@ const TrainingDataManager = () => {
 
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Rename Training Data</DialogTitle>
+                        <DialogTitle>Rename feedback example</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-4">
                         <div>
@@ -217,7 +217,7 @@ const TrainingDataManager = () => {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete Training Data</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to delete "{item.data_type}"? This action cannot be undone.
+                          Delete “{item.title || item.data_type}” from your feedback style library? This cannot be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>

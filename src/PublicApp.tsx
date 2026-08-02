@@ -7,6 +7,7 @@ const Pitch = lazy(() => import('./pages/Pitch'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
 const Accessibility = lazy(() => import('./pages/Accessibility'));
+const JudgeMode = lazy(() => import('./pages/JudgeMode'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 const PUBLIC_TITLES: Record<string, string> = {
@@ -14,6 +15,7 @@ const PUBLIC_TITLES: Record<string, string> = {
   '/privacy': 'Privacy preview · Mr Selby',
   '/terms': 'Terms preview · Mr Selby',
   '/accessibility': 'Accessibility · Mr Selby',
+  '/judge': 'The Teacher’s Test · Mr Selby',
   '/auth': 'Workspace setup · Mr Selby',
   '/auth/forgot-password': 'Workspace setup · Mr Selby',
   '/auth/reset-password': 'Workspace setup · Mr Selby',
@@ -40,20 +42,17 @@ const LaunchSetup = () => (
     </header>
 
     <main id="launch-setup-main" tabIndex={-1} className="grid flex-1 place-items-center px-6 py-16">
-      <section className="w-full max-w-2xl rounded-2xl border border-border bg-card p-8 shadow-lg sm:p-12">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+      <section className="w-full max-w-3xl border-y border-border bg-card px-6 py-10 sm:px-10 sm:py-12">
+        <div className="flex h-11 w-11 items-center justify-center rounded-md border border-primary/25 bg-primary/5 text-primary">
           <ShieldCheck className="h-6 w-6" aria-hidden="true" />
         </div>
-        <p className="mt-7 text-sm font-semibold uppercase tracking-[0.18em] text-primary">
-          Secure workspace setup
-        </p>
-        <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
-          Teacher workspaces are opening shortly.
+        <h1 className="mt-7 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+          Teacher workspaces are still closed.
         </h1>
         <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
-          The Mr Selby public preview is live while the protected classroom service finishes its
-          production connection. Account creation, sign-in, and password recovery stay closed
-          until that connection is verified.
+          The fictional sample and Judge Mode are open while the protected classroom service finishes
+          its production connection. Account creation, sign-in, and password recovery stay closed until
+          that connection is verified.
         </p>
         <p className="mt-4 font-medium text-foreground">
           No classroom or student data is accepted in this setup state.
@@ -61,10 +60,10 @@ const LaunchSetup = () => (
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Link
-            to="/"
+            to="/#sample-assignment"
             className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2.5 font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
           >
-            See how Mr Selby works
+            Review the sample assignment
           </Link>
           <Link
             to="/privacy"
@@ -86,9 +85,10 @@ const PublicRoutes = () => {
   useEffect(() => {
     document.title = PUBLIC_TITLES[location.pathname] ?? 'Page not found · Mr Selby';
 
+    const canonicalPaths = new Set(['/', '/judge', '/privacy', '/terms', '/accessibility']);
     const indexablePaths = new Set(['/', '/privacy', '/terms', '/accessibility']);
     const isIndexable = indexablePaths.has(location.pathname);
-    const canonicalPath = isIndexable ? location.pathname : '/';
+    const canonicalPath = canonicalPaths.has(location.pathname) ? location.pathname : '/';
     const canonicalUrl = new URL(canonicalPath, 'https://mrselby.app').href;
     document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.setAttribute('href', canonicalUrl);
     document.querySelector<HTMLMetaElement>('meta[property="og:url"]')?.setAttribute('content', canonicalUrl);
@@ -148,6 +148,7 @@ const PublicRoutes = () => {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/accessibility" element={<Accessibility />} />
+        <Route path="/judge" element={<JudgeMode />} />
         <Route path="/auth/*" element={<LaunchSetup />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

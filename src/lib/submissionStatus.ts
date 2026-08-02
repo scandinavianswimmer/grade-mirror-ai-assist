@@ -23,19 +23,19 @@ interface StatusMeta {
 }
 
 const META: Record<string, StatusMeta> = {
-  uploaded: { label: 'Uploaded', badgeClass: 'bg-blue-100 text-blue-800', description: 'Text extracted and ready to grade.' },
-  grading: { label: 'Grading…', badgeClass: 'bg-blue-100 text-blue-800', description: 'Mr Selby is drafting rubric-aligned notes.' },
-  graded: { label: 'AI draft ready', badgeClass: 'bg-amber-100 text-amber-800', description: 'AI draft is ready for your review.' },
-  needs_review: { label: 'Needs review', badgeClass: 'bg-red-100 text-red-800', description: 'Low-confidence extraction — review before grading.' },
-  grade_error: { label: 'Grading failed', badgeClass: 'bg-red-100 text-red-800', description: 'Grading errored. Try again.' },
-  finalized: { label: 'Finalized', badgeClass: 'bg-green-100 text-green-800', description: 'You approved this grade.' },
-  exported: { label: 'Exported', badgeClass: 'bg-green-100 text-green-800', description: 'Finalized and exported/shared.' },
+  uploaded: { label: 'Ready to draft', badgeClass: 'bg-primary/10 text-primary', description: 'Student work is present and ready for a first pass.' },
+  grading: { label: 'Drafting feedback…', badgeClass: 'bg-question-soft text-question', description: 'Mr Selby is drafting rubric-aligned feedback.' },
+  graded: { label: 'Ready for review', badgeClass: 'bg-suggestion-soft text-suggestion', description: 'Draft feedback is ready. Nothing has been released.' },
+  needs_review: { label: 'Needs a closer look', badgeClass: 'bg-critique-soft text-critique', description: 'The document or grading decision needs your attention.' },
+  grade_error: { label: 'Draft did not finish', badgeClass: 'bg-critique-soft text-critique', description: 'The latest draft did not finish. Try again without losing earlier work.' },
+  finalized: { label: 'Approved', badgeClass: 'bg-praise-soft text-praise', description: 'Review is complete. This has not necessarily been exported.' },
+  exported: { label: 'Exported', badgeClass: 'bg-praise-soft text-praise', description: 'The approved result was exported or shared.' },
   // legacy
-  pending: { label: 'Pending', badgeClass: 'bg-yellow-100 text-yellow-800', description: 'Awaiting processing.' },
-  ai_graded: { label: 'AI draft ready', badgeClass: 'bg-amber-100 text-amber-800', description: 'AI draft is ready for your review.' },
+  pending: { label: 'Ready to draft', badgeClass: 'bg-primary/10 text-primary', description: 'Student work is waiting for a first pass.' },
+  ai_graded: { label: 'Ready for review', badgeClass: 'bg-suggestion-soft text-suggestion', description: 'Draft feedback is ready. Nothing has been released.' },
 };
 
-const FALLBACK: StatusMeta = { label: 'Unknown', badgeClass: 'bg-gray-100 text-gray-800', description: '' };
+const FALLBACK: StatusMeta = { label: 'Status unavailable', badgeClass: 'bg-muted text-muted-foreground', description: 'Open the submission for details.' };
 
 export const statusMeta = (status: string | null | undefined): StatusMeta =>
   (status && META[status]) || FALLBACK;
@@ -48,23 +48,34 @@ export const statusDescription = (status: string | null | undefined): string => 
 export const isFinalized = (status: string | null | undefined): boolean =>
   status === 'finalized' || status === 'exported';
 
+// Teacher-facing aliases keep stored database terminology out of presentation code while
+// preserving the existing isFinalized export for grading and persistence callers.
+export const isApprovedStatus = isFinalized;
+export const isExportedStatus = (status: string | null | undefined): boolean => status === 'exported';
+
 // True when Mr Selby published this grade unattended (auto-finalize / On-the-Loop), vs. a teacher
 // approving it by hand. Drives provenance labels and the AI-native evidence count.
 export const isAutoFinalized = (finalizedBy: string | null | undefined): boolean =>
   finalizedBy === 'ai';
 
-// Status metadata that reflects WHO finalized the grade. A green "Auto-finalized" badge makes the
-// unattended-grading claim legible in the list/detail/dashboard and on the demo video. Falls back
-// to the plain status meta for teacher-approved or non-finalized submissions.
+// Status metadata that reflects who approved the grade without obscuring whether it was exported.
+// Automatic approval only exists after the teacher opts in, so that attribution stays explicit.
 export const statusMetaWithProvenance = (
   status: string | null | undefined,
   finalizedBy: string | null | undefined,
 ): StatusMeta => {
-  if ((status === 'finalized' || status === 'exported') && isAutoFinalized(finalizedBy)) {
+  if (status === 'finalized' && isAutoFinalized(finalizedBy)) {
     return {
-      label: 'Auto-finalized',
-      badgeClass: 'bg-green-100 text-green-800',
-      description: 'Mr Selby published this high-confidence grade for you. Open it to review or adjust.',
+      label: 'Approved automatically',
+      badgeClass: 'bg-praise-soft text-praise',
+      description: 'You turned this on. Review is complete, but this has not been exported.',
+    };
+  }
+  if (status === 'exported' && isAutoFinalized(finalizedBy)) {
+    return {
+      label: 'Exported',
+      badgeClass: 'bg-praise-soft text-praise',
+      description: 'Approved automatically. You turned this on. The result was then exported or shared.',
     };
   }
   return statusMeta(status);
