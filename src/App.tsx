@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/components/AuthProvider";
 import { useState, useEffect, useCallback, lazy, Suspense, useRef } from "react";
 import { supabase } from "@/lib/supabase";
@@ -17,12 +17,8 @@ const CreateAssignment = lazy(() => import("./pages/CreateAssignment"));
 const AssignmentDetail = lazy(() => import("./pages/AssignmentDetail"));
 const SubmissionDetail = lazy(() => import("./pages/SubmissionDetail"));
 const Training = lazy(() => import("./pages/Training"));
-const LMSIntegration = lazy(() => import("./pages/LMSIntegration"));
-const LMSCallback = lazy(() => import("./pages/LMSCallback"));
 const Profile = lazy(() => import("./pages/Profile"));
-const FreemiumDashboard = lazy(() => import("./pages/FreemiumDashboard"));
 const UploadTraining = lazy(() => import("./pages/UploadTraining"));
-const SubmitAssignment = lazy(() => import("./pages/SubmitAssignment"));
 const PdfSubmission = lazy(() => import("./pages/PdfSubmission").then((m) => ({ default: m.PdfSubmission })));
 const Pitch = lazy(() => import("./pages/Pitch"));
 const Pricing = lazy(() => import("./pages/Pricing"));
@@ -63,8 +59,6 @@ const getDocumentTitle = (pathname: string) => {
       "/upload-training",
       "/submit-assignment",
       "/training",
-      "/lms",
-      "/lms/callback",
       "/profile",
       "/billing",
       "/metrics",
@@ -299,11 +293,9 @@ const AppContent = () => {
         </AuthGuard>
       } />
       
-      <Route path="/submit-assignment" element={
-        <AuthGuard>
-          <SubmitAssignment />
-        </AuthGuard>
-      } />
+      {/* Historical one-paper grader retired: preserve old bookmarks, but route every teacher
+          into the canonical assignment workflow backed by grade-submission. */}
+      <Route path="/submit-assignment" element={<Navigate to="/create-assignment" replace />} />
       
       <Route path="/training" element={
         <AuthGuard>
@@ -311,17 +303,10 @@ const AppContent = () => {
         </AuthGuard>
       } />
       
-      <Route path="/lms" element={
-        <AuthGuard>
-          <LMSIntegration />
-        </AuthGuard>
-      } />
-      
-      <Route path="/lms/callback" element={
-        <AuthGuard>
-          <LMSCallback />
-        </AuthGuard>
-      } />
+      {/* Historical Canvas client retired: preserve old bookmarks and OAuth callbacks, but do not
+          expose an unverified LMS-return workflow from the protected product. */}
+      <Route path="/lms" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/lms/callback" element={<Navigate to="/dashboard" replace />} />
       
       <Route path="/profile" element={
         <AuthGuard>

@@ -19,7 +19,7 @@ The 90-second path asks four questions:
    note attached to the response.
 3. **Does it stop when the work should not be graded?** Inspect the deliberately off-topic response.
    The safe state proposes no score and asks the teacher to look more closely.
-4. **Can the teacher change every consequential result?** Accept, edit, or dismiss the fictional
+4. **Can the teacher revise every margin note before approval?** Accept, edit, or dismiss the fictional
    draft note. This public interaction is local-only; production persistence is reported separately.
 
 The entire public walkthrough uses the repository's original `The Beacon Ledger` fixture. It contains
@@ -61,7 +61,8 @@ The intended deployed grading workflow is:
 6. present the work for teacher accept, edit, dismiss, and approval decisions.
 
 The AI may propose rubric results and decide that a response must be withheld for review. The teacher
-can change every consequential result and determines when review is complete. `Approved` does not
+can accept, rewrite, or dismiss each margin note and determines when review is complete. The current
+workspace does not offer a direct, audited score editor, so this release does not claim one. `Approved` does not
 mean delivered to a student. Any eligible automatic approval must be explicitly enabled by the
 teacher and recorded with provenance; it is not claimed unless the final release proves it.
 
@@ -110,6 +111,7 @@ instructions after the following path passes in a clean browser against the fina
 - [`docs/launch/TEACHER-TIME-LEDGER.md`](docs/launch/TEACHER-TIME-LEDGER.md) — blank study protocol
 - [`docs/launch/DEVPOST-GALLERY-BRIEF.md`](docs/launch/DEVPOST-GALLERY-BRIEF.md) — three-criterion gallery
 - [`docs/launch/XPRIZE-SUBMISSION.md`](docs/launch/XPRIZE-SUBMISSION.md) — final gate and evidence boundary
+- [`docs/launch/AI-CAPABILITY-TRUTH-MAP.md`](docs/launch/AI-CAPABILITY-TRUTH-MAP.md) — claim-to-code and deployment boundary
 
 ## Local verification
 

@@ -34,6 +34,7 @@ export const MIN_THRESHOLD = 0.6;
 export const BLOCKING_FLAGS = [
   "off_topic",
   "grade_withheld",
+  "relevance_check_unavailable",
   "possible_injection",
   "likely_ai_generated",
   "low_confidence",

@@ -50,7 +50,10 @@ is exactly what production does:
 
 - **Relevance pre-pass** — replicates `engine.ts assessRelevance`: `gemini-2.5-flash`,
   threshold `0.5`, the same `RELEVANCE_SYSTEM`/`RELEVANCE_SCHEMA`, and the same withhold logic
-  (`!onTopic || relevanceScore < 0.5` ⇒ grade withheld, disposition `needs_review`).
+  (`!onTopic || relevanceScore < 0.5` ⇒ grade withheld, disposition `needs_review`). If the
+  relevance service is unavailable, the harness also mirrors production's fail-closed behavior:
+  it returns `grade_withheld` + `relevance_check_unavailable`, proposes no score, and never calls
+  the rubric grading model. A service outage is not labeled `off_topic`.
 - **Prompt assembly** — copies `SYSTEM_PROMPT`, `buildCachedSystem` (system + class-context
   calibration + rendered rubric) and `buildUserContent` (the essay delimited inside
   `<STUDENT_SUBMISSION>`, treated strictly as data).

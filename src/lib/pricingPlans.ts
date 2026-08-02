@@ -46,7 +46,7 @@ export const PRICING_TIERS: PricingTier[] = [
       '1 teacher',
       'Rubric-aligned grading + inline feedback',
       'Basic voice matching',
-      'Human-in-the-loop — you approve every grade',
+      'Teacher review is the default',
     ],
   },
   {

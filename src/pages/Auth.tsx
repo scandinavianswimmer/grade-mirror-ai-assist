@@ -110,7 +110,7 @@ const Auth = () => {
           </h2>
           <p className="mt-5 text-lg leading-relaxed text-primary-foreground/80">
             Mr Selby drafts rubric scores and margin notes from the assignment and paper. You approve,
-            edit, or dismiss every consequential suggestion.
+            edit, or dismiss each margin note before approval.
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-primary-foreground/80">

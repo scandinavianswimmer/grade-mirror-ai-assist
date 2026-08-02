@@ -119,7 +119,7 @@ const Billing = () => {
                 <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" />{limitText(free.monthlyGradingLimit, 'grading runs')}</li>
                 <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" />{free.maxClasses === null ? 'Unlimited classes' : `${free.maxClasses} class`}</li>
                 <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" />Rubric-aligned grading + inline feedback</li>
-                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" />Human-in-the-loop review (you approve every grade)</li>
+                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" />Teacher review is the default</li>
               </ul>
             </CardContent>
             <CardFooter>

@@ -14,7 +14,7 @@ The name is a personal tribute to a favorite teacher whose care in teaching, des
 - **Trustworthy by construction.** Rubric-mandatory, relevance-gated scoring. Off-assignment work is withheld with a flag, not given a fabricated grade.
 - **Teacher-controlled.** Human review is the default. Teachers accept, edit, or dismiss annotations; eligible automated finalization is explicitly opt-in and remains auditable.
 - **Auditable.** Each grade carries a rubric snapshot, evidence anchoring, and an agent-pipeline trace.
-- **Privacy-first.** Owner-isolated data, private storage with signed URLs, de-identification before model calls, right-to-erasure, and retention controls.
+- **Privacy-first.** Owner-isolated data, private storage with signed URLs, default-on masking of known names before model calls, right-to-erasure, and retention controls. Masking reduces risk; it is not guaranteed anonymization.
 
 ## How it works
 

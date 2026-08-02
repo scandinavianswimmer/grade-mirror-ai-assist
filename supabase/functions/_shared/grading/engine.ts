@@ -81,12 +81,25 @@ const RELEVANCE_SCHEMA = {
   required: ["onTopic", "relevanceScore", "reason", "riskFlags"],
 } as const;
 
-export interface RelevanceVerdict {
+export interface AssessedRelevanceVerdict {
+  status: "assessed";
   onTopic: boolean;
   relevanceScore: number;
   reason: string;
   riskFlags: string[];
 }
+
+export interface UnavailableRelevanceVerdict {
+  status: "unavailable";
+  // Null means the service did not establish either fact. Do not turn an outage into an
+  // off-topic verdict (false) or an on-topic verdict (true).
+  onTopic: null;
+  relevanceScore: null;
+  reason: string;
+  riskFlags: string[];
+}
+
+export type RelevanceVerdict = AssessedRelevanceVerdict | UnavailableRelevanceVerdict;
 
 // The Relevance/Risk agent (AGENT-04): judges on-topic-ness AND screens for risk — prompt injection
 // embedded in the submission, and likely AI-generated text — surfaced as advisory flags to the teacher.
@@ -101,7 +114,7 @@ async function assessRelevance(
   assignmentReference: string,
   essay: string,
   budget: CallBudget,
-): Promise<{ verdict: RelevanceVerdict; inputTokens: number; outputTokens: number }> {
+): Promise<{ verdict: AssessedRelevanceVerdict; inputTokens: number; outputTokens: number }> {
   const userContent = `ASSIGNMENT (what the student was asked to do):
 ${assignmentReference}
 
@@ -126,7 +139,8 @@ ${essay}
   });
   const o = (json ?? {}) as Record<string, unknown>;
   const rawScore = typeof o.relevanceScore === "number" ? o.relevanceScore : 0;
-  const verdict: RelevanceVerdict = {
+  const verdict: AssessedRelevanceVerdict = {
+    status: "assessed",
     onTopic: o.onTopic === true,
     relevanceScore: Math.max(0, Math.min(1, rawScore)),
     reason: typeof o.reason === "string" ? o.reason : "No reason provided.",
@@ -296,7 +310,7 @@ async function callModel(model: ModelSpec, input: GradeInput, deterministic: boo
 }
 
 // Build the withheld result returned when a submission fails the relevance gate. No rubric points.
-function offTopicResult(input: GradeInput, verdict: RelevanceVerdict, modelId: string): GradingResult {
+function offTopicResult(input: GradeInput, verdict: AssessedRelevanceVerdict, modelId: string): GradingResult {
   const result: GradingResult = {
     schemaVersion: GRADING_SCHEMA_VERSION,
     overall: { score: 0, maxScore: input.rubric.totalPoints, confidence: clamp01(verdict.relevanceScore) },
@@ -317,6 +331,25 @@ function offTopicResult(input: GradeInput, verdict: RelevanceVerdict, modelId: s
     summaryFeedback:
       `Mr Selby did not grade this submission because it does not appear to address the assignment (relevance ${(verdict.relevanceScore * 100).toFixed(0)}%). ${verdict.reason} Review it and re-grade if this is a mistake.`,
     flags: Array.from(new Set(["off_topic", "grade_withheld", ...verdict.riskFlags])),
+    modelId,
+  };
+  return GradingResultSchema.parse(result);
+}
+
+// Build the withheld result returned when the relevance service itself is unavailable. This is
+// deliberately distinct from offTopicResult: an outage proves nothing about the student's work.
+function relevanceUnavailableResult(input: GradeInput, modelId: string): GradingResult {
+  const result: GradingResult = {
+    schemaVersion: GRADING_SCHEMA_VERSION,
+    // The persisted contract currently requires a numeric score. `grade_withheld` is the canonical
+    // no-score signal consumed by the teacher UI/export; an empty criteria list avoids inventing a
+    // rubric score while keeping old rows/readers compatible.
+    overall: { score: 0, maxScore: input.rubric.totalPoints, confidence: 0 },
+    criteria: [],
+    annotations: [],
+    summaryFeedback:
+      "Mr Selby could not check whether this submission addresses the assignment because the relevance service was unavailable. No score was proposed. Review the submission and try grading again.",
+    flags: ["grade_withheld", "relevance_check_unavailable"],
     modelId,
   };
   return GradingResultSchema.parse(result);
@@ -362,7 +395,7 @@ export async function gradeSubmission(input: GradeInput): Promise<GradeOutcome> 
 
   // Agent 1 — Relevance/Risk (deterministic, model-independent). Off-topic ⇒ withhold, do not grade.
   const reference = input.assignmentPrompt?.trim() || renderRubric(input.rubric);
-  let relevance: RelevanceVerdict;
+  let relevance: AssessedRelevanceVerdict;
   let relUsage = { inputTokens: 0, outputTokens: 0 };
   const relStarted = Date.now();
   try {
@@ -374,10 +407,39 @@ export async function gradeSubmission(input: GradeInput): Promise<GradeOutcome> 
       inputTokens: r.inputTokens, outputTokens: r.outputTokens,
       detail: { onTopic: relevance.onTopic, relevanceScore: relevance.relevanceScore, riskFlags: relevance.riskFlags, reason: relevance.reason },
     });
-  } catch {
-    // If the relevance check itself fails, fail safe: don't block grading, but flag for review.
-    relevance = { onTopic: true, relevanceScore: 1, reason: "Relevance check unavailable.", riskFlags: [] };
-    trace.push({ agent: "relevance_risk", status: "error", modelId: RELEVANCE_MODEL, latencyMs: Date.now() - relStarted, detail: { error: "relevance check unavailable; failed open" } });
+  } catch (err) {
+    // Fail closed: without a relevance verdict we cannot safely call the grading model. Keep the
+    // outage truthful and distinct from a known off-topic submission, then route it to review.
+    const relevanceUnavailable: UnavailableRelevanceVerdict = {
+      status: "unavailable",
+      onTopic: null,
+      relevanceScore: null,
+      reason: "The relevance service was unavailable, so no score was proposed.",
+      riskFlags: [],
+    };
+    trace.push({
+      agent: "relevance_risk",
+      status: "error",
+      modelId: RELEVANCE_MODEL,
+      latencyMs: Date.now() - relStarted,
+      detail: {
+        error: "relevance check unavailable; grading withheld",
+        cause: err instanceof AppError ? err.stage : "exception",
+      },
+    });
+    trace.push({
+      agent: "grading",
+      status: "skipped",
+      latencyMs: 0,
+      detail: { reason: "withheld: relevance check unavailable" },
+    });
+    return {
+      result: relevanceUnavailableResult(input, RELEVANCE_MODEL),
+      usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 },
+      disposition: "needs_review",
+      relevance: relevanceUnavailable,
+      trace,
+    };
   }
 
   if (!relevance.onTopic || relevance.relevanceScore < RELEVANCE_THRESHOLD) {

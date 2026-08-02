@@ -38,7 +38,7 @@ const WelcomeStep = ({ onNext }: WelcomeStepProps) => {
           <ShieldCheck className="w-12 h-12 text-purple-600 mb-4" />
           <h3 className="font-semibold text-gray-900 mb-2">Keep the last word</h3>
           <p className="text-sm text-gray-600 text-center">
-            Accept, edit, or dismiss every consequential suggestion before approval.
+            Accept, edit, or dismiss each margin note before approval.
           </p>
         </div>
       </div>

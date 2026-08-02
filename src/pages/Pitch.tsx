@@ -22,12 +22,12 @@ const workflow = [
   },
   {
     title: 'Review drafts',
-    description: 'Inspect proposed scores, margin notes, and the evidence behind them.',
+    description: 'Inspect proposed rubric scores and the passages behind each margin note.',
     icon: PenLine,
   },
   {
     title: 'Approve',
-    description: 'Accept, rewrite, or dismiss each consequential suggestion.',
+    description: 'Accept, rewrite, or dismiss each margin note before approval.',
     icon: CircleCheckBig,
   },
   {
@@ -146,8 +146,8 @@ const Pitch = () => (
                 The draft is a starting point, not the decision.
               </h2>
               <p className="mt-5 text-lg leading-8 text-muted-foreground">
-                Mr Selby points back to the passage and rubric behind a suggestion. Accept it, rewrite it,
-                or dismiss it before you approve the assignment.
+                Mr Selby shows draft rubric scores beside the paper and points each margin note back to a
+                passage. Accept it, rewrite it, or dismiss it before you approve the assignment.
               </p>
               <div className="mt-8 border-l-2 border-primary pl-5 text-sm leading-6 text-muted-foreground">
                 <p className="font-semibold text-foreground">Optional automatic approval is off by default.</p>

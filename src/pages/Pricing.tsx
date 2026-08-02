@@ -132,8 +132,8 @@ const Pricing = () => {
             Grade in your voice. Pay for what you grade.
           </h1>
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-            Start free on a single class. Upgrade when you grade at full load — every plan keeps
-            you the final word, with human-in-the-loop review on every grade.
+            Start free on a single class. Upgrade when you grade at full load. Teacher review is the
+            default, and eligible automatic approval stays optional.
           </p>
         </div>
 

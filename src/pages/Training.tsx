@@ -77,7 +77,7 @@ const Training = () => {
           <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">Help drafts sound more like you.</h1>
           <p className="mt-4 text-lg leading-8 text-muted-foreground">
             Add examples of assignments, rubrics, and feedback you have already written. Mr Selby
-            uses them as context for future first passes; you still review every consequential decision.
+            uses them as context for future first passes; you still review the draft and control approval.
           </p>
         </header>
 

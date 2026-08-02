@@ -128,13 +128,13 @@ jobs:
           set -euo pipefail
 
           # This reviewed manifest is the production deployment boundary. Repository discovery
-          # below must match it exactly, so a new experimental/debug function cannot ship merely
-          # because it has a top-level index.ts. `_shared` helpers are bundled, never deployed.
+          # below must match the union of runtime + explicitly retired entry points, so a new
+          # experimental/debug function cannot ship merely because it has a top-level index.ts.
+          # `_shared` helpers are bundled, never deployed.
           runtime_functions=(
             build-style-profile
             create-class
             delete-data
-            generate-grading-feedback
             generate-style-summary
             grade-enqueue
             grade-submission
@@ -146,6 +146,12 @@ jobs:
             stripe-checkout
             stripe-portal
             stripe-webhook
+          )
+
+          # Historical source stays in-repo for auditability, but these teacher-facing v1/debug
+          # entry points are outside the reviewed release and must never enter the deploy loop.
+          retired_functions=(
+            generate-grading-feedback
             test-ai-grading
           )
 
@@ -168,7 +174,7 @@ jobs:
           )
 
           if [[ ${#discovered_functions[@]} -eq 0 ]]; then
-            echo "No deployable Supabase Edge Functions were found." >&2
+            echo "No top-level Supabase Edge Function entry points were found." >&2
             exit 1
           fi
 
@@ -179,10 +185,21 @@ jobs:
             fi
           done
 
-          manifest_inventory="$(printf '%s\n' "${runtime_functions[@]}" | LC_ALL=C sort)"
+          for fn in "${retired_functions[@]}"; do
+            if [[ ! "$fn" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+              echo "Invalid function name in retired manifest: $fn" >&2
+              exit 1
+            fi
+            if printf '%s\n' "${runtime_functions[@]}" | grep -Fxq "$fn"; then
+              echo "Retired Edge Function must not be deployable: $fn" >&2
+              exit 1
+            fi
+          done
+
+          manifest_inventory="$(printf '%s\n' "${runtime_functions[@]}" "${retired_functions[@]}" | LC_ALL=C sort)"
           repository_inventory="$(printf '%s\n' "${discovered_functions[@]}" | LC_ALL=C sort)"
           if [[ "$manifest_inventory" != "$repository_inventory" ]]; then
-            echo "Runtime manifest does not exactly match top-level Edge Function entry points." >&2
+            echo "Reviewed runtime + retired manifests do not exactly match top-level Edge Function entry points." >&2
             diff -u \
               <(printf '%s\n' "$manifest_inventory") \
               <(printf '%s\n' "$repository_inventory") || true

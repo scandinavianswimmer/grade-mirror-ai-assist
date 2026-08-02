@@ -1,10 +1,10 @@
 // On-the-Loop throughput — Mr Selby's headline differentiator: confidence-thresholded
-// auto-finalize. High-confidence, clean grades publish unattended ("auto-finalized");
+// auto-finalize. High-confidence, clean grades are approved automatically ("auto-finalized");
 // low-confidence or off-ramp ones route to the teacher's exception queue ("needs review").
 //
 // This module is PURE: it takes already-fetched rows and partitions them. The data layer
 // (metricsApi.fetchOnTheLoopSummary) reads the existing submissions + submission_grades
-// tables and feeds them here. No new backend calls are required. Unattended publication is
+// tables and feeds them here. No new backend calls are required. Automatic approval is
 // counted only when persisted provenance proves it happened; a lagging schema must fail closed
 // instead of manufacturing an XPRIZE-facing metric from model confidence.
 
@@ -32,17 +32,17 @@ export type Disposition = 'auto_finalized' | 'needs_review' | 'pending';
 
 export interface OnTheLoopSummary {
   graded: number; // submissions with at least one grade
-  autoFinalized: number; // persisted provenance proves Mr Selby published unattended
+  autoFinalized: number; // persisted provenance proves Mr Selby approved the result automatically
   needsReview: number; // off-ramp or non-finalized grade awaiting a teacher
   pending: number; // teacher-finalized grade, complete but not AI throughput
   autoFinalizedPct: number | null; // share of graded that Mr Selby handled unattended (0–100)
 }
 
-// True when explicit provenance says Mr Selby published this unattended.
+// True when explicit provenance says Mr Selby approved this automatically.
 const hasAutoFinalizeProvenance = (s: OnTheLoopSubmission): boolean =>
   !!s.auto_finalized_at || s.finalized_by === 'ai';
 
-// Classify one graded submission. Confidence alone never proves unattended publication.
+// Classify one graded submission. Confidence alone never proves automatic approval.
 export const dispositionFor = (submission: OnTheLoopSubmission): Disposition => {
   // Off-ramp statuses are exceptions no matter how confident the model was.
   if (EXCEPTION_STATUSES.has(submission.status ?? '')) return 'needs_review';

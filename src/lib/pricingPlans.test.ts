@@ -78,6 +78,13 @@ describe('pricingPlans — tier config', () => {
       expect(tier.features.length).toBeGreaterThan(0);
     }
   });
+
+  it('describes review without claiming that teachers manually approve every grade', () => {
+    const featureCopy = PRICING_TIERS.flatMap((tier) => tier.features).join(' ');
+
+    expect(featureCopy).toContain('Teacher review is the default');
+    expect(featureCopy).not.toMatch(/approve every grade/i);
+  });
 });
 
 describe('pricingPlans — contact config', () => {

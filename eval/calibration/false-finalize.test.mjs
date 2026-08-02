@@ -29,7 +29,7 @@ describe("wouldAutoFinalize — mirrors the auto-finalize gate's eligibility hal
     expect(wouldAutoFinalize({ confidence: 0.99, disposition: "needs_review" }, 0.85)).toBe(false);
   });
 
-  it.each(["off_topic", "grade_withheld", "possible_injection", "likely_ai_generated", "low_confidence"])(
+  it.each(["off_topic", "grade_withheld", "relevance_check_unavailable", "possible_injection", "likely_ai_generated", "low_confidence"])(
     "ineligible when carrying the blocking flag %s even at high confidence",
     (flag) => {
       expect(wouldAutoFinalize({ confidence: 0.99, flags: [flag] }, 0.85)).toBe(false);

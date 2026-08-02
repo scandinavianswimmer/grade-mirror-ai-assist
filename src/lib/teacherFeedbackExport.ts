@@ -21,7 +21,15 @@ export interface TeacherFeedbackExportInput {
   criteria?: FeedbackExportCriterion[] | null;
   summaryFeedback?: string | null;
   notes?: FeedbackExportNote[] | null;
+  flags?: readonly string[] | null;
 }
+
+const WITHHELD_SCORE_FLAGS = new Set(['grade_withheld', 'off_topic']);
+
+export const isScoreWithheld = (flags: unknown): boolean => (
+  Array.isArray(flags)
+  && flags.some((flag) => typeof flag === 'string' && WITHHELD_SCORE_FLAGS.has(flag))
+);
 
 const titleCase = (value: string): string => (
   value.length > 0 ? `${value[0].toUpperCase()}${value.slice(1)}` : 'Note'
@@ -30,6 +38,7 @@ const titleCase = (value: string): string => (
 export const buildTeacherFeedbackExport = (input: TeacherFeedbackExportInput): string => {
   const studentName = input.studentName?.trim() || 'Student';
   const assignmentTitle = input.assignmentTitle?.trim() || 'Assignment';
+  const scoreWithheld = isScoreWithheld(input.flags);
   const lines = [
     'MR SELBY — APPROVED FEEDBACK',
     '',
@@ -37,14 +46,16 @@ export const buildTeacherFeedbackExport = (input: TeacherFeedbackExportInput): s
     `Assignment: ${assignmentTitle}`,
   ];
 
-  if (input.overallScore != null) {
+  if (scoreWithheld) {
+    lines.push('Score: Withheld pending teacher review. No score proposed.');
+  } else if (input.overallScore != null) {
     const maximum = input.overallMax ?? 100;
     const letter = input.letter?.trim() ? ` (${input.letter.trim()})` : '';
     lines.push(`Score: ${input.overallScore}/${maximum}${letter}`);
   }
 
   const criteria = input.criteria ?? [];
-  if (criteria.length > 0) {
+  if (!scoreWithheld && criteria.length > 0) {
     lines.push('', 'RUBRIC');
     for (const criterion of criteria) {
       lines.push(`${criterion.name}: ${criterion.score}/${criterion.maxScore}`);

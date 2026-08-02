@@ -509,7 +509,7 @@ const Profile = () => {
                 <p className="text-sm text-gray-600 mb-4">
                   Mr Selby always drafts a grade for you to review — that's the default, and you stay in
                   control. Auto-finalize is <span className="font-medium">off until you turn it on</span>.
-                  Once enabled, the clearest high-confidence, on-topic grades publish for you while you
+                  Once enabled, the clearest high-confidence, on-topic grades are approved automatically while you
                   stay On-the-Loop: low-confidence, off-topic, or integrity-flagged essays still come
                   to your review queue, always.
                 </p>
@@ -584,11 +584,13 @@ const Profile = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <Label htmlFor="ai-training" className="text-base font-medium">
-                        Allow model training with your content
+                        Allow feedback-style personalization
                       </Label>
                       <p className="text-sm text-gray-600">
-                        Off by default. When enabled, your grading examples may be used for model training.
-                        Do not enable this for student work unless your school policy and permissions allow it.
+                        Off by default. When enabled, reviewed feedback and examples may be placed in
+                        future Gemini prompts to match your feedback style. Turning this off stops that
+                        future prompt use but does not delete saved examples; use the deletion controls
+                        below to erase them. Do not enable this unless school policy and permissions allow it.
                       </p>
                     </div>
                     <Switch
