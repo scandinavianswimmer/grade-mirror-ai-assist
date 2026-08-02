@@ -2,7 +2,7 @@
 
 Verified context: **August 1, 2026**
 
-The public site is already live at [mrselby.app](https://mrselby.app). The last fully recorded baseline before the current candidate is commit `028c0c7`, Cloudflare Worker version `4740b352-418a-46b6-bbda-f21ba30fa296`, with [GitHub Actions run 30727576006](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30727576006) passing the deterministic release gate with 249 tests. Record the current candidate's immutable identity separately after it is committed and deployed.
+The public site is already live at [mrselby.app](https://mrselby.app). Release commit `119d109`, tag `mr-selby-public-preview-2026-08-01`, is deployed as Cloudflare Worker version `94fc5cfb-941f-4d95-b50e-7de49d9b7066`. [GitHub Actions run 30728937099](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30728937099) passed the exact-release gate with 256 tests and the frozen Deno check of all 16 Edge Functions; [main run 30729106237](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30729106237) repeated the gate after merge.
 
 That deployment is intentionally a **public-only preview**. It contains no connected authentication, classroom data, billing, or production grading service. This runbook begins only after the owner approves an isolated backend and its exact cost.
 
@@ -23,7 +23,7 @@ Before backend work, record the current release and verify the safe fallback rem
 ```sh
 git status --short
 git rev-parse HEAD
-gh run view 30727576006 --json status,conclusion,headSha,url
+gh run view 30728937099 --json status,conclusion,headSha,url
 npx wrangler deployments list --name mr-selby --json
 
 curl -I https://mrselby.app/
@@ -33,8 +33,8 @@ curl -I https://www.mrselby.app/terms
 
 Expected baseline:
 
-- the evidence record maps public-preview commit `028c0c7` to the Worker deployment below, even if the working branch has since advanced;
-- Worker version `4740b352-418a-46b6-bbda-f21ba30fa296` receives 100% of traffic;
+- the evidence record maps public-preview commit `119d109` and tag `mr-selby-public-preview-2026-08-01` to the Worker deployment below, even if the working branch has since advanced;
+- Worker version `94fc5cfb-941f-4d95-b50e-7de49d9b7066` receives 100% of traffic;
 - the apex HTTPS URL returns 200;
 - plain HTTP and `www` return permanent redirects to the equivalent apex HTTPS URL; and
 - the public site continues to show the guarded setup state rather than accepting account or classroom data.
