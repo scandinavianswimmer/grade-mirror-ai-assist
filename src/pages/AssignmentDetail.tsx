@@ -34,7 +34,7 @@ interface Submission {
   created_at: string;
   hasGrade?: boolean;
   confidence?: number | null;
-  finalized_by?: string | null; // 'ai' = auto-finalized by aiTA; absent pre-migration
+  finalized_by?: string | null; // 'ai' = auto-finalized by Mr Selby; absent pre-migration
   auto_finalized_at?: string | null;
 }
 
@@ -122,7 +122,7 @@ const AssignmentDetail = () => {
 
       // Mark which submissions actually have a grade so the status badge can reconcile a stale
       // value (e.g. a failed re-grade left `grade_error` while a valid grade still stands), and
-      // carry the latest grade's confidence so we can show aiTA's auto-finalize disposition.
+      // carry the latest grade's confidence so we can show Mr Selby's auto-finalize disposition.
       const subs = (submissionsData || []) as Submission[];
       const subIds = subs.map((s) => s.id);
       const gradedIds = new Set<string>();
@@ -203,7 +203,7 @@ const AssignmentDetail = () => {
         toast({
           title: "Uploaded & ready to grade",
           description: pct != null
-            ? `${file.name} extracted (${pct}% confidence). Open it to grade with aiTA.`
+            ? `${file.name} extracted (${pct}% confidence). Open it to grade with Mr Selby.`
             : `${file.name} uploaded and ready for grading.`
         });
       }
@@ -251,7 +251,7 @@ const AssignmentDetail = () => {
     );
   }
 
-  // On-the-Loop disposition per submission — what aiTA published unattended vs. what it routed
+  // On-the-Loop disposition per submission — what Mr Selby published unattended vs. what it routed
   // to the teacher. Column-tolerant (reads optional provenance off the row if present).
   const dispositions = new Map<string, Disposition>();
   for (const s of submissions) {
@@ -361,7 +361,7 @@ const AssignmentDetail = () => {
                     <CheckCircle2 className="h-4 w-4" /> {loopSummary.graded} graded
                   </span>
                   <span className="flex items-center gap-1.5 font-medium text-emerald-700">
-                    <Bot className="h-4 w-4" /> {loopSummary.autoFinalized} auto-finalized by aiTA
+                    <Bot className="h-4 w-4" /> {loopSummary.autoFinalized} auto-finalized by Mr Selby
                   </span>
                   <span className={`flex items-center gap-1.5 font-medium ${loopSummary.needsReview > 0 ? 'text-amber-700' : 'text-gray-400'}`}>
                     <Inbox className="h-4 w-4" /> {loopSummary.needsReview} need your review
@@ -436,7 +436,7 @@ const AssignmentDetail = () => {
                       <div className="flex items-center gap-2">
                         {isAuto ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-800">
-                            <Bot className="h-3 w-3" /> Auto-finalized by aiTA
+                            <Bot className="h-3 w-3" /> Auto-finalized by Mr Selby
                           </span>
                         ) : (
                           <span className={`px-2 py-1 rounded-full text-xs ${statusBadgeClass(effectiveStatus(submission.status, !!submission.hasGrade))}`}>

@@ -81,8 +81,9 @@ describe('pricingPlans — tier config', () => {
 });
 
 describe('pricingPlans — contact config', () => {
-  it('never routes School / Dept enquiries to the parked aita.app domain', () => {
-    expect(SCHOOL_CONTACT_EMAIL).not.toBe('hello@aita.app');
+  it('never invents an unverified School / Dept inbox', () => {
+    expect(SCHOOL_CONTACT_EMAIL).not.toBe('hello@example.com');
+    expect(SCHOOL_CONTACT_EMAIL).not.toBe('hello@mrselby.app');
     if (SCHOOL_CONTACT_EMAIL) {
       expect(SCHOOL_CONTACT_EMAIL).toMatch(/^[^@\s]+@[^@\s]+\.[^@\s]+$/);
     }

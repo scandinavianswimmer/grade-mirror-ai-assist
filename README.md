@@ -1,8 +1,10 @@
-# aiTA — your grading co-pilot
+# Mr Selby — thoughtful grading support
 
-**aiTA helps middle- and high-school teachers grade student essays in their own voice and standards — while keeping the teacher as the final authority.**
+**Mr Selby helps middle- and high-school teachers grade student essays in their own voice and standards—while keeping the teacher as the final authority.**
 
-Paste a rubric, upload student work, and aiTA returns rubric-aligned scores and margin feedback written the way *you* write it. Off-topic or adversarial submissions are flagged and withheld, never silently scored. Every grade is reviewable: accept, edit, or dismiss each comment — and your edits teach aiTA your voice over time.
+Paste a rubric, upload student work, and Mr Selby returns rubric-aligned scores and margin feedback written the way *you* write it. Off-topic or adversarial submissions are flagged and withheld, never silently scored. Every grade is reviewable: accept, edit, or dismiss each comment—and your edits teach Mr Selby your voice over time.
+
+The name is a personal tribute to a favorite teacher whose care in teaching, designing assignments, and grading them set the standard behind the product. It does not imply affiliation with or endorsement by that teacher. The project was formerly developed as **aiTA / Grade Mirror**; internal infrastructure identifiers retain those names where changing them would risk data or deployment continuity.
 
 ---
 
@@ -10,7 +12,7 @@ Paste a rubric, upload student work, and aiTA returns rubric-aligned scores and 
 
 - **Grades in the teacher's voice.** A consent-gated style profile learns from your past feedback, so comments read like yours — not generic AI. ("I barely had to edit this.")
 - **Trustworthy by construction.** Rubric-mandatory, relevance-gated scoring. Off-assignment work is withheld with a flag, not given a fabricated grade.
-- **Human-in-the-loop.** Teacher keeps final authority — accept / edit / dismiss every annotation; edits feed the learning loop.
+- **Teacher-controlled.** Human review is the default. Teachers accept, edit, or dismiss annotations; eligible automated finalization is explicitly opt-in and remains auditable.
 - **Auditable.** Each grade carries a rubric snapshot, evidence anchoring, and an agent-pipeline trace.
 - **Privacy-first.** Owner-isolated data, private storage with signed URLs, de-identification before model calls, right-to-erasure, and retention controls.
 
@@ -20,11 +22,11 @@ Paste a rubric, upload student work, and aiTA returns rubric-aligned scores and 
 2. **Upload** student submissions (PDF / DOCX / text) — server-side extraction with confidence scoring.
 3. **Grade** — the AI pipeline validates against the rubric, verifies evidence, recomputes totals, anchors comments to the text, and fails loud rather than guessing.
 4. **Review** — accept, edit, or dismiss each comment; finalize when satisfied.
-5. **Improve** — your edits sharpen aiTA's grasp of your voice on the next batch.
+5. **Improve** — your edits sharpen Mr Selby's grasp of your voice on the next batch.
 
 ## Tech stack
 
-- **Frontend:** Vite · React 18 · TypeScript · shadcn/ui · Tailwind; Firebase Hosting configuration is included but not yet live
+- **Frontend:** Vite · React 18 · TypeScript · shadcn/ui · Tailwind; `mrselby.app` is purchased and delegated to Cloudflare, but the exact release is not live yet
 - **Backend:** Supabase Postgres + Edge Functions; Cloud Run and Cloud Storage adapters are implemented but not yet deployed
 - **AI:** Google **Gemini** with an optional Vertex AI transport; rubric-aligned grading, evidence verification, and teacher-style injection
 - **Payments:** Stripe · **Analytics:** PostHog

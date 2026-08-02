@@ -22,7 +22,7 @@ describe('dispositionFor', () => {
   });
 
   it('rejects non-schema aliases as auto-finalize provenance', () => {
-    expect(dispositionFor({ id: '1', status: 'finalized', finalized_by: 'aiTA' })).toBe('pending');
+    expect(dispositionFor({ id: '1', status: 'finalized', finalized_by: 'Mr Selby' })).toBe('pending');
   });
 });
 

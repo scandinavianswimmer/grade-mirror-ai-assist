@@ -111,7 +111,7 @@ const Billing = () => {
                 {free.label}
                 {plan === 'free' && <Badge variant="secondary">Your plan</Badge>}
               </CardTitle>
-              <CardDescription>For trying aiTA on a single class.</CardDescription>
+              <CardDescription>For trying Mr Selby on a single class.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="text-3xl font-semibold">$0<span className="text-base font-normal text-muted-foreground">/mo</span></div>

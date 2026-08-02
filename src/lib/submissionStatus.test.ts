@@ -20,7 +20,7 @@ describe('statusMetaWithProvenance', () => {
   it('labels an AI-finalized grade as Auto-finalized', () => {
     const meta = statusMetaWithProvenance('finalized', 'ai');
     expect(meta.label).toBe('Auto-finalized');
-    expect(meta.description).toMatch(/aiTA/);
+    expect(meta.description).toMatch(/Mr Selby/);
   });
 
   it('labels an exported AI grade as Auto-finalized too', () => {

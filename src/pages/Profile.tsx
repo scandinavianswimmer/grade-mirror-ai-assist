@@ -78,7 +78,7 @@ const Profile = () => {
     await supabase.from('ai_profiles').delete().eq('user_id', user.id);
     setStyleSummary(null);
     toast.success('Learned style reset', {
-      description: 'aiTA will rebuild your style from new exemplars.',
+      description: 'Mr Selby will rebuild your style from new exemplars.',
     });
   };
 
@@ -507,7 +507,7 @@ const Profile = () => {
               <Card className="p-6">
                 <h3 className="text-lg font-semibold mb-1">Grading Automation</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  aiTA always drafts a grade for you to review — that's the default, and you stay in
+                  Mr Selby always drafts a grade for you to review — that's the default, and you stay in
                   control. Auto-finalize is <span className="font-medium">off until you turn it on</span>.
                   Once enabled, the clearest high-confidence, on-topic grades publish for you while you
                   stay On-the-Loop: low-confidence, off-topic, or integrity-flagged essays still come
@@ -520,7 +520,7 @@ const Profile = () => {
                         Auto-finalize high-confidence grades (opt-in)
                       </Label>
                       <p className="text-sm text-gray-600">
-                        Off by default. Turn this on to let aiTA publish confident, rubric-aligned
+                        Off by default. Turn this on to let Mr Selby publish confident, rubric-aligned
                         grades without manual approval. You stay On-the-Loop: low-confidence or
                         off-topic essays, and anything with an integrity flag (possible AI-generated,
                         off-topic, prompt injection), always come to you regardless of this setting.
@@ -539,7 +539,7 @@ const Profile = () => {
                       Confidence threshold
                     </Label>
                     <p className="text-sm text-gray-600 mb-2">
-                      How sure aiTA must be before it finalizes on its own. Higher = more essays routed
+                      How sure Mr Selby must be before it finalizes on its own. Higher = more essays routed
                       to your review.
                     </p>
                     <Select
@@ -651,7 +651,7 @@ const Profile = () => {
                   <p className="text-sm text-gray-700 whitespace-pre-wrap">{styleSummary}</p>
                 ) : (
                   <p className="text-sm text-gray-500">
-                    aiTA hasn't learned a style yet. Upload graded exemplars (with your feedback) to teach it your voice.
+                    Mr Selby hasn't learned a style yet. Upload graded exemplars (with your feedback) to teach it your voice.
                   </p>
                 )}
               </Card>
@@ -686,8 +686,8 @@ const Profile = () => {
                   <div className="p-4 bg-amber-50 rounded-lg">
                     <h4 className="font-medium text-amber-900 mb-2">Regulatory note</h4>
                     <p className="text-amber-800">
-                      aiTA is not certified compliant with FERPA, GDPR, or similar regulations. Compliance for
-                      your use depends on your institution's policies and agreements. Review aiTA with your
+                      Mr Selby is not certified compliant with FERPA, GDPR, or similar regulations. Compliance for
+                      your use depends on your institution's policies and agreements. Review Mr Selby with your
                       school or district before processing student records.
                     </p>
                   </div>

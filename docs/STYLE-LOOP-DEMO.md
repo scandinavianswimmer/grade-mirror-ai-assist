@@ -1,53 +1,83 @@
-# Style-Loop Demo — "aiTA learns your voice"
+# Style-profile application demo — Mr Selby
 
-Proves the marquee goal claim: **the output looks like the teacher actually graded it.** This is the
-#1 gap flagged in `.planning/GOAL-ALIGNMENT-REVIEW.md` — close it and the system matches the goal.
+This demo answers one narrow question: **Does the grading path apply a supplied teacher-style profile to
+the draft?** It does not, by itself, prove that Mr Selby learned a teacher's voice, improved over time,
+or converged on a real teacher's feedback.
 
-## How it works (verified in code)
-- `grade-submission` reads `teacher_style_profiles.style_summary` for the grading teacher
-  (`index.ts:94-98`) and passes it to the engine as `styleProfile` (`index.ts:191`).
-- `engine.ts buildCachedSystem` injects it as a **"TEACHER GRADING STYLE — write feedback in this
-  teacher's voice"** block (`engine.ts:130-135`).
-- The **Style agent step** in the visible pipeline flips **`skipped` → `ok (applied)`** when a profile
-  is present (`engine.ts:375-378`) — a clean on-camera signal that the teacher's voice is being applied.
+Status on August 1, 2026: verified in the release-candidate code, not in the protected production path.
+Record only after the backend, schema, Gemini call, and exact release are live and traceable.
 
-So: **no DB write to the grader is needed** — seed `teacher_style_profiles.style_summary` and the
-already-deployed grader injects it on the next grade.
+## What the code path implements
 
-## Seeded persona (see `scripts/seed-demo-style-profile.sql`)
-A warm, Socratic 8th-grade English teacher who: opens with a specific affirmation, **coaches with
-questions**, demands **"Evidence?"** for unsupported claims, calls plot summary "retelling, not
-analysis," is **hard on thesis/structure but lenient on grammar**, and **always closes with
-"Next step:"**. Deliberately distinctive so the with/without difference is obvious on camera.
+- `supabase/functions/grade-submission/index.ts` reads
+  `teacher_style_profiles.style_summary` for the grading teacher.
+- `supabase/functions/_shared/grading/engine.ts` injects the profile into the grading-system prompt.
+- The grading trace records whether a profile or approved style exemplars were applied.
+- A missing profile is intended to leave the style stage unapplied rather than invent one.
 
-## Steps to record the demo
-1. **Deploy the two committed grading fixes first** (so criteria are assignment-specific + notes don't
-   duplicate on a re-grade): `supabase functions deploy grade-submission --no-verify-jwt`.
-   Recommended: also enable `gemini-2.5-pro` billing so the happy path runs on pro.
-2. **Capture the BEFORE (no profile).** Either screenshot an existing grade (the generic
-   "exceptionally clear, well-organized…" summary on the Stanley essay is a perfect baseline), or grade
-   a fresh essay while no profile exists. Note the agent pipeline shows **Style: skipped**.
-3. **Run the seed:** `psql … -f scripts/seed-demo-style-profile.sql` (see that file's header for the
-   exact session-pooler command — needs your DB password).
-4. **Capture the AFTER (with profile).** Re-grade the same essay. Expect the feedback to adopt the
-   teacher's voice — questions instead of commands, **"Evidence?"**, quoting the student's words back,
-   and a closing **"Next step:"** — and the pipeline now shows **Style: ok (applied)**.
-5. **Show the A/B side by side.** Same essay, same rubric — only the voice changed. That is "it grades
-   like me."
-6. **(Optional, strongest) Close the loop on camera:** edit one annotation → "AI originally suggested…"
-   is recorded; over a batch the **Metrics → edit-rate-over-time** trends down = "it's learning me."
+These are repository facts. They are not deployment evidence.
 
-## Cleanest controlled A/B (same essay, post-deploy)
-With the dedup fix deployed, re-grades are clean, so you can toggle:
-- Grade essay → screenshot (profile present = WITH).
-- Run the UNDO block's `DELETE FROM teacher_style_profiles …` → re-grade → screenshot (WITHOUT).
-- Re-run the seed to restore. (Pre-deploy, avoid repeated re-grades — they duplicated annotations.)
+## Synthetic profile
 
-## Notes / caveats
-- `build-style-profile` (the fn that would generate the summary from samples) currently targets
-  `GRADING_MODELS[0]` = `gemini-2.5-pro` (quota=0 → 429) and may not be deployed. The seed writes the
-  summary directly so the demo doesn't depend on it. To make it fully real later: give that fn a
-  flash fallback / `GEMINI_STYLE_MODEL`, deploy it, and let it regenerate from the 10 seeded samples.
-- The seed also writes 10 `training_examples` and flips `allow_training_on_content = TRUE` so the
-  onboarding "≥10 samples" state and consent are realistic.
-- UNDO block at the bottom of the seed file removes everything.
+The demo seed describes a warm, Socratic English-teacher style: begin with a specific strength, coach
+with questions, ask for evidence when a claim is unsupported, distinguish summary from analysis, focus
+more on thesis and structure than minor mechanics, and end with a concrete next step.
+
+The profile is deliberately distinctive so an A/B can reveal whether the prompt path applied it. It is
+fabricated and is not the voice of a real teacher or of the teacher who inspired the Mr Selby name.
+
+## Safety gate before recording
+
+`scripts/seed-demo-style-profile.sql` currently contains a hard-coded teacher UUID, stale backend
+instructions, direct writes to the style profile and training examples, and a consent-setting change.
+**Do not run it as written.** Use only a disposable synthetic account after a separate implementation
+task removes the defaults and confirms the undo path. Administrative SQL bypasses RLS.
+
+Before capture:
+
+- [ ] Canonical backend and migrations are verified.
+- [ ] Exact release is deployed and produces a traceable privacy-safe Gemini request.
+- [ ] Synthetic demo account is isolated from real teacher and student data.
+- [ ] Consent state is explicit and limited to the synthetic account.
+- [ ] A/B procedure preserves the same essay, rubric, model route, and release.
+- [ ] Profile-present and profile-absent states are confirmed from the trace, not inferred from tone.
+
+## Controlled A/B procedure
+
+1. Grade one synthetic essay without a style profile and save the output, trace ID, model, commit, and
+   timestamp as the **baseline**.
+2. Apply the reviewed synthetic profile to the same disposable account.
+3. Re-grade the same essay with the same rubric and release; save the equivalent evidence as the
+   **profile condition**.
+4. Verify the trace reports profile application and that annotation anchors remain valid.
+5. Present both outputs side by side. Highlight concrete language differences without claiming the
+   profile made the grade more accurate.
+6. Restore or dispose of the synthetic account using the reviewed recovery procedure.
+
+Do not delete or alter a real teacher's profile to create the baseline.
+
+## Evidence-safe narration
+
+> Same synthetic essay, same rubric, same release. The baseline used no style profile. In the second
+> run, the trace confirms that Mr Selby applied this synthetic teaching-style profile. The wording
+> changed in the ways shown here. This demonstrates profile application; it does not yet demonstrate
+> learning or convergence from real teacher behavior.
+
+## What would prove learning
+
+A real learning claim requires the consented profile-generation or exemplar loop to run on approved
+teacher decisions, followed by a held-out evaluation. The pre-registered primary evidence is the stated
+blinded voice-fidelity judge plus aggregated embedding and within-teacher holdout analysis. Edit-rate
+decline may be reported only as a corroborating signal with sample size and method; it is not the
+verdict, because teachers may accept AI feedback without editing it.
+
+Editing one annotation can demonstrate that the product records a teacher decision. A seeded profile
+can demonstrate that the grader applies a profile. Neither event alone proves that the system learned
+the teacher.
+
+## Remaining gaps
+
+- The current seed script must be made safe and backend-neutral before use.
+- `build-style-profile` must be deployed, traced, and tested against the configured production model.
+- The profile update path from consented teacher decisions requires live evidence.
+- No measured teacher-voice result belongs in the submission until the held-out evaluation is complete.

@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Download,
   Play,
+  Feather,
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
@@ -44,9 +45,18 @@ const Pitch = () => {
 
       {/* Navigation */}
       <nav aria-label="Primary" className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 animate-fade-in">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-8">
-            <Link to="/pitch" className="text-2xl font-bold text-primary transition-colors hover:text-primary/80">aiTA</Link>
+        <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-4">
+          <div className="flex items-center gap-5 lg:gap-8">
+            <Link
+              to="/"
+              className="flex items-center gap-2 text-primary transition-colors hover:text-primary/80"
+              aria-label="Mr Selby overview"
+            >
+              <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+                <Feather className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <span className="whitespace-nowrap font-display text-2xl font-semibold tracking-tight">Mr Selby</span>
+            </Link>
             <div className="hidden md:flex space-x-6 text-sm">
               <a href="#product" className="story-link text-muted-foreground hover:text-foreground transition-colors">Product</a>
               <a href="#how-it-works" className="story-link text-muted-foreground hover:text-foreground transition-colors">How it works</a>
@@ -56,10 +66,10 @@ const Pitch = () => {
               <a href="#faq" className="story-link text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-1 sm:gap-3">
             <Button onClick={handleSignIn} variant="ghost" size="sm" className="hover-scale">Sign in</Button>
             <Button onClick={handleStartFree} size="sm" className="hover-scale relative overflow-hidden">
-              <span className="relative z-10">Start free</span>
+              <span className="relative z-10">Try free</span>
             </Button>
           </div>
         </div>
@@ -69,17 +79,20 @@ const Pitch = () => {
       {/* Hero Section */}
       <section id="product" className="py-20 px-4">
         <div className="container mx-auto max-w-4xl text-center">
-          <h1 className="mb-6 text-4xl font-bold text-foreground md:text-6xl">
-            You're not “falling behind.” You're carrying the weight of a whole classroom.
-          </h1>
-          
-          <p className="text-xl text-muted-foreground mb-8 leading-relaxed animate-fade-in">
-            The late‑night grading. The copy‑and‑paste feedback. The guilt when family time loses to the stack on your desk. 
-            It's not that you're not enough—you're being asked to do the work of three people.
+          <p className="mb-5 text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+            Teacher-controlled grading co-pilot
           </p>
-          
-          <p className="text-2xl font-semibold text-foreground mb-12 animate-fade-in">
-            aiTA gives you your evenings back—without compromising the feedback your students deserve.
+          <h1 className="mb-6 text-4xl font-bold text-foreground md:text-6xl">
+            Thoughtful grading support, shaped by how you teach.
+          </h1>
+
+          <p className="mx-auto mb-6 max-w-3xl text-xl leading-relaxed text-muted-foreground animate-fade-in">
+            Mr Selby reads the assignment, follows your rubric, and drafts clear feedback in your
+            voice—so you can spend less time on repetitive grading and more time teaching.
+          </p>
+
+          <p className="mb-12 text-2xl font-semibold text-foreground animate-fade-in">
+            You review every comment, adjust every score, and stay the final word.
           </p>
           
           <div className="grid md:grid-cols-2 gap-4 mb-12 text-left max-w-2xl mx-auto">
@@ -101,7 +114,7 @@ const Pitch = () => {
             <Button onClick={handleStartFree} size="lg" className="text-lg px-8 hover-scale relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <span className="relative z-10 flex items-center">
-                Start free
+                Grade your first assignment
                 <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
               </span>
             </Button>
@@ -119,7 +132,7 @@ const Pitch = () => {
             )}
           </div>
           
-          <p className="text-sm text-muted-foreground mb-8 animate-fade-in">No credit card.</p>
+          <p className="text-sm text-muted-foreground mb-8 animate-fade-in">Start with sample work. No credit card.</p>
           
           <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
             {[
@@ -137,6 +150,30 @@ const Pitch = () => {
         </div>
       </section>
 
+      {/* Origin story */}
+      <section aria-labelledby="why-the-name" className="border-y border-border/70 bg-card/65 px-4 py-14">
+        <div className="container mx-auto grid max-w-4xl gap-6 md:grid-cols-[12rem_minmax(0,1fr)] md:gap-10">
+          <div>
+            <span className="grid h-12 w-12 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <Feather className="h-6 w-6" aria-hidden="true" />
+            </span>
+            <p className="mt-4 text-sm font-semibold uppercase tracking-[0.16em] text-primary">Why the name?</p>
+          </div>
+          <div>
+            <h2 id="why-the-name" className="text-3xl font-semibold text-foreground md:text-4xl">
+              Named for a teacher who made the work matter.
+            </h2>
+            <p className="mt-5 text-lg leading-8 text-muted-foreground">
+              Mr Selby is named in gratitude for a favorite teacher whose care in teaching,
+              designing assignments, and grading them set the standard behind this product.
+            </p>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              The name is a personal tribute, not a claim of affiliation or endorsement.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Scroll Story */}
       <section className="py-20 px-4 bg-muted/50">
         <div className="container mx-auto max-w-4xl text-center">
@@ -150,7 +187,7 @@ const Pitch = () => {
           </p>
           
           <p className="text-2xl font-semibold text-primary mb-12 animate-fade-in animate-pulse">
-            aiTA shoulders the repetitive work so you can show up where you matter most.
+            Mr Selby shoulders the repetitive work so you can show up where you matter most.
           </p>
           
           <div className="flex flex-wrap justify-center gap-6">
@@ -177,7 +214,7 @@ const Pitch = () => {
           
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold mb-4 text-center">Before aiTA</h3>
+              <h3 className="text-lg font-semibold mb-4 text-center">Before Mr Selby</h3>
               {[
                 { icon: Clock, text: "10:14 PM: still grading" },
                 { icon: MessageSquare, text: "Same comment, different student" },
@@ -193,7 +230,7 @@ const Pitch = () => {
             </div>
             
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold mb-4 text-center">After aiTA</h3>
+              <h3 className="text-lg font-semibold mb-4 text-center">With Mr Selby</h3>
               {[
                 { icon: CheckCircle2, text: "A review queue instead of a blank page" },
                 { icon: MessageSquare, text: "Comments drafted in your voice" },
@@ -227,17 +264,17 @@ const Pitch = () => {
               {
                 step: "1",
                 title: "Upload",
-                description: "Add the student files; aiTA extracts the text—no retyping, no extra tabs."
+                description: "Add the student files; Mr Selby extracts the text—no retyping, no extra tabs."
               },
               {
                 step: "2", 
                 title: "Align",
-                description: "aiTA finds your instructions and rubric, then drafts inline comments and proposes rubric-aligned scores."
+                description: "Mr Selby finds your instructions and rubric, then drafts inline comments and proposes rubric-aligned scores."
               },
               {
                 step: "3",
                 title: "Review", 
-                description: "Approve, tweak, or dismiss. aiTA learns your tone and tightens its drafts every time."
+                description: "Approve, tweak, or dismiss. Mr Selby learns your tone and tightens its drafts every time."
               },
               {
                 step: "4",
@@ -259,7 +296,7 @@ const Pitch = () => {
           </div>
           
           <p className="text-center text-lg text-muted-foreground mt-12">
-            You stay the teacher. aiTA does the heavy lifting.
+            You stay the teacher. Mr Selby does the heavy lifting.
           </p>
         </div>
       </section>
@@ -291,12 +328,12 @@ const Pitch = () => {
               {
                 icon: CheckCircle2,
                 title: "All in one place.",
-                description: "No juggling tabs or tools. aiTA lives inside your app."
+                description: "No juggling tabs or tools. Mr Selby lives inside your app."
               },
               {
                 icon: ArrowRight,
                 title: "Learns from you.",
-                description: "Every tweak teaches aiTA your style and standards."
+                description: "Every tweak teaches Mr Selby your style and standards."
               },
               {
                 icon: Download,
@@ -368,7 +405,7 @@ const Pitch = () => {
           </div>
           
           <p className="text-center text-xl text-foreground mt-12">
-            Measure these outcomes against your own baseline; aiTA keeps the underlying activity auditable.
+            Measure these outcomes against your own baseline; Mr Selby keeps the underlying activity auditable.
           </p>
         </div>
       </section>
@@ -480,20 +517,20 @@ const Pitch = () => {
           <div className="space-y-4">
             {[
                {
-                question: "Will aiTA replace me?",
-                answer: "No. aiTA drafts; you approve. It's a power tool that accelerates your workflow—not a substitute for your judgment."
+                question: "Does Mr Selby replace the teacher?",
+                answer: "No. Mr Selby drafts; you decide. It supports your workflow rather than substituting for your judgment."
               },
               {
                 question: "Will comments sound generic?",
-                answer: "aiTA learns from your edits, so feedback keeps sounding like you and gets closer to your voice over time."
+                answer: "Mr Selby learns from your edits, so feedback keeps sounding like you and gets closer to your voice over time."
               },
               {
                 question: "Can I use my own rubrics?",
-                answer: "Yes. aiTA finds your rubric and proposes rubric‑aligned scores that you can accept or adjust."
+                answer: "Yes. Mr Selby finds your rubric and proposes rubric‑aligned scores that you can accept or adjust."
               },
               {
                 question: "Does it work for ELA and History?",
-                answer: "Yes—aiTA is built for essay‑driven courses first, with broader subject support planned."
+                answer: "Yes—Mr Selby is built for essay‑driven courses first, with broader subject support planned."
               },
               {
                 question: "What about privacy?",
@@ -541,16 +578,16 @@ const Pitch = () => {
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-4xl text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-            Stop choosing between great feedback and a life outside school.
+            Give thoughtful feedback without giving up every evening.
           </h2>
           
           <p className="text-xl text-muted-foreground mb-12">
-            Teach with a full heart—aiTA carries the stack.
+            You stay the teacher. Mr Selby helps carry the stack.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <Button onClick={handleStartFree} size="lg" className="text-lg px-8">
-              Start free
+              Create your teacher workspace
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
             {salesContactHref ? (
@@ -587,7 +624,7 @@ const Pitch = () => {
           </nav>
           
           <div className="text-center text-sm text-muted-foreground">
-            Copyright © aiTA · Launch preview
+            Mr Selby · Teacher-controlled grading support · Launch preview
           </div>
         </div>
       </footer>

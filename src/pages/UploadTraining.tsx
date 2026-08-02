@@ -38,7 +38,7 @@ const UploadTraining = () => {
     if (!formData.essay.trim() || !formData.rubric.trim() || !formData.feedback.trim()) {
       toast({
         title: "Missing required fields",
-        description: "Provide the student essay, the rubric, and your own feedback — your feedback is what teaches aiTA your style.",
+        description: "Provide the student essay, the rubric, and your own feedback — your feedback is what teaches Mr Selby your style.",
         variant: "destructive"
       });
       return;

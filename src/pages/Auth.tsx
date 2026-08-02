@@ -56,7 +56,7 @@ const Auth = () => {
     try {
       if (isLogin) {
         await signIn(email, password)
-        toast({ title: 'Welcome back', description: 'Signed in to aiTA.' })
+        toast({ title: 'Welcome back', description: 'Signed in to Mr Selby.' })
         navigate('/')
       } else {
         await signUp(email, password, name)
@@ -106,14 +106,14 @@ const Auth = () => {
           <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary-foreground/15">
             <Feather className="h-5 w-5" aria-hidden="true" />
           </span>
-          <span className="font-display text-2xl font-semibold tracking-tight">aiTA</span>
+          <span className="font-display text-2xl font-semibold tracking-tight">Mr Selby</span>
         </div>
         <div className="relative max-w-md">
           <h2 className="font-display text-4xl font-semibold leading-[1.1] tracking-tight">
             Grade in your voice. Stay the final word.
           </h2>
           <p className="mt-5 text-lg leading-relaxed text-primary-foreground/80">
-            aiTA reads, annotates, and proposes rubric-aligned feedback — like a thoughtful TA in the margins.
+            Mr Selby reads, annotates, and proposes rubric-aligned feedback — like a thoughtful TA in the margins.
             You approve, edit, or reject every note.
           </p>
         </div>
@@ -131,7 +131,7 @@ const Auth = () => {
               <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground">
                 <Feather className="h-5 w-5" aria-hidden="true" />
               </span>
-              <span className="font-display text-2xl font-semibold tracking-tight">aiTA</span>
+              <span className="font-display text-2xl font-semibold tracking-tight">Mr Selby</span>
             </div>
           </div>
 
@@ -246,7 +246,7 @@ const Auth = () => {
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            {isLogin ? "New to aiTA?" : 'Already have an account?'}{' '}
+            {isLogin ? "New to Mr Selby?" : 'Already have an account?'}{' '}
             <button
               type="button"
               onClick={() => {

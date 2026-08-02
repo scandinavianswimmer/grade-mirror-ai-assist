@@ -131,7 +131,7 @@ const ProfileSetup = ({ userId, onComplete }: ProfileSetupProps) => {
       </div>
 
       <div>
-        <Label htmlFor="why_joining">Why are you using aiTA? *</Label>
+        <Label htmlFor="why_joining">Why are you using Mr Selby? *</Label>
         <Textarea
           id="why_joining"
           required

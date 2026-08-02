@@ -1,6 +1,6 @@
 // Phase 15 Wave 2 (PROOF-02): render a teacher's binary-signal few-shot exemplars into the grading
 // prompt's cacheable prefix. These exemplars are derived from the teacher's OWN accept/edit/dismiss
-// decisions on aiTA's past notes (see rebuild-exemplars), so the grader learns this teacher's voice
+// decisions on Mr Selby's past notes (see rebuild-exemplars), so the grader learns this teacher's voice
 // from behavior rather than a prose description.
 //
 // Pure + dependency-free on purpose: the Deno grading engine imports it, and the vitest suite covers
@@ -9,7 +9,7 @@
 export interface StyleExemplar {
   kind: "positive" | "correction" | "negative";
   annotationType?: string; // praise|suggestion|error|question — matchable context, not a rubric criterion
-  aiText?: string; // aiTA's original wording (correction + negative)
+  aiText?: string; // Mr Selby's original wording (correction + negative)
   finalText?: string; // the teacher's final wording (positive + correction)
 }
 
@@ -36,14 +36,14 @@ export function renderExemplars(exemplars: StyleExemplar[]): string {
       if (e.kind === "correction") {
         const from = clip(e.aiText);
         const to = clip(e.finalText);
-        return to ? `✎ REWRITE — this teacher changed aiTA's "${from}" into "${to}"` : "";
+        return to ? `✎ REWRITE — this teacher changed Mr Selby's "${from}" into "${to}"` : "";
       }
       const t = clip(e.aiText);
       return t ? `✗ AVOID — this teacher dismissed a note like this${tag}: "${t}"` : "";
     })
     .filter(Boolean);
   if (!lines.length) return "";
-  return `\n\nTHIS TEACHER'S FEEDBACK SIGNALS — learned from their own edits to aiTA's past notes. Match the
+  return `\n\nTHIS TEACHER'S FEEDBACK SIGNALS — learned from their own edits to Mr Selby's past notes. Match the
 voice of the KEEP examples, apply the direction of the REWRITE corrections, and avoid the AVOID patterns.
 Stay within the rubric; do not invent new criteria:
 ${lines.join("\n")}`;

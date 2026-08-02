@@ -51,7 +51,7 @@ const launchDetails = [
   },
   {
     title: 'Public site',
-    value: 'Firebase launch URL first · custom domain later',
+    value: 'mrselby.app · Public preview live',
     icon: Globe2,
   },
 ];
@@ -89,11 +89,11 @@ const LegalPreviewLayout = ({
 
       <header className="border-b border-border/70 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <nav aria-label="Primary" className="container mx-auto flex flex-wrap items-center justify-between gap-3 px-4 py-4">
-          <Link to="/pitch" className="flex min-h-11 items-center gap-2.5 rounded-md" aria-label="aiTA overview">
+          <Link to="/" className="flex min-h-11 items-center gap-2.5 rounded-md" aria-label="Mr Selby overview">
             <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
               <Feather className="h-5 w-5" aria-hidden="true" />
             </span>
-            <span className="font-display text-2xl font-semibold tracking-tight">aiTA</span>
+            <span className="font-display text-2xl font-semibold tracking-tight">Mr Selby</span>
           </Link>
 
           <div className="flex items-center gap-1">
@@ -119,11 +119,11 @@ const LegalPreviewLayout = ({
         <section className="border-b border-border/70 px-4 py-14 sm:py-20">
           <div className="container mx-auto max-w-5xl">
             <Link
-              to="/pitch"
+              to="/"
               className="inline-flex min-h-11 items-center gap-2 rounded-md text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              Back to the aiTA overview
+              Back to the Mr Selby overview
             </Link>
 
             <div className="mt-7 max-w-3xl animate-fade-up">
@@ -131,7 +131,10 @@ const LegalPreviewLayout = ({
                 <Badge variant="secondary" className="border border-border/80">Launch preview</Badge>
                 <span className="text-sm font-medium uppercase tracking-[0.16em] text-primary">{eyebrow}</span>
               </div>
-              <h1 className="mt-5 font-display text-4xl font-semibold tracking-tight sm:text-6xl">
+              <h1
+                tabIndex={-1}
+                className="mt-5 font-display text-4xl font-semibold tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:text-6xl"
+              >
                 {title}
               </h1>
               <p className="mt-6 text-lg leading-8 text-muted-foreground sm:text-xl">
@@ -206,12 +209,12 @@ const LegalPreviewLayout = ({
 
       <footer className="border-t border-border/70 px-4 py-8">
         <div className="container mx-auto flex max-w-5xl flex-col gap-5 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>aiTA launch preview · Legal details pending final review</p>
+          <p>Mr Selby launch preview · Legal details pending final review</p>
           <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2">
-            <Link to="/pitch" className="min-h-6 underline underline-offset-4 hover:text-foreground">Overview</Link>
-            <Link to="/pricing" className="min-h-6 underline underline-offset-4 hover:text-foreground">Pricing</Link>
-            <Link to="/privacy" className="min-h-6 underline underline-offset-4 hover:text-foreground">Privacy</Link>
-            <Link to="/terms" className="min-h-6 underline underline-offset-4 hover:text-foreground">Terms</Link>
+            <Link to="/" className="inline-flex min-h-6 items-center underline underline-offset-4 hover:text-foreground">Overview</Link>
+            <Link to="/pricing" className="inline-flex min-h-6 items-center underline underline-offset-4 hover:text-foreground">Pricing</Link>
+            <Link to="/privacy" className="inline-flex min-h-6 items-center underline underline-offset-4 hover:text-foreground">Privacy</Link>
+            <Link to="/terms" className="inline-flex min-h-6 items-center underline underline-offset-4 hover:text-foreground">Terms</Link>
           </nav>
         </div>
       </footer>

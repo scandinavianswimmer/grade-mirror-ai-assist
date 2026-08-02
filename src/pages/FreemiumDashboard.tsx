@@ -70,7 +70,7 @@ const FreemiumDashboard = () => {
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              Welcome to <span className="text-blue-600">aiTA</span>
+              Welcome to <span className="text-blue-600">Mr Selby</span>
             </h1>
             <p className="text-gray-600">
               Your AI-powered grading assistant. Upload training examples and start generating personalized feedback.
@@ -114,7 +114,7 @@ const FreemiumDashboard = () => {
                   <div>
                     <p className="font-medium text-yellow-800">Limit Reached</p>
                     <p className="text-sm text-yellow-700">
-                      Upgrade to continue using aiTA with unlimited training examples and feedback generation.
+                      Upgrade to continue using Mr Selby with unlimited training examples and feedback generation.
                     </p>
                     <Button className="mt-2" size="sm">Upgrade Plan</Button>
                   </div>

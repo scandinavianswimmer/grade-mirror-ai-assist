@@ -1,5 +1,5 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "mr-selby",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -11,6 +11,9 @@
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "cloudflare:dry-run": "npm run build && wrangler deploy --dry-run",
+    "cloudflare:preview": "wrangler dev --local",
+    "deploy:cloudflare": "npm run build && wrangler deploy",
     "lint": "eslint . --max-warnings=0",
     "preview": "vite preview",
     "test": "vitest run",
@@ -98,6 +101,7 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "8.65.0",
     "vite": "6.4.3",
-    "vitest": "3.2.6"
+    "vitest": "3.2.6",
+    "wrangler": "^4.118.0"
   }
 }

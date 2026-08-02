@@ -1,6 +1,6 @@
-# aiTA — Session Handoff
+# Mr Selby — Session Handoff
 
-> Product: **aiTA**, an AI grading co-pilot for teachers (repo name: `grade-mirror-ai-assist`).
+> Product: **Mr Selby** (formerly aiTA / Grade Mirror), a teacher-controlled grading co-pilot (repo name: `grade-mirror-ai-assist`).
 > Stack: Vite + React 18 + TS + shadcn/ui + Tailwind · Supabase (Postgres + Edge Functions) · **Google Gemini** for grading.
 > Last verified: 2026-08-01. Full competition gate: `docs/launch/XPRIZE-SUBMISSION.md`.
 > Fail-closed deployment recovery: `docs/launch/DEPLOYMENT-RECOVERY.md`.
@@ -11,11 +11,13 @@
 
 - The isolated candidate is on branch `codex/xprize-submission-sprint-20260801` in draft [PR #30](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/pull/30).
 - [GitHub Actions run 30717852981](https://github.com/scandinavianswimmer/grade-mirror-ai-assist/actions/runs/30717852981) passed lint, typecheck, all 224 tests, the production build, and deterministic eval gates.
-- The Firebase URL configured in this repository currently returns HTTP 404. There is no verified live frontend release.
+- The current working candidate passes the full Node 22.23.1 gate with 249 tests, both TypeScript projects, a production build, deterministic evals, and Deno checks for the deletion/privacy functions. Remote CI evidence must be refreshed after this candidate is pushed.
+- `https://mrselby.app` now serves a verified public preview from Cloudflare Workers. The protected product is intentionally gated until a new Supabase backend is provisioned and verified; this is not yet a working judge journey.
 - The backend target is unresolved: `supabase/config.toml` names inactive project `rwiqwuohbcvhuvtlxlvh`, while the May deployment notes below name `yhdobsmmhdvqswjpousc`, which is not visible to the currently authenticated CLI account. Do **not** restore, link, migrate, or deploy until the founder confirms which ref is canonical.
 - Ignored CLI state had linked this sprint worktree to unrelated active project `zuazyrqrktlfgtncpeei`. The link was removed on August 1; default Supabase remote commands now fail closed until an explicit, verified relink.
-- The authenticated Vercel scope contains only an unrelated project. Do **not** deploy aiTA into that scope.
-- The existing aiTA project predates the XPRIZE eligibility cutoff. Do not submit it without a written organizer ruling; see the competition gate for the official-source evidence and pivot options.
+- The authenticated Vercel scope contains only an unrelated project. Do **not** deploy Mr Selby into that scope.
+- Organizer approval to proceed was confirmed by the founder on August 1, 2026; preserve the written ruling privately and follow its conditions.
+- Cloudflare Worker `mr-selby` version `5fa596e9-a8d5-40ab-84ef-1b01054890cf` created the apex custom-domain record on August 1, 2026. Root, pitch, Privacy, Terms, guarded auth setup, sitemap, robots, and social image return HTTP 200 with TLS and the configured security headers. Redeploy after committing the working tree so the final evidence maps to an exact SHA.
 
 Everything below this point is historical May 2026 context. It is useful for recovery, but its claims of a live deployment are **not current production evidence**.
 
@@ -89,7 +91,7 @@ Direction: scholarly grading workspace — warm parchment, ink text, pine primar
 ## Validation done this session (non-mutating)
 - `grade-submission`: no-auth → **401** (gateway gated); anon-as-bearer → **401** (auth-gated); CORS preflight → **204**. Function is **live, reachable, auth-gated, CORS-clean**.
 - Production `npm run build` passes (exit 0) after every change.
-- **NOT yet validated:** the full grade round-trip (function → Gemini → writes `submission_grades`/`annotations`). Needs a real teacher JWT. Resetting an existing account's password to get one was correctly blocked. **To validate:** sign in as `test.teacher@school.edu` at localhost:8080, open a submission, click **"Grade with aiTA"** — OR paste a teacher `access_token` so the next agent can run the live curl + verify rows. **Cannot browser-test inside the Claude agent env (Chromium sandboxed).**
+- **NOT yet validated:** the full grade round-trip (function → Gemini → writes `submission_grades`/`annotations`). Needs a real teacher JWT. Resetting an existing account's password to get one was correctly blocked. **To validate:** sign in as `test.teacher@school.edu` at localhost:8080, open a submission, click **"Grade with Mr Selby"** — OR paste a teacher `access_token` so the next agent can run the live curl + verify rows. **Cannot browser-test inside the Claude agent env (Chromium sandboxed).**
 
 ## Security TODO (do soon)
 - **Rotate** the `sb_secret_` secret key (Dashboard → Settings → API) and **reset the DB password** — both were shared in chat.

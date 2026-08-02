@@ -1,4 +1,4 @@
-# aiTA deployment recovery — founder runbook
+# Mr Selby deployment recovery — founder runbook
 
 Verified context: **August 1, 2026**
 
@@ -24,7 +24,8 @@ supabase projects list
 
 Continue only if the output includes `yhdobsmmhdvqswjpousc` and its ownership, name, and region match the founder's records. If it does not, stop and recover the owning account or obtain a team invitation.
 
-Firebase is also unauthenticated on this machine. Recover access and verify the configured project before any deploy:
+Firebase is also unauthenticated on this machine. Recover access only if Firebase remains the chosen
+fallback host:
 
 ```sh
 firebase login
@@ -32,7 +33,9 @@ firebase projects:list
 firebase use aita-5aca5
 ```
 
-Continue only if `aita-5aca5` is visible under the intended Google account. The currently configured public URL returns HTTP 404.
+Continue only if `aita-5aca5` is visible under the intended Google account. The currently configured
+public URL returns HTTP 404. The preferred frontend path is now Cloudflare Workers Static Assets at
+`mrselby.app`; the Firebase identifiers remain unchanged only as historical infrastructure IDs.
 
 ## 2. Inspect before changing remote state
 
@@ -60,17 +63,23 @@ VITE_SUPABASE_URL=https://yhdobsmmhdvqswjpousc.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=<current publishable key>
 ```
 
-No custom domain has been purchased. Use `https://aita-5aca5.web.app` as the launch origin only after the Firebase project is confirmed and the deployed site passes the acceptance gate. Keep custom-domain fields visibly marked as pending; do not configure or advertise `aita.app` unless it is later purchased and ownership is verified.
+`mrselby.app` was purchased, delegated to Cloudflare, and attached to the `mr-selby` Worker on
+August 1, 2026. The public-preview deployment created the apex DNS record and serves the marketing,
+Privacy, Terms, and guarded setup routes over HTTPS. Do not add a competing A, AAAA, or CNAME
+record. The protected product remains unavailable until the production backend is provisioned and
+verified.
 
 In Supabase Auth, add the exact recovery redirect URL for every origin that will be tested:
 
 ```text
 http://localhost:4173/auth/reset-password
-https://aita-5aca5.web.app/auth/reset-password
-https://<purchased-and-verified-domain>/auth/reset-password   # later, not tonight
+https://mrselby.app/auth/callback
+https://mrselby.app/auth/reset-password
 ```
 
-The app derives the recovery redirect from `window.location.origin`; it does not hard-code an unowned domain. Set server secrets directly on the confirmed Supabase project. Ensure `ALLOWED_ORIGINS` includes the final Firebase origin. Then run the full gate with Node 22:
+The app derives authentication redirects from `window.location.origin`. Set server secrets directly
+on the confirmed Supabase project. Ensure `ALLOWED_ORIGINS` includes `https://mrselby.app`. Then run
+the full gate with Node 22:
 
 ```sh
 nvm use
@@ -87,13 +96,25 @@ Deploy only the functions whose source and required migrations were reviewed. Th
 
 The current CI deploy loop ships 9 of the repository's 16 edge entrypoints. The frontend also invokes omitted functions including `create-class` and `rebuild-exemplars`, alongside older grading/count functions that should not automatically be revived. Before release, create an explicit modern runtime manifest: either review and add each required function to CI, or remove/replace its caller. A green frontend build is not evidence that these server calls exist in production.
 
-After the backend is verified, deploy the already-built `dist/` directory to the confirmed Firebase project:
+After the backend is verified and the exact browser configuration is present, validate the staged
+Cloudflare deployment without changing remote state:
 
 ```sh
-firebase deploy --only hosting --project aita-5aca5
+npm run cloudflare:dry-run
 ```
 
-Record the deploy output, release time, public URL, and Git commit. A successful CLI exit is not release proof.
+Then deploy through an authenticated Cloudflare account. `wrangler.jsonc` binds the Worker directly
+to `mrselby.app` with `custom_domain: true`, so Cloudflare creates the required DNS record:
+
+```sh
+npm run deploy:cloudflare
+```
+
+A backend-less build now intentionally serves only the public preview and a guarded setup page; it
+does not accept accounts or classroom data. The first public-preview Worker version was
+`5fa596e9-a8d5-40ab-84ef-1b01054890cf`, deployed August 1, 2026 from the release-candidate working
+tree. Record a new Worker version after the changes are committed and redeployed. A successful CLI
+exit is not proof that the protected product works.
 
 ## 5. Exact-release acceptance gate
 
@@ -111,7 +132,8 @@ All of these must pass against the public URL in a private browser session:
 - An off-topic fixture is withheld or routed for review rather than silently scored.
 - Accept, edit, and dismiss persist after a reload; no grade is described as auto-finalized without explicit provenance.
 - Production logs contain a timestamped Gemini request/trace for the exact release, with student content and credentials redacted.
-- Security headers from `firebase.json` are present on the public response.
+- Security headers from `public/_headers` are present on the public response.
+- Plain HTTP and `www.mrselby.app` return permanent redirects to the equivalent canonical HTTPS apex URL.
 - The final public URL returns HTTP 200 from a clean network request.
 
 Only after this gate passes should you create judge credentials, record the under-three-minute video, or convert draft claims into production claims.

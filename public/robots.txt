@@ -13,6 +13,6 @@ Allow: /
 User-agent: *
 Allow: /
 
-# Firebase Hosting is the configured release target. Replace this only after a custom domain is
-# owned, connected, and verified against the exact release.
-Sitemap: https://aita-5aca5.web.app/sitemap.xml
+# mrselby.app is the canonical public domain. Account and recovery routes remain non-indexable
+# until the protected production service is connected.
+Sitemap: https://mrselby.app/sitemap.xml

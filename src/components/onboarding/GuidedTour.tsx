@@ -11,7 +11,7 @@ interface GuidedTourProps {
 
 const TOUR_STEPS = [
   {
-    title: "Welcome to aiTA! 🎉",
+    title: "Welcome to Mr Selby! 🎉",
     content: "Let's take a quick tour to show you around. This will help you get the most out of our AI-powered grading assistant.",
     position: "center"
   },

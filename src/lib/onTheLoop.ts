@@ -1,4 +1,4 @@
-// On-the-Loop throughput — aiTA's headline differentiator: confidence-thresholded
+// On-the-Loop throughput — Mr Selby's headline differentiator: confidence-thresholded
 // auto-finalize. High-confidence, clean grades publish unattended ("auto-finalized");
 // low-confidence or off-ramp ones route to the teacher's exception queue ("needs review").
 //
@@ -32,13 +32,13 @@ export type Disposition = 'auto_finalized' | 'needs_review' | 'pending';
 
 export interface OnTheLoopSummary {
   graded: number; // submissions with at least one grade
-  autoFinalized: number; // persisted provenance proves aiTA published unattended
+  autoFinalized: number; // persisted provenance proves Mr Selby published unattended
   needsReview: number; // off-ramp or non-finalized grade awaiting a teacher
   pending: number; // teacher-finalized grade, complete but not AI throughput
-  autoFinalizedPct: number | null; // share of graded that aiTA handled unattended (0–100)
+  autoFinalizedPct: number | null; // share of graded that Mr Selby handled unattended (0–100)
 }
 
-// True when explicit provenance says aiTA published this unattended.
+// True when explicit provenance says Mr Selby published this unattended.
 const hasAutoFinalizeProvenance = (s: OnTheLoopSubmission): boolean =>
   !!s.auto_finalized_at || s.finalized_by === 'ai';
 
@@ -59,7 +59,7 @@ export const dispositionFor = (submission: OnTheLoopSubmission): Disposition => 
 };
 
 // Build the dashboard/assignment On-the-Loop summary from already-fetched rows.
-// Only submissions that have a grade are counted (a grade is what aiTA can finalize).
+// Only submissions that have a grade are counted (a grade is what Mr Selby can finalize).
 export const computeOnTheLoopSummary = (
   submissions: OnTheLoopSubmission[],
   grades: OnTheLoopGrade[],
@@ -94,7 +94,7 @@ export const computeOnTheLoopSummary = (
   return { graded, autoFinalized, needsReview, pending, autoFinalizedPct };
 };
 
-// Whether a single submission read as auto-finalized by aiTA — used by badges/provenance.
+// Whether a single submission read as auto-finalized by Mr Selby — used by badges/provenance.
 // Mirrors dispositionFor but takes the same loose row shape the list rows carry.
 export const isAutoFinalized = (
   status: string | null | undefined,

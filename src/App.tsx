@@ -41,14 +41,15 @@ const History = lazy(() => import("./pages/History"));
 const queryClient = new QueryClient();
 
 const getDocumentTitle = (pathname: string) => {
-  if (pathname === "/pitch") return "aiTA for teachers · grading co-pilot";
-  if (pathname === "/pricing") return "Pricing · aiTA";
-  if (pathname === "/privacy") return "Privacy preview · aiTA";
-  if (pathname === "/terms") return "Terms preview · aiTA";
-  if (pathname === "/auth") return "Sign in or create an account · aiTA";
-  if (pathname === "/auth/callback") return "Completing sign-in · aiTA";
-  if (pathname === "/auth/forgot-password") return "Reset your password · aiTA";
-  if (pathname === "/auth/reset-password") return "Choose a new password · aiTA";
+  if (pathname === "/") return "Mr Selby · Thoughtful grading support";
+  if (pathname === "/pitch") return "Mr Selby for teachers · grading co-pilot";
+  if (pathname === "/pricing") return "Pricing · Mr Selby";
+  if (pathname === "/privacy") return "Privacy preview · Mr Selby";
+  if (pathname === "/terms") return "Terms preview · Mr Selby";
+  if (pathname === "/auth") return "Sign in or create an account · Mr Selby";
+  if (pathname === "/auth/callback") return "Completing sign-in · Mr Selby";
+  if (pathname === "/auth/forgot-password") return "Reset your password · Mr Selby";
+  if (pathname === "/auth/reset-password") return "Choose a new password · Mr Selby";
 
   const workspaceRoute =
     pathname === "/" ||
@@ -69,7 +70,7 @@ const getDocumentTitle = (pathname: string) => {
     pathname.startsWith("/submission/") ||
     pathname.startsWith("/pdf/submission/");
 
-  return workspaceRoute ? "Grading workspace · aiTA" : "Page not found · aiTA";
+  return workspaceRoute ? "Grading workspace · Mr Selby" : "Page not found · Mr Selby";
 };
 
 const AppContent = () => {
@@ -86,10 +87,19 @@ const AppContent = () => {
     const title = getDocumentTitle(location.pathname);
     document.title = title;
 
+    let scrollAnimationFrame = 0;
+    let focusAnimationFrame = 0;
+    if (location.hash) {
+      scrollAnimationFrame = window.requestAnimationFrame(() => {
+        document.getElementById(location.hash.slice(1))?.scrollIntoView();
+      });
+    } else {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+
     if (previousPathname.current !== location.pathname) {
       setRouteAnnouncement(`Navigated to ${title}`);
 
-      let animationFrame = 0;
       let attempts = 0;
       const focusPageHeading = () => {
         const heading = document.querySelector<HTMLElement>("main h1, [role='main'] h1, h1");
@@ -100,16 +110,18 @@ const AppContent = () => {
         }
 
         attempts += 1;
-        if (attempts < 12) animationFrame = window.requestAnimationFrame(focusPageHeading);
+        if (attempts < 12) focusAnimationFrame = window.requestAnimationFrame(focusPageHeading);
       };
 
-      animationFrame = window.requestAnimationFrame(focusPageHeading);
-      previousPathname.current = location.pathname;
-      return () => window.cancelAnimationFrame(animationFrame);
+      focusAnimationFrame = window.requestAnimationFrame(focusPageHeading);
     }
 
     previousPathname.current = location.pathname;
-  }, [location.pathname]);
+    return () => {
+      window.cancelAnimationFrame(scrollAnimationFrame);
+      window.cancelAnimationFrame(focusAnimationFrame);
+    };
+  }, [location.hash, location.pathname]);
 
   const checkOnboardingStatus = useCallback(async () => {
     if (!user) return;
@@ -179,6 +191,19 @@ const AppContent = () => {
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
           <div className="text-lg font-medium" role="status" aria-live="polite">Loading…</div>
         </div>
+      </>
+    );
+  }
+
+  // Show the public overview at the canonical root for signed-out visitors. Signed-in teachers
+  // keep the established `/` workspace route below.
+  if (location.pathname === '/' && !user && !session) {
+    return (
+      <>
+        <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{routeAnnouncement}</p>
+        <Routes>
+          <Route path="/" element={<Pitch />} />
+        </Routes>
       </>
     );
   }

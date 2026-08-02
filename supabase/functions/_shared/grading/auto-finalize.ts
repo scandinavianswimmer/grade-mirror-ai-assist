@@ -1,8 +1,8 @@
-// Auto-finalize decision — the "On-the-Loop" gate that lets aiTA publish high-confidence,
+// Auto-finalize decision — the "On-the-Loop" gate that lets Mr Selby publish high-confidence,
 // on-topic, rubric-aligned grades UNATTENDED, routing only exceptions to the teacher.
 //
 // The agent grades every submission and produces an "AI draft ready" by default; a teacher who has
-// EXPLICITLY opted in can additionally let aiTA publish the clearest grades without manual approval,
+// EXPLICITLY opted in can additionally let Mr Selby publish the clearest grades without manual approval,
 // while still monitoring the exception queue (needs_review). Keep this module PURE TypeScript (no
 // Deno/Supabase imports) so the same logic the edge function runs is unit-tested by vitest under
 // src/ — mirrors plan-limits.ts.
@@ -25,7 +25,7 @@
 export const AUTO_FINALIZE_DEFAULT_THRESHOLD = 0.85;
 
 /** Auto-finalize is OPT-IN (default OFF). Human-in-the-loop is the product's #1 non-negotiable:
- *  aiTA always produces an "AI draft ready" the teacher reviews. Only a teacher who has explicitly
+ *  Mr Selby always produces an "AI draft ready" the teacher reviews. Only a teacher who has explicitly
  *  enabled this setting lets the clearest grades publish unattended ("On-the-Loop"). The toggle is
  *  per-teacher and never silently flips on. */
 export const AUTO_FINALIZE_DEFAULT_ENABLED = false;

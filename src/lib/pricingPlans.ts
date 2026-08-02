@@ -27,19 +27,18 @@ export const ANNUAL_SAVINGS_PCT = Math.round(
 );
 
 // Where to send "Contact us" for the School / Dept tier (lead capture only).
-// The previously hardcoded hello@aita.app address cannot receive mail because aita.app is a
-// parked domain with a null MX record. Fail closed until the release owner configures a real
-// monitored inbox at build time.
+// mrselby.app is registered, but registration alone does not create a monitored inbox. Fail
+// closed until the release owner configures and verifies a real address at build time.
 export const SCHOOL_CONTACT_EMAIL = (
   import.meta.env.VITE_SCHOOL_CONTACT_EMAIL as string | undefined
 )?.trim() ?? '';
-export const SCHOOL_CONTACT_SUBJECT = 'aiTA for our school / department';
+export const SCHOOL_CONTACT_SUBJECT = 'Mr Selby for our school / department';
 
 export const PRICING_TIERS: PricingTier[] = [
   {
     id: 'free',
     name: 'Free',
-    tagline: 'Try aiTA on a single class — no card required.',
+    tagline: 'Try Mr Selby on a single class — no card required.',
     monthlyPrice: 0,
     annualPrice: 0,
     features: [

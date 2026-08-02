@@ -50,7 +50,7 @@ export const getTrainingExamples = async (userId: string): Promise<TrainingExamp
 export const createTrainingExample = async (example: Omit<TrainingExample, 'id' | 'created_at'>): Promise<TrainingExample> => {
   // A style exemplar is only meaningful with the teacher's own feedback (H22).
   if (!example.feedback || !example.feedback.trim()) {
-    throw new Error('A training exemplar requires your feedback so aiTA can learn your style.');
+    throw new Error('A training exemplar requires your feedback so Mr Selby can learn your style.');
   }
   const { data, error } = await supabase
     .from('training_examples')

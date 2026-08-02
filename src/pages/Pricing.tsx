@@ -113,11 +113,11 @@ const Pricing = () => {
       {/* Lightweight public header (the app chrome is auth-gated). */}
       <header className="border-b border-border/70">
         <nav aria-label="Primary" className="container mx-auto flex items-center justify-between px-4 py-4">
-          <Link to="/pitch" className="flex items-center gap-2.5" aria-label="aiTA overview">
+          <Link to="/" className="flex items-center gap-2.5" aria-label="Mr Selby overview">
             <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground">
               <Feather className="h-5 w-5" aria-hidden="true" />
             </span>
-            <span className="font-display text-2xl font-semibold tracking-tight">aiTA</span>
+            <span className="font-display text-2xl font-semibold tracking-tight">Mr Selby</span>
           </Link>
           <Button asChild variant="ghost" size="sm">
             <Link to="/auth">{user ? 'Open app' : 'Sign in'}</Link>
@@ -161,9 +161,9 @@ const Pricing = () => {
 
       <footer className="border-t border-border/70 px-4 py-8">
         <div className="container mx-auto flex max-w-5xl flex-col gap-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>aiTA launch preview · Final legal details pending review</p>
+          <p>Mr Selby launch preview · Final legal details pending review</p>
           <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2">
-            <Link to="/pitch" className="underline underline-offset-4 hover:text-foreground">Overview</Link>
+            <Link to="/" className="underline underline-offset-4 hover:text-foreground">Overview</Link>
             <Link to="/privacy" className="underline underline-offset-4 hover:text-foreground">Privacy</Link>
             <Link to="/terms" className="underline underline-offset-4 hover:text-foreground">Terms</Link>
           </nav>

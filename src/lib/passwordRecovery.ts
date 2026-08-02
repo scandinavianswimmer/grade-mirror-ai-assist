@@ -3,7 +3,8 @@ export const MIN_PASSWORD_LENGTH = 8;
 export const PASSWORD_RESET_CONFIRMATION =
   'If an account exists for that email address, a password reset link is on its way. Check your inbox and spam folder.';
 
-const PASSWORD_RECOVERY_INTENT_KEY = 'aita:password-recovery-intent';
+const PASSWORD_RECOVERY_INTENT_KEY = 'mr-selby:password-recovery-intent';
+const PASSWORD_RESET_PATH = '/auth/reset-password';
 
 type RecoveryIntentStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
@@ -11,10 +12,18 @@ export const getPasswordResetRedirectUrl = (origin: string): string =>
   new URL('/auth/reset-password', origin).toString();
 
 export const isPasswordRecoveryCallbackUrl = (href: string): boolean => {
-  const url = new URL(href);
-  const hashParams = new URLSearchParams(url.hash.replace(/^#/, ''));
+  try {
+    const url = new URL(href);
+    const hashParams = new URLSearchParams(url.hash.replace(/^#/, ''));
 
-  return url.searchParams.get('type') === 'recovery' || hashParams.get('type') === 'recovery';
+    if (url.pathname !== PASSWORD_RESET_PATH) return false;
+
+    return url.searchParams.get('type') === 'recovery' || hashParams.get('type') === 'recovery';
+  } catch {
+    // Treat malformed or unavailable URLs as ordinary navigation. Supabase's
+    // PASSWORD_RECOVERY event can still establish recovery intent.
+    return false;
+  }
 };
 
 export const getInitialPasswordRecoveryIntent = (

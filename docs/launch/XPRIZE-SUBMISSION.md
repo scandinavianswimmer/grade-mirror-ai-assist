@@ -1,4 +1,4 @@
-# aiTA — Build with Gemini XPRIZE submission gate
+# Mr Selby — Build with Gemini XPRIZE submission gate
 
 Audit date: **August 1, 2026**
 
@@ -12,7 +12,7 @@ Conditional deployment recovery: [`DEPLOYMENT-RECOVERY.md`](DEPLOYMENT-RECOVERY.
 
 ## 0. Eligibility gate: organizer approval received
 
-On **August 1, 2026**, the founder confirmed that organizer approval was received for aiTA to proceed. Archive the written ruling in the private submission evidence folder and preserve its complete wording; do not commit private correspondence or contact details to this public repository.
+On **August 1, 2026**, the founder confirmed that organizer approval was received for Mr Selby to proceed. Archive the written ruling in the private submission evidence folder and preserve its complete wording; do not commit private correspondence or contact details to this public repository.
 
 - The public GitHub repository and first AI Grading Assistant MVP commit date to **June 23, 2025**.
 - That history was the reason written organizer confirmation was required.
@@ -27,7 +27,7 @@ Eligibility is therefore no longer the release stop gate. Deployment evidence, a
 | Date eligibility | **CLEARED — founder confirmed** | Organizer approval received Aug 1; archive the written ruling and follow any stated conditions |
 | Public code repository | Ready | `scandinavianswimmer/grade-mirror-ai-assist` is public |
 | License | Open | All rights reserved; founder must choose whether to add a license |
-| Public live application | **NO-GO** | No custom domain has been purchased; do not use or imply ownership of `aita.app`. Use the configured Firebase Hosting URL for launch after it returns HTTP 200 (it currently returns 404), then connect a purchased domain later. |
+| Public live application | **PUBLIC PREVIEW LIVE; PRODUCT GATED** | `https://mrselby.app` serves the rebranded overview, legal previews, security headers, and guarded setup state from Cloudflare Workers. Accounts and classroom data remain closed until the backend is provisioned and verified. |
 | Working backend | **NO-GO** | Both candidate Supabase hosts (`rwiqwuohbcvhuvtlxlvh` and `yhdobsmmhdvqswjpousc`) return authoritative DNS NXDOMAIN; current credentials cannot access the intended later project |
 | Google Cloud product in deployed app | **UNPROVEN** | Cloud Run/Firebase/Vertex paths exist in code; no live deployment evidence |
 | Gemini API call in deployed app | **UNPROVEN** | Gemini integration exists in code; no production request/log proof |
@@ -40,18 +40,19 @@ Eligibility is therefore no longer the release stop gate. Deployment evidence, a
 | 500–1,000 word narrative | Draft only | Complete with measured figures and links; remove every placeholder |
 | Repository/security hygiene | Partial | Current tree scan is clean; old history contains public Supabase/Firebase client identifiers and GitHub secret scanning is disabled. `npm audit --omit=dev` reports the current React Router RSC advisory, but the official advisory says it applies only to unstable RSC APIs; this Vite `BrowserRouter` SPA has no RSC package or API usage. Track and upgrade when a compatible patched release is published. |
 | Password recovery | **READY LOCALLY; LIVE GATE PENDING** | Dedicated request/update routes, account-enumeration-safe confirmation, expired-link handling, and recovery-intent tests pass. A real emailed link still requires the confirmed Supabase project and redirect allowlist. |
-| Privacy and Terms | **POLISHED PREVIEWS** | Public, accessible preview pages now state the product's current practices and show conspicuous placeholders for the effective date, legal entity, contact, and future public domain. Final legal review and real contact details remain required before launch. |
+| Right to erasure | **READY LOCALLY; LIVE GATE PENDING** | The authenticated Edge Function recursively removes and re-verifies all owned objects before deleting records, covers the current and legacy private buckets, rejects cross-owner paths, and fails closed on partial deletion. A seeded live deletion test still requires the confirmed Supabase project. |
+| Privacy and Terms | **POLISHED PREVIEWS — LIVE** | Public, accessible pages at `mrselby.app` state the product's current practices and show conspicuous placeholders for the effective date, legal entity, and contact. Final legal review and real contact details remain required before account launch. |
 | Accessibility beta pass | **READY LOCALLY; REPEAT ON LIVE URL** | VoiceOver, exact 200% Safari zoom, macOS Increase Contrast, keyboard/dialog focus, 320px reflow, route announcements, landmarks, form labels, and chart text alternatives were exercised against the configured production build. Repeat against the exact deployed release. |
 
 ### 1.1 Beta-gap closure evidence — August 1
 
-- `npm run verify` passes locally with zero lint warnings, both TypeScript projects, **230 tests**, a production build, deterministic eval dry runs, and the calibration gate.
+- `npm run verify` passes locally under Node 22.23.1 with zero lint warnings, both TypeScript projects, **249 tests**, a production build, deterministic eval dry runs, and the calibration gate. Both deletion/privacy Edge Functions also pass Deno checks.
 - Password recovery now uses `/auth/forgot-password` and `/auth/reset-password`. The request result is deliberately generic, success headings receive focus, expired or context-free update links fail closed, and tab-scoped recovery intent is cleared after use or sign-out. The local synthetic-backend browser pass covered request confirmation and invalid-link behavior; a valid emailed production link remains part of the live gate.
-- VoiceOver was enabled through macOS Accessibility settings for a real Safari pass. Safari exposed the auth and recovery headings, named email/password controls, recovery/legal links, and the `Navigated to Reset your password · aiTA` route announcement. The VoiceOver rotor opened and exited normally.
+- VoiceOver was enabled through macOS Accessibility settings for a real Safari pass. Safari exposed the auth and recovery headings, named email/password controls, recovery/legal links, and the `Navigated to Reset your password · Mr Selby` route announcement. The VoiceOver rotor opened and exited normally.
 - Safari page zoom was set to exactly **200%**. The recovery flow remained readable and operable with no horizontal clipping; the setting was restored to 100% afterward.
 - macOS **Increase Contrast** was enabled. Input, card, link, focus, and primary-action boundaries remained visible; the setting was restored afterward. Source-level forced-colors and `prefers-contrast` fallbacks are also present.
 - At 320px, authenticated navigation retains all five destinations with 56px targets, workspace pages do not overflow horizontally, long dialogs scroll inside the viewport, and closing a dialog restores focus to its launch button. At 640px and the default desktop viewport, public/auth/legal surfaces also reflow without horizontal overflow.
-- Privacy and Terms are intentionally labeled launch previews. They do not invent ownership of a domain, a legal entity, an effective date, a privacy address, or a completed compliance review.
+- Privacy and Terms are intentionally labeled launch previews. They accurately show the public preview as live and do not invent a legal entity, effective date, privacy address, or completed compliance review.
 - The production dependency audit currently reports [GHSA-qwww-vcr4-c8h2](https://github.com/advisories/GHSA-qwww-vcr4-c8h2) through `react-router`/`react-router-dom`. GitHub's reviewed advisory says the issue affects only unstable RSC APIs; the app is a client-only Vite SPA using `BrowserRouter`, has no React Server Components package or RSC API references, and therefore does not expose the affected path. No compatible patched npm release was available during this audit, so a forced breaking downgrade was not used to create a false-green report.
 
 ## 2. Submission checklist
@@ -63,8 +64,8 @@ The eligibility gate is cleared. Every remaining item still requires evidence fr
 - [ ] 500–1,000 word description covers the problem, solution, AI-native operation, business viability, category impact, Google Cloud architecture, and measured evidence.
 - [ ] Public demo video is **under three minutes**, captioned, and shows the exact deployed release.
 - [ ] Public repository URL points to the reviewed commit/tag and includes setup instructions.
-- [ ] Live application URL works in a private browser session.
-- [ ] Submission and product surfaces use the verified Firebase Hosting URL; replace the polished custom-domain placeholders only after a domain is purchased, connected, and verified.
+- [x] Public-preview URL works over HTTPS in a clean browser session; protected product acceptance remains open.
+- [x] Public and submission surfaces use `https://mrselby.app`; the Worker custom domain, HTTPS, SPA routes, and static security headers are verified.
 - [ ] Judge account and test instructions reproduce the demonstrated path without exposing real student data.
 - [ ] At least one Google Cloud product and at least one Gemini API call are present in the deployed app and backed by timestamped logs.
 - [ ] Real-user counts, demographics, testimonials, and production usage are documented.
@@ -123,6 +124,8 @@ Tonight can produce a reviewed release candidate and complete the submission sur
 - [x] Receive organizer approval to proceed.
 - [x] Implement and locally test password recovery, including generic request confirmation and fail-closed invalid links.
 - [x] Publish polished Privacy and Terms previews with conspicuous launch placeholders instead of invented facts.
+- [x] Harden account and retention erasure so nested Storage objects are recursively removed and verified before related records are deleted.
+- [x] Deploy the safe public preview to Cloudflare Workers at `https://mrselby.app` and verify DNS, TLS, SPA routes, assets, and security headers.
 - [x] Complete the local VoiceOver, exact 200% zoom, Increase Contrast, keyboard, dialog-focus, and responsive-layout beta pass; restore all host settings afterward.
 - [ ] Archive the written ruling in the private submission evidence folder and note any conditions.
 - [ ] If continuing: confirm the canonical Supabase ref, restore/provision only that backend, configure Google Cloud/Firebase and secrets, deploy, and re-run the release gate against the live URLs.

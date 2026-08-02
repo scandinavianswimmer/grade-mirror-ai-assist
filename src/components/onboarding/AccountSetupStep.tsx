@@ -46,7 +46,7 @@ const AccountSetupStep: React.FC<AccountSetupStepProps> = ({ data, onNext, onBac
 
       <div>
         <Label className="text-base font-medium mb-4 block">
-          How would you like to use aiTA?
+          How would you like to use Mr Selby?
         </Label>
         <RadioGroup value={syncLMS} onValueChange={setSyncLMS}>
           <div className="flex items-center space-x-2">

@@ -1,34 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Firebase Hosting is the configured release target. Replace this only after a custom domain
-     is owned, connected, and verified. Only public routes are listed. -->
+<!-- mrselby.app is the canonical public domain. Only indexable public routes are listed. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://aita-5aca5.web.app/</loc>
+    <loc>https://mrselby.app/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://aita-5aca5.web.app/pitch</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://aita-5aca5.web.app/pricing</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://aita-5aca5.web.app/privacy</loc>
+    <loc>https://mrselby.app/privacy</loc>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://aita-5aca5.web.app/terms</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
-  </url>
-  <url>
-    <loc>https://aita-5aca5.web.app/auth</loc>
+    <loc>https://mrselby.app/terms</loc>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>

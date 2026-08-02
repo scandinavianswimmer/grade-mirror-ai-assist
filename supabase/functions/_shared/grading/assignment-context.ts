@@ -28,7 +28,7 @@ const clean = (s: string | null | undefined): string => (s ?? "").trim();
 
 // The message a teacher sees when grading is refused for lack of context (fail-closed, F-002).
 export const MISSING_CONTEXT_REASON =
-  "This assignment has no prompt or rubric for aiTA to grade against, so a trustworthy grade can't be produced. Add an assignment prompt or a rubric, then re-grade.";
+  "This assignment has no prompt or rubric for Mr Selby to grade against, so a trustworthy grade can't be produced. Add an assignment prompt or a rubric, then re-grade.";
 
 /**
  * Resolve the grading context and decide trust.

@@ -84,7 +84,7 @@ const TechnicalComfortStep: React.FC<TechnicalComfortStepProps> = ({ data, onNex
           </div>
         </RadioGroup>
         <p className="text-sm text-gray-600 mt-2">
-          We recommend the guided tour to help you discover all of aiTA's features quickly.
+          We recommend the guided tour to help you discover all of Mr Selby's features quickly.
         </p>
       </div>
 

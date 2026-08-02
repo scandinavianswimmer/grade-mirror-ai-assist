@@ -211,7 +211,7 @@ Deno.serve((req) => {
           user_id: userId,
           assignment_id: submission.assignment_id,
           total_points: synth.totalPoints,
-          title: "aiTA synthesized rubric",
+          title: "Mr Selby synthesized rubric",
           rubric_json: synth,
         };
         let { data: newRubric, error: rubErr } = await db

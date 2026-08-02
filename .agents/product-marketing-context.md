@@ -1,4 +1,4 @@
-# Product Marketing Context — aiTA
+# Product Marketing Context — Mr Selby
 
 > Foundational context for all marketing work. Other marketing skills read this first.
 > Full research + positioning rationale: `docs/marketing/ICP-RESEARCH-AND-POSITIONING.md`.
@@ -7,12 +7,13 @@
 > Product north star: `docs/v2-planning/GOAL.md`. Last updated 2026-06-15 (XPRIZE master-plan reconcile).
 
 ## Product
-**aiTA** — an AI-native instructional co-pilot that helps teachers give timely, rubric-aligned,
+**Mr Selby** — a teacher-controlled grading co-pilot that helps teachers give timely, rubric-aligned,
 personalized written feedback **in their own voice**, while keeping the teacher as final grader.
 Upload assignment + rubric + student work → a visible multi-agent pipeline produces rubric-aligned
-scores, inline annotations, and summary feedback → the teacher approves/edits/dismisses → aiTA learns
+scores, inline annotations, and summary feedback → the teacher approves/edits/dismisses → Mr Selby learns
 from those edits (persistent pedagogical memory). Stack: Vite/React + Supabase + Google Gemini.
-Status: production build on `main`; live grading verified in cloud.
+Status: release candidate on the submission sprint branch; automated gates pass, but the current
+frontend, backend, and exact-release grading path are not yet verified live.
 
 ## Target audience (ICP)
 **Individual high-school English/humanities teacher** ("Sarah" archetype) — writing-heavy grading
@@ -26,8 +27,12 @@ comments, burnout. AI tools they've tried feel robotic, misapply the rubric, and
 so they "spend more time correcting the AI than benefiting from it."
 
 ## Positioning — sell FIDELITY, not speed
-**One-liner:** *"aiTA grades like you would — to your rubric, in your voice — and gets more like
-you every week. You stay the teacher."* (Speed is the byproduct, not the headline.)
+**One-liner:** *"Thoughtful grading support, shaped by how you teach. You stay the final word."*
+(Speed is the byproduct, not the headline.)
+
+**Name story:** Mr Selby is a personal tribute to a favorite teacher whose care in teaching,
+designing assignments, and grading them set the standard behind the product. Never imply the
+teacher's affiliation, endorsement, voice, likeness, or biography.
 
 **Three territories (use together):**
 - **In your voice, and it proves it** — voice-learning loop + visible with/without-style difference. Moat = persistent pedagogical memory; switching cost grows with every edit.
@@ -59,7 +64,7 @@ Two audiences, two narratives, never blended:
 - **Teachers (the buyers):** lead with **time saved** + **authority/voice** ("your voice, you stay in
   command"). Do **NOT** lead with bias — it spooks the AI-skeptical majority.
 - **XPRIZE judges (Criterion-C narrative):** lead with the documented AI-grading **bias** problem
-  (Stanford LAK26; ETS Asian-American 1.1pt penalty) → aiTA's structural fix (rubric-grounded + HITL +
+  (Stanford LAK26; ETS Asian-American 1.1pt penalty) → Mr Selby's structural fix (rubric-grounded + HITL +
   refusal + voice) → the **measured, pre-registered** proof. No student-outcome claims (not credible in 9 wks).
 
 ## Offer / pricing (locked)
@@ -74,4 +79,4 @@ below market; justify with ROI (≈5.9 hrs/wk saved). Trial onboards on **pre-lo
 - **Channels (rank):** Facebook teacher groups (#1, but NO direct self-promo → proxy via teacher-users +
   free-PD webinars) · Reddit (r/Teachers zero-promo, r/edtech value-posts) · Product Hunt (Wk6 spike) ·
   referral loop. Content/SEO + district = deferred (too slow for a 9-wk window).
-- **Motion:** bottom-up trial ("Start teaching aiTA your voice") → in-product champion → department/school.
+- **Motion:** bottom-up trial ("Start teaching Mr Selby your voice") → in-product champion → department/school.

@@ -28,7 +28,7 @@ interface SubmissionRow {
   essay: string | null;
   extracted_text: string | null;
   status: string;
-  // 'ai' when aiTA auto-finalized this grade; 'teacher' when approved by hand. Optional/absent
+  // 'ai' when Mr Selby auto-finalized this grade; 'teacher' when approved by hand. Optional/absent
   // until migration 0020 (migrations_v2) lands — fetched best-effort so a missing column never blocks load.
   finalized_by?: string | null;
 }
@@ -158,7 +158,7 @@ const SubmissionDetail = () => {
         const autoFinalized = Boolean((data as { autoFinalized?: boolean } | null)?.autoFinalized);
         analytics.capture('grade_completed', { submission_id: id, ok: true, duration_ms: Date.now() - startedAt, auto_finalized: autoFinalized });
         toast(autoFinalized
-          ? { title: 'Auto-finalized', description: 'aiTA was confident — this grade is published. Open it to review or adjust any time.' }
+          ? { title: 'Auto-finalized', description: 'Mr Selby was confident — this grade is published. Open it to review or adjust any time.' }
           : { title: 'Graded', description: 'Review the AI’s notes — you have the final say.' });
         await load();
       }
@@ -179,7 +179,7 @@ const SubmissionDetail = () => {
 
   const saveEdit = async (ann: AnnotationRow) => {
     const revised = draft.trim();
-    // Phase 15: score how far the teacher's final wording is from aiTA's original (ai_comment).
+    // Phase 15: score how far the teacher's final wording is from Mr Selby's original (ai_comment).
     // This per-annotation edit-distance is the raw signal the convergence curve aggregates.
     const aiOriginal = ann.ai_comment ?? ann.comment;
     const editDistance = normalizedEditDistance(aiOriginal, revised);
@@ -274,7 +274,7 @@ const SubmissionDetail = () => {
       .eq('id', id);
     setSubmission((prev) => (prev ? { ...prev, status: 'finalized' } : prev));
     analytics.capture('grade_finalized', { submission_id: id, edit_self_rating: selfRating });
-    toast({ title: 'Grade finalized', description: 'Approved by you — aiTA will learn from your edits.' });
+    toast({ title: 'Grade finalized', description: 'Approved by you — Mr Selby will learn from your edits.' });
     void learnFromFinalized();
   };
 
@@ -358,14 +358,14 @@ const SubmissionDetail = () => {
               </Button>
             )}
             <Button size="lg" className="gap-2" onClick={runGrading} disabled={grading || !essay}>
-              {grading ? <><Loader2 className="h-4 w-4 animate-spin" /> Grading…</> : <><Sparkles className="h-4 w-4" /> {grade ? 'Re-grade with aiTA' : 'Grade with aiTA'}</>}
+              {grading ? <><Loader2 className="h-4 w-4 animate-spin" /> Grading…</> : <><Sparkles className="h-4 w-4" /> {grade ? 'Re-grade with Mr Selby' : 'Grade with Mr Selby'}</>}
             </Button>
           </div>
         </div>
 
         {grade && isAutoFinalized(submission.finalized_by) && (
           <Card className="mb-6 border-praise/40 bg-praise-soft/40 p-4 text-sm">
-            <span className="flex items-center gap-2 text-foreground/80"><ShieldCheck className="h-4 w-4 text-praise" /> aiTA auto-finalized this grade — it was high-confidence and on-topic. Review the notes or re-grade any time; you stay on the loop.</span>
+            <span className="flex items-center gap-2 text-foreground/80"><ShieldCheck className="h-4 w-4 text-praise" /> Mr Selby auto-finalized this grade — it was high-confidence and on-topic. Review the notes or re-grade any time; you stay on the loop.</span>
           </Card>
         )}
 
@@ -395,8 +395,8 @@ const SubmissionDetail = () => {
             )}
             {pendingFinalize && (
               <Card className="border-primary/40 bg-primary/5 p-4" role="dialog" aria-label="Finalize rating">
-                <p className="text-sm font-semibold text-foreground">How much did you change aiTA's feedback?</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">This is how we measure whether aiTA is learning your voice.</p>
+                <p className="text-sm font-semibold text-foreground">How much did you change Mr Selby's feedback?</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">This is how we measure whether Mr Selby is learning your voice.</p>
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {[
                     { v: 1, label: 'Rewrote it all' },
@@ -536,7 +536,7 @@ const SubmissionDetail = () => {
             {!grade && essay && (
               <Card className="border-dashed p-6 text-center text-sm text-muted-foreground">
                 <Sparkles className="mx-auto mb-2 h-6 w-6 text-primary/60" />
-                Not graded yet. Run aiTA to get rubric-aligned notes you can accept, edit, or dismiss.
+                Not graded yet. Run Mr Selby to get rubric-aligned notes you can accept, edit, or dismiss.
               </Card>
             )}
           </div>

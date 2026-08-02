@@ -1,15 +1,17 @@
-# aiTA
+# Mr Selby
 
-> aiTA is an AI grading co-pilot for teachers. Teachers upload assignment instructions,
-> a rubric, and student submissions; aiTA drafts rubric-aligned scores and inline
-> annotations in the teacher's voice. Every result is human-in-the-loop: the teacher
-> accepts, edits, or dismisses each suggestion and approves the final grade.
+> Mr Selby is a teacher-controlled grading co-pilot. Teachers provide assignment
+> instructions, a rubric, and student submissions; the workspace drafts rubric-aligned
+> scores and inline annotations in the teacher's voice. Teachers review suggestions
+> and remain responsible for final grading decisions.
 
 ## Principles
-- Human-in-the-loop approval is mandatory; AI never finalizes a grade on its own.
-- Grading is rubric-aware and only runs when a teacher explicitly requests it.
-- Student work is private (encrypted in transit/at rest, access-restricted, teacher-controlled).
+- Human review is the default; eligible automated finalization is opt-in.
+- Grading is rubric-aware and runs only when a teacher explicitly requests it or enables an eligible workflow.
+- Student work is access-restricted and teacher-controlled.
+- Low-confidence, off-topic, and integrity-flagged work returns to the teacher review queue.
 
 ## Notes for crawlers
 - This is a private, authenticated application; most routes require sign-in.
-- aiTA is not certified compliant with FERPA/GDPR; institutions should review before use.
+- Mr Selby is not certified compliant with FERPA, GDPR, or similar regulations; institutions should review the actual deployment before use.
+- The product is available at https://mrselby.app.

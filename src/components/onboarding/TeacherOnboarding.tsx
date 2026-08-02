@@ -123,7 +123,7 @@ const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => 
         // After 3 seconds, complete onboarding
         setTimeout(() => {
           toast({
-            title: "Welcome to aiTA! ✨",
+            title: "Welcome to Mr Selby! ✨",
             description: "Your teaching journey just got a whole lot easier!"
           });
           onComplete();
@@ -205,7 +205,7 @@ const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => 
   const handleTourComplete = () => {
     setShowGuidedTour(false);
     toast({
-      title: "Welcome to aiTA! ✨",
+      title: "Welcome to Mr Selby! ✨",
       description: "Your teaching journey just got a whole lot easier!"
     });
     onComplete();
@@ -231,7 +231,7 @@ const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => 
             </div>
             
             <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              Welcome to aiTA! 🎉
+              Welcome to Mr Selby! 🎉
             </h1>
             
             <p className="text-lg text-gray-600 mb-6 leading-relaxed">
@@ -262,7 +262,7 @@ const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete }) => 
         <Card className="shadow-xl">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl text-gray-900">
-              Welcome to aiTA! 🧑‍🏫
+              Welcome to Mr Selby! 🧑‍🏫
             </CardTitle>
             <p className="text-gray-600 mt-2">
               Let's set up your teaching profile to personalize your experience

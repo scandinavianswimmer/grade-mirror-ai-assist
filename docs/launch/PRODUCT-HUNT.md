@@ -1,116 +1,152 @@
-# aiTA — Product Hunt Launch Kit
+# Mr Selby — Product Hunt launch kit
 
-> Launch the freemium grading co-pilot that grades in the teacher's own voice — and refuses to rubber-stamp off-topic work.
-> Funnel goal: PH signups → freemium → paid + testimonials → XPRIZE user/revenue evidence. (See `.planning/LAUNCH-PLAN.md` §2.)
+> **Do not publish yet.** `https://mrselby.app` is a live public preview, but account creation,
+> grading, checkout, analytics, and support must be verified against the exact production release
+> before this copy becomes a public listing.
 
----
+Planned funnel: Product Hunt visit → privacy-safe sample workflow → free plan or Pro trial → paid
+conversion. Product Hunt activity becomes submission evidence only after it is exported with dates,
+definitions, and exclusions.
 
-## 1. Tagline options (≤60 chars)
+## 1. Tagline options (60 characters or fewer)
 
-Each option is character-counted; pick one for the PH "tagline" field.
+1. **Thoughtful grading support, shaped by how you teach** (51)
+2. **Rubric-aligned feedback in your teaching voice** (46)
+3. **Grade essays to your rubric. Stay the final word.** (49)
+4. **A grading co-pilot that learns from your edits** (46)
+5. **Feedback in your voice, with you in control** (43)
 
-1. **Grade essays in your own voice — you stay the boss** (51)
-2. **An AI co-pilot that grades like *you* — not like AI** (49)
-3. **Your grading voice, on every essay. You hit finalize.** (53)
-4. **AI essay grading that sounds like the teacher** (47)
-5. **It grades in your voice — and flags the off-topic ones** (55)
+**Recommended: #1.** It matches the product positioning without claiming a measured speedup or
+presenting AI as the final grader.
 
-**Recommended: #2 — "An AI co-pilot that grades like *you* — not like AI."**
-It leads with the defensible wedge (voice-convergence), uses the co-pilot framing from the README, and the "not like AI" contrast is the line teachers feel in their gut. #5 is the strong backup because it names both proof moments (voice + the off-topic flag) in one breath.
+## 2. Short description
 
----
+> Mr Selby is a teacher-controlled grading co-pilot for middle- and high-school English teachers.
+> Add an assignment and rubric, then submit privacy-safe student writing. Mr Selby drafts
+> rubric-aligned scores, evidence-linked margin notes, and summary feedback shaped by the teacher's
+> approved examples and edits. Off-topic or risky work is designed to return to review instead of
+> being silently scored. Teacher review is the default; any eligible automatic finalization is a
+> separate opt-in.
 
-## 2. Short description (the "what is it" blurb)
+Short version:
 
-> aiTA is a grading co-pilot for middle- and high-school English teachers. Paste your rubric, upload student essays, and aiTA returns rubric-aligned scores and margin comments written *the way you write them* — learned from your own past feedback, with your consent. Off-topic or adversarial submissions are flagged and withheld, never silently scored. Every grade is yours to accept, edit, or dismiss — and your edits teach aiTA your voice for the next batch. Five hours of grading becomes ninety minutes, and the feedback still sounds like you.
+> Mr Selby drafts rubric-aligned essay feedback shaped by how you teach, routes uncertain work to
+> review, and keeps you the final authority.
 
-Alt one-liner (for tweets / outreach): *aiTA grades student essays in the teacher's own voice — and refuses to grade off-topic work. You stay the final authority.*
+Use this copy only after the protected workflow has been verified live. Until then, describe the
+site as a public preview rather than an available grading service.
 
----
-
-## 3. Topics / categories to tag
+## 3. Topics
 
 Primary:
-- **Education**
-- **Artificial Intelligence**
-- **Productivity**
 
-Secondary (pick from PH's live list at launch):
-- **Teacher Tools** / **EdTech**
-- **SaaS**
-- **Writing**
+- Education
+- Artificial Intelligence
+- Productivity
 
-Positioning note for the listing: lead the Education angle, not the "AI tool" angle. The audience that converts is teachers, and the PH Education community is where testimonials (XPRIZE user evidence) come from.
+Secondary, subject to Product Hunt's live category list:
 
----
+- Teacher Tools or EdTech
+- SaaS
+- Writing
 
-## 4. Gallery plan (~5 slides)
+Lead with the teacher's feedback problem, not with a generic AI-tool label.
 
-Lead with the two proof moments — voice-convergence and the trust moment — because those are the only things competitors can't copy. (Moments map to `docs/DEMO-SARAH-MARTINEZ.md` §5.)
+## 4. Gallery capture plan
 
-| # | Slide | Caption |
-|---|-------|---------|
-| 1 | **Voice-convergence (hero)** — split view: a generic-AI comment vs. the same essay graded in Sarah's voice ("name the strength, push your analysis one step further, integrate quotes naturally"). | *"It sounds like me." aiTA learns your feedback voice from your own past comments — so margin notes read like yours, not like ChatGPT.* |
-| 2 | **The trust moment** — Brandon Davis's off-topic jump-shot essay shown **withheld / needs-review**, not scored 95%. | *It won't rubber-stamp off-topic work. Brandon wrote about basketball, not Gatsby — aiTA flags and withholds instead of fabricating a grade.* |
-| 3 | **The visible agent pipeline** — Rubric → Relevance/Risk → Grading → Annotation → Feedback Summary → Style, chewing through a batch. | *Not one black-box call. A transparent pipeline validates the rubric, verifies every evidence quote, recomputes totals, and anchors each comment to the text.* |
-| 4 | **Human-in-the-loop review** — accept / edit / dismiss on annotations, with the "AI originally suggested…" trace after an edit. | *aiTA drafts; you decide. Accept, edit, or dismiss every comment — nothing is final without you, and your edits teach it your voice.* |
-| 5 | **Metrics dashboard** — time saved, approval rate, turnaround. | *Five hours of grading became ninety minutes — measured, not guessed. Real numbers from a real grading week.* |
+Every frame must come from the exact release being launched. A synthetic persona or seeded essay
+must be labeled **synthetic demo data** in the asset or caption.
 
-Demo GIF (PH loves motion as slide 1 or the embedded video): the agent pipeline running on the Gatsby batch, ending on Sofia Reyes's in-voice feedback. Keep it under ~10s.
+| # | Frame | Evidence-safe caption |
+|---|---|---|
+| 1 | Same essay and rubric, generic baseline beside teacher-style output | **Same work, different feedback.** Mr Selby can apply an approved teaching-style profile instead of relying on a generic default. |
+| 2 | Synthetic off-topic essay routed to review or withheld | **It does not have to force a score.** This synthetic off-topic response was routed for teacher review. |
+| 3 | Visible grading pipeline | **See the work behind the draft.** The release shows rubric, relevance/risk, grading, annotation, summary, and style stages. |
+| 4 | Accept, edit, dismiss, and finalize controls | **Mr Selby drafts; the teacher decides.** Teacher review is the default, and edits remain visible in the audit trail. |
+| 5 | Operational dashboard | **Show the denominator.** Label graded count, edits, and turnaround from the captured dataset. Label time saved as an estimate unless a dated baseline study supports it. |
 
-Honesty guardrail for the gallery (from `docs/DEMO-SARAH-MARTINEZ.md`): the grades, annotations, evidence citations, the in-voice feedback, the off-topic refusal, and the metrics are all **real, produced by the live grader**. Don't caption fabricated "thousands of annotations" volume.
+Optional motion asset: a short capture of the pipeline running on the synthetic Gatsby batch and
+ending on the review screen. Do not present the seeded teacher, students, essays, class size, or
+dashboard totals as customer activity.
 
----
+## 5. Maker's first comment
 
-## 5. Maker's first comment (~150 words, founder voice, Education angle)
-
-> Hi PH 👋 I built aiTA because grading essays is the part of teaching that quietly burns good teachers out — five hours a week of writing the same margin comments, then feeling guilty when you rush the last ten.
+> Hi Product Hunt — I built Mr Selby because thoughtful essay feedback can consume the part of a
+> teacher's day that should belong to planning, students, or life outside school.
 >
-> I didn't want another tool that spits out generic AI feedback a teacher has to rewrite anyway. So aiTA does two stubborn things. First, it grades **in your voice** — it learns from your own past comments (only with your consent) so the notes read like yours. Second, it **refuses to fake a grade**: off-topic or adversarial essays get flagged and withheld, never silently scored 95%. You stay the final authority on every comment — accept, edit, dismiss, finalize.
+> I named it after one of my favorite teachers. The care he brought to teaching, assignments, and
+> grading set the standard behind the product. The name is a personal tribute, not an affiliation or
+> endorsement.
 >
-> It's freemium — ~15 gradings free, no card. I'd genuinely love feedback from teachers: does it sound like *you*? What would make you trust it with a real stack of essays? 🙏
+> Mr Selby is designed to draft feedback to the teacher's rubric and style while keeping the teacher
+> in control. It can route off-topic or uncertain work back for review instead of forcing a confident
+> score. Teachers can accept, edit, or dismiss suggestions, and consented examples can shape later
+> drafts.
+>
+> I would value candid feedback from teachers: Does the workflow respect your judgment? What evidence
+> would you need before trusting it with a real stack of essays?
 
----
+Add plan and trial details only after signup, limits, and checkout have passed production acceptance.
 
-## 6. Maker story / "why I built this"
+## 6. Maker story
 
-Grading is where teaching integrity and teaching exhaustion collide. A conscientious English teacher will spend an entire evening on one class set because the feedback is the teaching — the margin note that says *push your analysis one step further* is worth more than the number at the top. But that care doesn't scale, and most "AI graders" make it worse: they hand back generic, voiceless comments that a teacher has to rewrite line by line, or — worse — they confidently score an off-topic essay 95% because they were built to always produce a number.
+Grading is where teaching integrity and teaching workload meet. The useful part is not only the number
+at the top; it is the specific note that helps a student revise. Generic AI output can add work when it
+misses the rubric, invents support, or uses language the teacher would not choose.
 
-aiTA is built around the opposite conviction: **the grade must be valid and trustworthy — rubric-aligned, teacher-calibrated, and never awarded to off-assignment work.** Two things follow from that. It learns the teacher's own voice from their consented past feedback, so the output reads like the teacher graded it — not like a chatbot. And it's trustworthy by construction: relevance-gated, rubric-mandatory, evidence-anchored, and it fails loud rather than guessing. When Brandon turns in a basketball essay for a Gatsby assignment, aiTA withholds it and says so. That refusal is the feature.
+Mr Selby is built around a narrower standard: ground each draft in the assignment and rubric, expose
+the supporting evidence, route unsupported cases to review, and let approved teacher examples shape
+the feedback style. It is intended to assist professional judgment, not impersonate or replace it.
 
-The teacher never leaves the loop. aiTA drafts; the teacher decides; and every edit the teacher makes sharpens aiTA's grasp of their voice on the next batch. The goal isn't to replace the teacher's judgment — it's to give it back the evening.
+The goal is thoughtful grading support shaped by how the teacher teaches. Any claim about time saved,
+voice convergence, users, or outcomes must come from dated evidence rather than from the synthetic
+demo account.
 
----
+## 7. Launch-day gate
 
-## 7. Launch-day checklist
+### Before scheduling
 
-**Hunter & timing**
-- [ ] Line up a hunter with EdTech/AI reach (or self-hunt — fine for a first launch). Confirm 24h before.
-- [ ] Launch **12:01am PT** (PH day resets at midnight Pacific). Target a Tuesday–Thursday to dodge weekend low traffic.
-- [ ] First comment (§5) queued to post **within the first minute**.
+- [x] Public overview and legal-preview routes respond over HTTPS at `https://mrselby.app`.
+- [ ] Exact production release supports fresh signup and sign-in in a private browser session.
+- [ ] Password recovery succeeds through a real emailed link on the production allowlist.
+- [ ] Privacy-safe sample assignment reaches a real Gemini-backed result with a retained trace ID.
+- [ ] Off-topic and low-confidence synthetic cases route as described.
+- [ ] Teacher accept, edit, dismiss, and finalize actions persist after reload.
+- [ ] Free limit and 14-day Pro trial match the UI and backend; no card is requested when promised.
+- [ ] Paid checkout succeeds with the production configuration, then is safely refunded during testing.
+- [ ] A monitored support or school-contact channel is published; do not invent an address.
+- [ ] Analytics capture signup → first grade → paywall → checkout with privacy-safe identifiers.
+- [ ] Production secrets are rotated and the release contains no revoked, demo, or shared credentials.
+- [ ] Gallery, motion asset, listing copy, and maker comment use the verified release and label synthetic data.
+- [ ] Confirm Product Hunt's current scheduling, category, and promotion rules immediately before launch.
 
-**Pre-launch (the night before)**
-- [ ] Live URL smoke-tested on **mobile + desktop**; fresh-incognito signup works end-to-end. (Launch-plan checklist §2.)
-- [ ] Free tier works **without a card**; paid checkout works with a real card (test, then refund).
-- [ ] Gallery (5 slides) + demo GIF uploaded; tagline + description + topics set.
-- [ ] **Secrets rotated before any public traffic** (DB password, Stripe `sk_live_`, Gemini key — all were shared in chat). Non-negotiable. (Launch-plan F-A2.)
-- [ ] Support channel (email/Intercom) staffed for the day.
-- [ ] PostHog confirmed capturing signup → first-grade → paywall → checkout (this *is* the XPRIZE user evidence).
+### Outreach
 
-**Outreach (day-of)**
-- [ ] Personal post on X / LinkedIn at launch with the demo GIF; ask for an honest comment, not just an upvote (PH down-ranks vote-begging).
-- [ ] DM the teacher communities you're already in (r/Teachers, English-teacher Discords/FB groups, your beta list). Lead with "does this sound like you?" not "please upvote."
-- [ ] Email any beta teachers + Phase-15 test-teacher candidate.
+- [ ] Share the launch from founder-owned accounts with a clear affiliation disclosure.
+- [ ] Participate only in teacher communities whose current rules permit the post; do not solicit votes or disguise promotion as a user recommendation.
+- [ ] Ask for product feedback, not testimonials. Quote a response later only with explicit permission and context.
 
-**FAQ replies (have these drafted)**
-- *"Is this just ChatGPT with a prompt?"* → No — it's a transparent multi-step pipeline (rubric validation → relevance/risk gate → grading → evidence-anchored annotation → style injection), and it learns *your* voice from *your* consented past feedback. It also withholds off-topic work instead of scoring it.
-- *"Does the AI grade for me?"* → It drafts; you decide. Accept/edit/dismiss every comment, finalize when you're satisfied. Nothing is final without you.
-- *"What about student privacy / FERPA?"* → Owner-isolated data, private storage with signed URLs, de-identification before any model call, right-to-erasure, retention controls. Voice learning is consent-gated.
-- *"Will it hallucinate a grade?"* → It's relevance-gated and evidence-anchored; off-topic/adversarial work is flagged and withheld, and it fails loud rather than guessing.
-- *"Pricing?"* → Free: ~15 gradings/mo, no card. Pro: $15/mo or $144/yr (full voice-convergence loop, bulk grading, exports). 14-day Pro trial on signup. Schools: contact us.
-- *"What grade levels / subjects?"* → Built for middle- and high-school English essays today (rubric + prose feedback). Other rubric-graded writing works; that's the near roadmap.
+### Evidence-safe FAQ
 
-**After launch**
-- [ ] Reply to every comment within the hour for the first 8 hours.
-- [ ] Capture every positive teacher reply as a **testimonial** (with permission) → XPRIZE user evidence.
-- [ ] Note conversion drop-off in PostHog; the paywall/onboarding fixes become next week's work.
+- **Is this just a single prompt?** The release candidate uses distinct rubric, relevance/risk,
+  grading, annotation, summary, and style stages. Show the live trace rather than relying on the claim.
+- **Does the AI make the final decision?** Teacher review is the default. Eligible automatic
+  finalization, if it is enabled in the verified release, is a separate teacher-controlled opt-in.
+- **What about student privacy or FERPA?** Do not claim compliance. The code includes account-scoped
+  controls and default-on exact-match masking for known names, but it does not remove every piece of
+  free-text personal information. Start with synthetic or appropriately de-identified work and follow
+  institutional requirements. Link to the published Privacy preview and current compliance posture.
+- **Will it always catch bad input?** No safeguard is perfect. The product is designed to route
+  off-topic, risky, or insufficiently supported work to review; demonstrate the exact release's behavior.
+- **Pricing?** The configured plans are approximately 15 gradings per month on Free, Pro at $15/month
+  or $144/year, and a 14-day Pro trial. Publish this only after the live entitlement and checkout paths
+  match it. Do not advertise school contact until a monitored channel exists.
+- **Which subjects?** The current examples and workflow focus on middle- and high-school English and
+  humanities writing. Broader subject support is a roadmap item, not a launch claim.
+
+### After launch
+
+- [ ] Respond to questions with the limitations above intact.
+- [ ] Export dated funnel counts with definitions and failed-event coverage.
+- [ ] Record user quotes only with permission; keep seed and founder accounts out of independent-user totals.
+- [ ] Report arms-length and related-party revenue separately.

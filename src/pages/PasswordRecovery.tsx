@@ -31,12 +31,16 @@ const RecoveryShell = ({ children, eyebrow }: RecoveryShellProps) => (
       }}
     />
     <main id="main-content" className="relative w-full max-w-md">
-      <div className="mb-6 flex items-center justify-center gap-2.5">
+      <Link
+        to="/"
+        aria-label="Mr Selby overview"
+        className="mb-6 flex min-h-11 items-center justify-center gap-2.5 rounded-md"
+      >
         <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm">
           <Feather className="h-5 w-5" aria-hidden="true" />
         </span>
-        <span className="font-display text-2xl font-semibold tracking-tight">aiTA</span>
-      </div>
+        <span className="font-display text-2xl font-semibold tracking-tight">Mr Selby</span>
+      </Link>
       <Card className="border-border/70 p-6 shadow-lg sm:p-8">
         <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.18em] text-primary">
           {eyebrow}
@@ -45,7 +49,7 @@ const RecoveryShell = ({ children, eyebrow }: RecoveryShellProps) => (
       </Card>
       <p className="mt-5 flex items-center justify-center gap-2 text-center text-xs text-muted-foreground">
         <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-        Your password is handled securely by our authentication provider.
+        Password changes are processed by the configured authentication provider.
       </p>
     </main>
   </div>
@@ -193,6 +197,8 @@ export const ForgotPassword = () => {
 export const ResetPassword = () => {
   const { loading: authLoading, passwordRecovery, session, updatePassword } = useAuth();
   const successHeadingRef = useRef<HTMLHeadingElement>(null);
+  const resetHeadingRef = useRef<HTMLHeadingElement>(null);
+  const invalidLinkHeadingRef = useRef<HTMLHeadingElement>(null);
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [loading, setLoading] = useState(false);
@@ -203,6 +209,19 @@ export const ResetPassword = () => {
   useEffect(() => {
     if (updated) successHeadingRef.current?.focus({ preventScroll: true });
   }, [updated]);
+
+  useEffect(() => {
+    if (authLoading || updated) return;
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      const heading = session && passwordRecovery
+        ? resetHeadingRef.current
+        : invalidLinkHeadingRef.current;
+      heading?.focus({ preventScroll: true });
+    });
+
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [authLoading, passwordRecovery, session, updated]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -233,9 +252,14 @@ export const ResetPassword = () => {
   if (authLoading) {
     return (
       <RecoveryShell eyebrow="Secure password update">
-        <p className="text-center text-sm text-muted-foreground" role="status" aria-live="polite">
-          Verifying your reset link…
-        </p>
+        <section className="text-center" aria-labelledby="verifying-reset-title" aria-busy="true">
+          <h1 id="verifying-reset-title" className="font-display text-2xl font-semibold tracking-tight">
+            Verifying your reset link
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground" role="status" aria-live="polite">
+            This should only take a moment.
+          </p>
+        </section>
       </RecoveryShell>
     );
   }
@@ -259,7 +283,7 @@ export const ResetPassword = () => {
             Your new password is ready. You can continue to your grading workspace.
           </p>
           <Button asChild size="lg" className="mt-7 w-full">
-            <Link to="/">Continue to aiTA</Link>
+            <Link to="/">Continue to Mr Selby</Link>
           </Button>
         </section>
       </RecoveryShell>
@@ -273,7 +297,12 @@ export const ResetPassword = () => {
           <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-muted text-muted-foreground">
             <KeyRound className="h-6 w-6" aria-hidden="true" />
           </span>
-          <h1 id="expired-reset-title" className="mt-5 font-display text-2xl font-semibold tracking-tight">
+          <h1
+            id="expired-reset-title"
+            ref={invalidLinkHeadingRef}
+            tabIndex={-1}
+            className="mt-5 font-display text-2xl font-semibold tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
             This reset link is not valid
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -299,7 +328,13 @@ export const ResetPassword = () => {
         <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
           <KeyRound className="h-6 w-6" aria-hidden="true" />
         </span>
-        <h1 className="mt-5 font-display text-2xl font-semibold tracking-tight">Choose a new password</h1>
+        <h1
+          ref={resetHeadingRef}
+          tabIndex={-1}
+          className="mt-5 font-display text-2xl font-semibold tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          Choose a new password
+        </h1>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
           Use a unique password you do not use for another service.
         </p>

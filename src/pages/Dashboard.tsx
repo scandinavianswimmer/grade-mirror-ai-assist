@@ -260,7 +260,7 @@ const Dashboard = () => {
       toast({
         title: created ? 'Sample essays loaded' : 'Opening your sample set',
         description: created
-          ? '5 student essays are ready — hit “Grade all” and watch aiTA auto-finalize the strong ones.'
+          ? '5 student essays are ready — hit “Grade all” and watch Mr Selby auto-finalize the strong ones.'
           : 'You already have the sample assignment — taking you to it.',
       });
       dashboardCache = null;
@@ -344,7 +344,7 @@ const Dashboard = () => {
             </div>
             <h2 className="font-display text-2xl font-semibold">Start your first class</h2>
             <p className="mx-auto mt-2 max-w-sm text-muted-foreground">
-              The fastest way to see aiTA work is our sample essays — no student data, no upload. Or
+              The fastest way to see Mr Selby work is our sample essays — no student data, no upload. Or
               group your assignments by class and grade real student work in your voice.
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">

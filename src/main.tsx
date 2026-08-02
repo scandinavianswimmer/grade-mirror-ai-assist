@@ -8,11 +8,6 @@ if (!rootElement) {
 }
 
 const root = createRoot(rootElement);
-const missingServiceConfig = [
-  !import.meta.env.VITE_SUPABASE_URL && 'VITE_SUPABASE_URL',
-  !import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY && 'VITE_SUPABASE_PUBLISHABLE_KEY',
-].filter(Boolean);
-
 const renderUnavailable = () => {
   root.render(
     <main className="grid min-h-screen place-items-center bg-background px-6 text-foreground">
@@ -23,7 +18,7 @@ const renderUnavailable = () => {
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           Service unavailable
         </p>
-        <h1 className="mt-3 font-display text-3xl font-semibold">aiTA is not configured yet.</h1>
+        <h1 className="mt-3 font-display text-3xl font-semibold">Mr Selby is not configured yet.</h1>
         <p className="mt-3 text-muted-foreground">
           This release is missing its service connection. Please try again after the deployment
           owner finishes setup.
@@ -33,9 +28,15 @@ const renderUnavailable = () => {
   );
 };
 
-if (missingServiceConfig.length > 0) {
-  console.error(`Missing required service configuration: ${missingServiceConfig.join(', ')}`);
-  renderUnavailable();
+if (__MR_SELBY_PUBLIC_PREVIEW__) {
+  void import('./PublicApp.tsx')
+    .then(({ default: PublicApp }) => {
+      root.render(<PublicApp />);
+    })
+    .catch((error: unknown) => {
+      console.error('Failed to start the Mr Selby public preview', error);
+      renderUnavailable();
+    });
 } else {
   void Promise.all([import('./App.tsx'), import('./lib/analytics')])
     .then(([{ default: App }, { initAnalytics }]) => {
@@ -44,7 +45,7 @@ if (missingServiceConfig.length > 0) {
       root.render(<App />);
     })
     .catch((error: unknown) => {
-      console.error('Failed to start aiTA', error);
+      console.error('Failed to start Mr Selby', error);
       renderUnavailable();
     });
 }

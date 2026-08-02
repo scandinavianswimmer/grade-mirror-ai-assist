@@ -41,6 +41,8 @@ describe('password recovery helpers', () => {
     expect(isPasswordRecoveryCallbackUrl('https://preview.example.test/auth/reset-password#type=recovery&access_token=secret')).toBe(true);
     expect(isPasswordRecoveryCallbackUrl('https://preview.example.test/auth/reset-password?code=abc')).toBe(false);
     expect(isPasswordRecoveryCallbackUrl('https://preview.example.test/auth/reset-password#note=type%3Drecovery')).toBe(false);
+    expect(isPasswordRecoveryCallbackUrl('https://preview.example.test/?type=recovery')).toBe(false);
+    expect(isPasswordRecoveryCallbackUrl('not a URL')).toBe(false);
   });
 
   it('persists only a tab-scoped intent marker across reloads', () => {
@@ -62,6 +64,35 @@ describe('password recovery helpers', () => {
     expect([...storage.values.values()]).toEqual(['1']);
     clearPasswordRecoveryIntent(storage);
     expect(storage.values.size).toBe(0);
+  });
+
+  it('fails closed when tab-scoped storage is unavailable', () => {
+    const unavailableStorage = {
+      getItem: () => {
+        throw new Error('storage blocked');
+      },
+      setItem: () => {
+        throw new Error('storage blocked');
+      },
+      removeItem: () => {
+        throw new Error('storage blocked');
+      },
+    };
+
+    expect(
+      getInitialPasswordRecoveryIntent(
+        'https://preview.example.test/auth/reset-password?type=recovery',
+        unavailableStorage,
+      ),
+    ).toBe(true);
+    expect(
+      getInitialPasswordRecoveryIntent(
+        'https://preview.example.test/auth/reset-password',
+        unavailableStorage,
+      ),
+    ).toBe(false);
+    expect(() => rememberPasswordRecoveryIntent(unavailableStorage)).not.toThrow();
+    expect(() => clearPasswordRecoveryIntent(unavailableStorage)).not.toThrow();
   });
 
   it('requires a useful minimum password length', () => {
