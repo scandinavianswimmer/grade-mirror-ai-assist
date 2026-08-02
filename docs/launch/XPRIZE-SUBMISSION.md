@@ -65,7 +65,7 @@ The eligibility gate is cleared. Every remaining item still requires evidence fr
 - [ ] Public demo video is **under three minutes**, captioned, and shows the exact deployed release.
 - [ ] Public repository URL points to the reviewed commit/tag and includes setup instructions.
 - [x] Public-preview URL works over HTTPS in a clean browser session; protected product acceptance remains open.
-- [x] Public and submission surfaces use `https://mrselby.app`; the Worker custom domain, HTTPS, SPA routes, and static security headers are verified.
+- [x] Public and submission surfaces use `https://mrselby.app`; the Worker custom domain, HTTPS, canonical HTTP/`www` redirects, SPA routes, and static security headers are verified.
 - [ ] Judge account and test instructions reproduce the demonstrated path without exposing real student data.
 - [ ] At least one Google Cloud product and at least one Gemini API call are present in the deployed app and backed by timestamped logs.
 - [ ] Real-user counts, demographics, testimonials, and production usage are documented.

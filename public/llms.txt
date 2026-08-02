@@ -14,4 +14,10 @@
 ## Notes for crawlers
 - This is a private, authenticated application; most routes require sign-in.
 - Mr Selby is not certified compliant with FERPA, GDPR, or similar regulations; institutions should review the actual deployment before use.
-- The product is available at https://mrselby.app.
+
+## Public links
+- [Product overview](https://mrselby.app/)
+- [Privacy launch preview](https://mrselby.app/privacy)
+- [Terms launch preview](https://mrselby.app/terms)
+- [XML sitemap](https://mrselby.app/sitemap.xml)
+- [Public source repository](https://github.com/scandinavianswimmer/grade-mirror-ai-assist)

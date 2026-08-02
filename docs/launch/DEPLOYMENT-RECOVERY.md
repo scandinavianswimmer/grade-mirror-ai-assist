@@ -114,7 +114,10 @@ A backend-less build now intentionally serves only the public preview and a guar
 does not accept accounts or classroom data. The first public-preview Worker version was
 `5fa596e9-a8d5-40ab-84ef-1b01054890cf`, deployed August 1, 2026 from the release-candidate working
 tree. Record a new Worker version after the changes are committed and redeployed. A successful CLI
-exit is not proof that the protected product works.
+exit is not proof that the protected product works. The first committed hardened preview was SHA
+`55d6fe8a392ec4b35569ec84c52b9418ca2821c2`, Worker version
+`672ba5d7-5ba9-4f49-ab49-a559866de3de`; it added canonical HTTP/`www` redirects, HSTS, the corrected
+Cloudflare analytics CSP, route-aware canonical metadata, and the lean public-only build.
 
 ## 5. Exact-release acceptance gate
 

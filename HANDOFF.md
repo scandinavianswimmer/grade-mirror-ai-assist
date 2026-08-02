@@ -17,7 +17,7 @@
 - Ignored CLI state had linked this sprint worktree to unrelated active project `zuazyrqrktlfgtncpeei`. The link was removed on August 1; default Supabase remote commands now fail closed until an explicit, verified relink.
 - The authenticated Vercel scope contains only an unrelated project. Do **not** deploy Mr Selby into that scope.
 - Organizer approval to proceed was confirmed by the founder on August 1, 2026; preserve the written ruling privately and follow its conditions.
-- Cloudflare Worker `mr-selby` version `5fa596e9-a8d5-40ab-84ef-1b01054890cf` created the apex custom-domain record on August 1, 2026. Root, pitch, Privacy, Terms, guarded auth setup, sitemap, robots, and social image return HTTP 200 with TLS and the configured security headers. Redeploy after committing the working tree so the final evidence maps to an exact SHA.
+- Cloudflare Worker `mr-selby` version `5fa596e9-a8d5-40ab-84ef-1b01054890cf` created the apex custom-domain record on August 1, 2026. The first committed hardened preview, SHA `55d6fe8a392ec4b35569ec84c52b9418ca2821c2` / Worker version `672ba5d7-5ba9-4f49-ab49-a559866de3de`, added canonical HTTP and `www` redirects, HSTS, route-aware canonical metadata, the corrected Cloudflare analytics CSP, and a public-only bundle. Root, Privacy, Terms, guarded auth setup, sitemap, robots, and social image are live; protected-product acceptance remains blocked on Supabase.
 
 Everything below this point is historical May 2026 context. It is useful for recovery, but its claims of a live deployment are **not current production evidence**.
 
