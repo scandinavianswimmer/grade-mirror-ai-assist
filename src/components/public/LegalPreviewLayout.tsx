@@ -8,9 +8,11 @@ import {
   Globe2,
   MailQuestion,
   Scale,
+  type LucideIcon,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import PublicFooter from '@/components/public/PublicFooter';
 import { cn } from '@/lib/utils';
 
 export interface LegalPageSection {
@@ -19,11 +21,20 @@ export interface LegalPageSection {
 }
 
 interface LegalPreviewLayoutProps {
-  currentPath: '/privacy' | '/terms';
+  currentPath: '/privacy' | '/terms' | '/accessibility';
   eyebrow: string;
   title: string;
   summary: string;
   sections: LegalPageSection[];
+  noticeBadge?: string;
+  noticeTitle?: string;
+  noticeBody?: string;
+  noticeIcon?: LucideIcon;
+  details?: Array<{
+    title: string;
+    value: ReactNode;
+    icon: LucideIcon;
+  }>;
   children: ReactNode;
 }
 
@@ -81,10 +92,15 @@ const LegalPreviewLayout = ({
   title,
   summary,
   sections,
+  noticeBadge = 'Launch preview',
+  noticeTitle = 'A useful preview, not final legal text',
+  noticeBody = 'This page documents the product\'s current launch approach in plain language. It must be reviewed by qualified counsel and completed with the final entity, effective date, and contact details before anyone is asked to rely on it as a legal agreement or policy.',
+  noticeIcon: NoticeIcon = Scale,
+  details = launchDetails,
   children,
 }: LegalPreviewLayoutProps) => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <a href="#legal-main" className="skip-link">Skip to main content</a>
 
       <header className="border-b border-border/70 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -111,11 +127,18 @@ const LegalPreviewLayout = ({
             >
               Terms
             </Link>
+            <Link
+              to="/accessibility"
+              className={navLinkClass(currentPath === '/accessibility')}
+              aria-current={currentPath === '/accessibility' ? 'page' : undefined}
+            >
+              Accessibility
+            </Link>
           </div>
         </nav>
       </header>
 
-      <main id="legal-main" tabIndex={-1}>
+      <main id="legal-main" tabIndex={-1} className="flex-1">
         <section className="border-b border-border/70 px-4 py-14 sm:py-20">
           <div className="container mx-auto max-w-5xl">
             <Link
@@ -128,7 +151,7 @@ const LegalPreviewLayout = ({
 
             <div className="mt-7 max-w-3xl animate-fade-up">
               <div className="flex flex-wrap items-center gap-3">
-                <Badge variant="secondary" className="border border-border/80">Launch preview</Badge>
+                <Badge variant="secondary" className="border border-border/80">{noticeBadge}</Badge>
                 <span className="text-sm font-medium uppercase tracking-[0.16em] text-primary">{eyebrow}</span>
               </div>
               <h1
@@ -148,12 +171,12 @@ const LegalPreviewLayout = ({
             >
               <div className="flex gap-4">
                 <span className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent/20 text-foreground">
-                  <Scale className="h-5 w-5" aria-hidden="true" />
+                  <NoticeIcon className="h-5 w-5" aria-hidden="true" />
                 </span>
                 <div>
-                  <h2 id="preview-notice-heading" className="font-display text-xl font-semibold">A useful preview, not final legal text</h2>
+                  <h2 id="preview-notice-heading" className="font-display text-xl font-semibold">{noticeTitle}</h2>
                   <p className="mt-2 leading-7 text-muted-foreground">
-                    This page documents the product&apos;s current launch approach in plain language. It must be reviewed by qualified counsel and completed with the final entity, effective date, and contact details before anyone is asked to rely on it as a legal agreement or policy.
+                    {noticeBody}
                   </p>
                 </div>
               </div>
@@ -162,7 +185,7 @@ const LegalPreviewLayout = ({
             <section aria-labelledby="launch-details-heading" className="mt-8">
               <h2 id="launch-details-heading" className="sr-only">Launch details still to be completed</h2>
               <div className="grid gap-4 sm:grid-cols-2">
-                {launchDetails.map((detail) => {
+                {details.map((detail) => {
                   const Icon = detail.icon;
                   return (
                     <Card key={detail.title} className="border-border/80 bg-card/90 p-5 shadow-sm">
@@ -207,17 +230,7 @@ const LegalPreviewLayout = ({
         </div>
       </main>
 
-      <footer className="border-t border-border/70 px-4 py-8">
-        <div className="container mx-auto flex max-w-5xl flex-col gap-5 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>Mr Selby launch preview · Legal details pending final review</p>
-          <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2">
-            <Link to="/" className="inline-flex min-h-6 items-center underline underline-offset-4 hover:text-foreground">Overview</Link>
-            <Link to="/pricing" className="inline-flex min-h-6 items-center underline underline-offset-4 hover:text-foreground">Pricing</Link>
-            <Link to="/privacy" className="inline-flex min-h-6 items-center underline underline-offset-4 hover:text-foreground">Privacy</Link>
-            <Link to="/terms" className="inline-flex min-h-6 items-center underline underline-offset-4 hover:text-foreground">Terms</Link>
-          </nav>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 };

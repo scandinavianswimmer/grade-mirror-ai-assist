@@ -44,9 +44,12 @@ export function initAnalytics(): void {
   try {
     posthog.init(KEY as string, {
       api_host: HOST,
-      capture_pageview: true,
-      // Respect Do-Not-Track and avoid surprising autocapture noise; we send explicit events.
+      // Keep the protected workspace on explicit, purpose-limited events. Automatic page URLs and
+      // session replays can expose classroom workflow details that are not needed for these metrics.
+      capture_pageview: false,
       autocapture: false,
+      disable_session_recording: true,
+      respect_dnt: true,
       persistence: 'localStorage',
     });
     initialized = true;

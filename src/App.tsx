@@ -28,6 +28,7 @@ const Pitch = lazy(() => import("./pages/Pitch"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
+const Accessibility = lazy(() => import("./pages/Accessibility"));
 const ForgotPassword = lazy(() =>
   import("./pages/PasswordRecovery").then((module) => ({ default: module.ForgotPassword })),
 );
@@ -46,6 +47,7 @@ const getDocumentTitle = (pathname: string) => {
   if (pathname === "/pricing") return "Pricing · Mr Selby";
   if (pathname === "/privacy") return "Privacy preview · Mr Selby";
   if (pathname === "/terms") return "Terms preview · Mr Selby";
+  if (pathname === "/accessibility") return "Accessibility · Mr Selby";
   if (pathname === "/auth") return "Sign in or create an account · Mr Selby";
   if (pathname === "/auth/callback") return "Completing sign-in · Mr Selby";
   if (pathname === "/auth/forgot-password") return "Reset your password · Mr Selby";
@@ -210,7 +212,7 @@ const AppContent = () => {
 
   // Allow public product, legal, and account-recovery pages without authentication.
   if (
-    ['/pitch', '/pricing', '/privacy', '/terms', '/auth/forgot-password', '/auth/reset-password']
+    ['/pitch', '/pricing', '/privacy', '/terms', '/accessibility', '/auth/forgot-password', '/auth/reset-password']
       .includes(location.pathname)
   ) {
     return (
@@ -221,6 +223,7 @@ const AppContent = () => {
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/accessibility" element={<Accessibility />} />
           <Route path="/auth/forgot-password" element={<ForgotPassword />} />
           <Route path="/auth/reset-password" element={<ResetPassword />} />
           <Route path="*" element={<NotFound />} />
@@ -350,6 +353,7 @@ const AppContent = () => {
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
+      <Route path="/accessibility" element={<Accessibility />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/auth/forgot-password" element={<ForgotPassword />} />

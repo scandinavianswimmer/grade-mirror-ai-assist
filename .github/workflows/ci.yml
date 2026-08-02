@@ -73,6 +73,12 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Install Chromium for accessibility checks
+        run: npx playwright install --with-deps chromium
+
+      - name: Public-route accessibility gate (axe + WCAG 2.2 checks)
+        run: npm run a11y:ci
+
       - name: Eval dry-run — Gemini-judge voice-fidelity contract (mock scorer, no key)
         run: npm run eval:dry
 
