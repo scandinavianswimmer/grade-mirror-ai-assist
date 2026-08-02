@@ -2,11 +2,16 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { handleRequest } from '../worker/cloudflare';
 
-const createEnv = () => ({
-  ASSETS: {
+const createEnv = () => {
+  const assetBinding = {
     fetch: vi.fn(async () => new Response('asset response')),
-  },
-});
+    connect: vi.fn(() => {
+      throw new Error('The static asset binding does not use connect in this Worker.');
+    }),
+  } satisfies Fetcher;
+
+  return { ASSETS: assetBinding } satisfies Env;
+};
 
 describe('Cloudflare canonical-host Worker', () => {
   it('redirects the production HTTP origin to HTTPS', async () => {

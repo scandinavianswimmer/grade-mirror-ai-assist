@@ -29,6 +29,7 @@ const Pricing = lazy(() => import("./pages/Pricing"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Accessibility = lazy(() => import("./pages/Accessibility"));
+const JudgeMode = lazy(() => import("./pages/JudgeMode"));
 const ForgotPassword = lazy(() =>
   import("./pages/PasswordRecovery").then((module) => ({ default: module.ForgotPassword })),
 );
@@ -48,6 +49,7 @@ const getDocumentTitle = (pathname: string) => {
   if (pathname === "/privacy") return "Privacy preview · Mr Selby";
   if (pathname === "/terms") return "Terms preview · Mr Selby";
   if (pathname === "/accessibility") return "Accessibility · Mr Selby";
+  if (pathname === "/judge") return "The Teacher’s Test · Mr Selby";
   if (pathname === "/auth") return "Sign in or create an account · Mr Selby";
   if (pathname === "/auth/callback") return "Completing sign-in · Mr Selby";
   if (pathname === "/auth/forgot-password") return "Reset your password · Mr Selby";
@@ -190,7 +192,7 @@ const AppContent = () => {
     return (
       <>
         <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{routeAnnouncement}</p>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="text-lg font-medium" role="status" aria-live="polite">Loading…</div>
         </div>
       </>
@@ -212,7 +214,7 @@ const AppContent = () => {
 
   // Allow public product, legal, and account-recovery pages without authentication.
   if (
-    ['/pitch', '/pricing', '/privacy', '/terms', '/accessibility', '/auth/forgot-password', '/auth/reset-password']
+    ['/pitch', '/pricing', '/privacy', '/terms', '/accessibility', '/judge', '/auth/forgot-password', '/auth/reset-password']
       .includes(location.pathname)
   ) {
     return (
@@ -224,6 +226,7 @@ const AppContent = () => {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/accessibility" element={<Accessibility />} />
+          <Route path="/judge" element={<JudgeMode />} />
           <Route path="/auth/forgot-password" element={<ForgotPassword />} />
           <Route path="/auth/reset-password" element={<ResetPassword />} />
           <Route path="*" element={<NotFound />} />
@@ -354,6 +357,7 @@ const AppContent = () => {
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/accessibility" element={<Accessibility />} />
+      <Route path="/judge" element={<JudgeMode />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/auth/forgot-password" element={<ForgotPassword />} />

@@ -11,43 +11,43 @@ interface GuidedTourProps {
 
 const TOUR_STEPS = [
   {
-    title: "Welcome to Mr Selby! 🎉",
-    content: "Let's take a quick tour to show you around. This will help you get the most out of our AI-powered grading assistant.",
+    title: "A quick tour of Mr Selby",
+    content: "See where work waiting for review lives, then open a paper and make the final decisions.",
     position: "center"
   },
   {
-    title: "Dashboard Overview",
-    content: "This is your main dashboard where you can see all your classes and assignments. You can track your grading progress and manage your teaching workflow.",
+    title: "Today",
+    content: "Today gathers assignments that need a closer look, drafts that are ready, and stacks you can keep moving through.",
     target: "[data-tour='dashboard-overview']",
     position: "bottom"
   },
   {
     title: "Creating Classes",
-    content: "Start by creating classes for your courses. Click here to add a new class with details like grade level, size, and schedule.",
+    content: "Group assignments by class when it helps. Add the grade level, size, and schedule you actually use.",
     target: "[data-tour='create-class']",
     position: "bottom"
   },
   {
     title: "Managing Classes",
-    content: "You can edit your classes anytime by clicking the edit button. Update class details, student rosters, and schedules as needed.",
+    content: "Update class details, rosters, and schedules whenever they change.",
     target: "[data-tour='edit-class']",
     position: "top"
   },
   {
     title: "Creating Assignments",
-    content: "Once you have classes, create assignments for your students. Set grading criteria and let our AI help with consistent grading.",
+    content: "Add the prompt and rubric Mr Selby should follow for the first pass.",
     target: "[data-tour='create-assignment']",
     position: "bottom"
   },
   {
     title: "Uploading Student Work",
-    content: "Upload student submissions easily. Our AI will analyze them based on your grading style and provide detailed feedback.",
+    content: "Add student work only when the assignment and rubric are ready. Mr Selby drafts feedback for your review.",
     target: "[data-tour='upload-section']",
     position: "top"
   },
   {
-    title: "AI-Powered Grading",
-    content: "Our AI has learned from your 10 uploaded examples and will grade consistently according to your standards. You can always review and adjust the feedback.",
+    title: "Reviewing a first pass",
+    content: "Check the rubric evidence, accept or change each note, and approve the result only when it meets your standard.",
     target: "[data-tour='grading-results']",
     position: "center"
   }

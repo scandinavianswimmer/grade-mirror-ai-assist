@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Upload, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { Upload, CheckCircle, Loader2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/components/AuthProvider';
 import { createTrainingExample, getUserLimits } from '@/lib/freemiumApi';
@@ -29,7 +29,7 @@ const UploadTraining = () => {
     if (!user) {
       toast({
         title: "Authentication required",
-        description: "Please sign in to upload training examples.",
+        description: "Please sign in to add feedback examples.",
         variant: "destructive"
       });
       return;
@@ -52,7 +52,7 @@ const UploadTraining = () => {
       if (limits.trainingExamplesCount >= limits.maxTrainingExamples) {
         toast({
           title: "Limit reached",
-          description: `You've reached the maximum number of training examples (${limits.maxTrainingExamples}) for the ${limits.plan} plan.`,
+          description: `You've reached the feedback-example limit (${limits.maxTrainingExamples}) for the ${limits.plan} plan.`,
           variant: "destructive"
         });
         return;
@@ -67,8 +67,8 @@ const UploadTraining = () => {
       });
 
       toast({
-        title: "Training example uploaded!",
-        description: "Your grading example has been added to improve AI accuracy."
+        title: "Feedback example added",
+        description: "Your paper, rubric, and wording are saved in Feedback style."
       });
 
       // Reset form
@@ -79,12 +79,11 @@ const UploadTraining = () => {
         grade: ''
       });
 
-      // Navigate back to dashboard
-      navigate('/');
+      navigate('/training');
     } catch (error) {
       console.error('Upload error:', error);
       toast({
-        title: "Upload failed",
+        title: "Could not add that example",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive"
       });
@@ -99,13 +98,13 @@ const UploadTraining = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-background">
         <Navbar />
         <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
           <div className="max-w-2xl mx-auto text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Sign In Required</h1>
-            <p className="text-gray-600 mb-8">Please sign in to upload training examples.</p>
-            <Button onClick={() => navigate('/auth')}>Sign In</Button>
+            <h1 className="font-display text-3xl font-semibold mb-4">Sign in to add an example</h1>
+            <p className="text-muted-foreground mb-8">Feedback examples stay with your teacher workspace.</p>
+            <Button onClick={() => navigate('/auth')}>Sign in</Button>
           </div>
         </main>
       </div>
@@ -113,28 +112,30 @@ const UploadTraining = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-background">
       <Navbar />
       
       <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Upload Training Example</h1>
-            <p className="text-gray-600">
-              Upload a past graded essay to train the AI to match your grading style and feedback approach.
+          <div className="mb-8">
+            <p className="text-sm font-semibold text-primary">Feedback style</p>
+            <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">Add a feedback example</h1>
+            <p className="mt-4 text-lg leading-8 text-muted-foreground">
+              Add a de-identified paper, the rubric you used, and your final wording. Mr Selby can use
+              the example as context for future first passes.
             </p>
           </div>
 
           <Card className="p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Student Essay */}
+              {/* Student paper */}
               <div>
-                <Label htmlFor="essay">Student Essay *</Label>
+                <Label htmlFor="essay">Student paper *</Label>
                 <Textarea
                   id="essay"
                   value={formData.essay}
                   onChange={(e) => handleInputChange('essay', e.target.value)}
-                  placeholder="Paste the student's essay text here..."
+                  placeholder="Paste de-identified paper text here…"
                   className="mt-1 min-h-[200px]"
                   required
                 />
@@ -142,12 +143,12 @@ const UploadTraining = () => {
 
               {/* Rubric */}
               <div>
-                <Label htmlFor="rubric">Grading Rubric *</Label>
+                <Label htmlFor="rubric">Rubric *</Label>
                 <Textarea
                   id="rubric"
                   value={formData.rubric}
                   onChange={(e) => handleInputChange('rubric', e.target.value)}
-                  placeholder="Paste the grading rubric or criteria used for this assignment..."
+                  placeholder="Paste the rubric or criteria used for this assignment…"
                   className="mt-1 min-h-[150px]"
                   required
                 />
@@ -155,24 +156,24 @@ const UploadTraining = () => {
 
               {/* Your Feedback */}
               <div>
-                <Label htmlFor="feedback">Your Feedback</Label>
+                <Label htmlFor="feedback">Your final feedback *</Label>
                 <Textarea
                   id="feedback"
                   value={formData.feedback}
                   onChange={(e) => handleInputChange('feedback', e.target.value)}
-                  placeholder="The feedback you provided to the student..."
+                  placeholder="Paste the feedback you wrote…"
                   className="mt-1 min-h-[120px]"
                 />
               </div>
 
               {/* Grade Given */}
               <div>
-                <Label htmlFor="grade">Grade Given</Label>
+                <Label htmlFor="grade">Score or grade</Label>
                 <Input
                   id="grade"
                   value={formData.grade}
                   onChange={(e) => handleInputChange('grade', e.target.value)}
-                  placeholder="e.g., A-, 87%, B+"
+                  placeholder="For example: 16/20, 87%, B+"
                   className="mt-1"
                 />
               </div>
@@ -181,28 +182,28 @@ const UploadTraining = () => {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Uploading Training Example...
+                    Adding example…
                   </>
                 ) : (
                   <>
                     <Upload className="w-4 h-4 mr-2" />
-                    Upload Training Example
+                    Add feedback example
                   </>
                 )}
               </Button>
             </form>
 
             {/* Help Text */}
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+            <div className="mt-6 rounded-lg border border-border bg-secondary/45 p-4">
               <div className="flex items-start gap-3">
-                <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                <CheckCircle className="w-5 h-5 text-primary mt-0.5" />
                 <div>
-                  <p className="font-medium text-blue-800">Training Tips</p>
-                  <ul className="text-sm text-blue-700 mt-1 space-y-1">
-                    <li>• Upload examples that represent your typical grading style</li>
-                    <li>• Include both high and low-performing essays for balance</li>
-                    <li>• More training examples = better AI accuracy</li>
-                    <li>• Free plan allows up to 5 training examples</li>
+                  <p className="font-medium text-foreground">Before you add it</p>
+                  <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                    <li>Remove names, emails, student IDs, and identifying details.</li>
+                    <li>Use the feedback you actually returned, including edits you made.</li>
+                    <li>A few representative examples are more useful than a large inconsistent set.</li>
+                    <li>Your plan limit is shown before anything is saved.</li>
                   </ul>
                 </div>
               </div>

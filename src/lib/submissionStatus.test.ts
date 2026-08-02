@@ -5,7 +5,33 @@ import {
   statusMetaWithProvenance,
   statusMeta,
   effectiveStatus,
+  isApprovedStatus,
+  isExportedStatus,
 } from './submissionStatus';
+
+describe('teacher-facing status language', () => {
+  it.each([
+    ['uploaded', 'Ready to draft'],
+    ['pending', 'Ready to draft'],
+    ['grading', 'Drafting feedback…'],
+    ['graded', 'Ready for review'],
+    ['ai_graded', 'Ready for review'],
+    ['needs_review', 'Needs a closer look'],
+    ['grade_error', 'Draft did not finish'],
+    ['finalized', 'Approved'],
+    ['exported', 'Exported'],
+  ])('translates %s to %s', (stored, visible) => {
+    expect(statusMeta(stored).label).toBe(visible);
+  });
+
+  it('keeps approved and exported as separate release states', () => {
+    expect(isApprovedStatus('finalized')).toBe(true);
+    expect(isApprovedStatus('exported')).toBe(true);
+    expect(isApprovedStatus('graded')).toBe(false);
+    expect(isExportedStatus('finalized')).toBe(false);
+    expect(isExportedStatus('exported')).toBe(true);
+  });
+});
 
 describe('isAutoFinalized', () => {
   it('is true only for ai provenance', () => {
@@ -17,14 +43,17 @@ describe('isAutoFinalized', () => {
 });
 
 describe('statusMetaWithProvenance', () => {
-  it('labels an AI-finalized grade as Auto-finalized', () => {
+  it('attributes eligible automatic approval to the teacher setting', () => {
     const meta = statusMetaWithProvenance('finalized', 'ai');
-    expect(meta.label).toBe('Auto-finalized');
-    expect(meta.description).toMatch(/Mr Selby/);
+    expect(meta.label).toBe('Approved automatically');
+    expect(meta.description).toMatch(/You turned this on/);
   });
 
-  it('labels an exported AI grade as Auto-finalized too', () => {
-    expect(statusMetaWithProvenance('exported', 'ai').label).toBe('Auto-finalized');
+  it('does not hide the exported state when approval was automatic', () => {
+    const meta = statusMetaWithProvenance('exported', 'ai');
+    expect(meta.label).toBe('Exported');
+    expect(meta.description).toMatch(/approved automatically/i);
+    expect(meta.description).toMatch(/You turned this on/);
   });
 
   it('falls back to the plain finalized label for teacher approval', () => {
@@ -32,7 +61,7 @@ describe('statusMetaWithProvenance', () => {
   });
 
   it('falls back to plain meta when provenance is missing (pre-migration)', () => {
-    expect(statusMetaWithProvenance('finalized', undefined).label).toBe('Finalized');
+    expect(statusMetaWithProvenance('finalized', undefined).label).toBe('Approved');
   });
 
   it('does not relabel non-finalized statuses even with ai provenance', () => {

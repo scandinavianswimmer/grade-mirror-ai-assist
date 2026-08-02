@@ -46,22 +46,22 @@ const Metrics = () => {
 
   const cards = summary ? [
     {
-      label: 'Estimated time saved',
+      label: 'Planning estimate',
       value: formatMinutes(summary.estimatedMinutesSaved),
       icon: Clock,
-      hint: `${summary.gradedCount} graded × (${BASELINE_MINUTES_PER_SUBMISSION}−${AI_REVIEW_MINUTES_PER_SUBMISSION} min)`,
+      hint: `${summary.gradedCount} drafts × (${BASELINE_MINUTES_PER_SUBMISSION} min manual baseline − ${AI_REVIEW_MINUTES_PER_SUBMISSION} min review assumption)`,
     },
     {
-      label: 'Avg edits / submission',
+      label: 'Average edits per paper',
       value: summary.avgEditsPerSubmission.toFixed(2),
       icon: Pencil,
-      hint: `${summary.totalEdits} edits across ${summary.gradedCount} graded`,
+      hint: `${summary.totalEdits} edits across ${summary.gradedCount} drafted papers`,
     },
     {
-      label: 'Rubric-alignment confidence',
+      label: 'Rubric evidence signal',
       value: summary.avgConfidencePct != null ? `${summary.avgConfidencePct.toFixed(0)}%` : '—',
       icon: Target,
-      hint: 'Avg overall AI confidence',
+      hint: 'Internal draft signal; always verify against the paper',
     },
     {
       label: 'Feedback turnaround',
@@ -76,8 +76,8 @@ const Metrics = () => {
       <Navbar />
       <main id="main-content" tabIndex={-1} className="container mx-auto px-4 py-8">
         <div className="mb-6">
-          <h1 className="font-display text-3xl font-semibold tracking-tight">Metrics</h1>
-          <p className="text-muted-foreground">Your grading impact and how Mr Selby is learning your style.</p>
+          <h1 className="font-display text-3xl font-semibold tracking-tight">Progress</h1>
+          <p className="text-muted-foreground">Review activity, turnaround, and how often you change drafted feedback.</p>
         </div>
 
         {/* METRIC-01 summary cards */}
@@ -106,10 +106,11 @@ const Metrics = () => {
           <CardHeader className="rule">
             <div className="flex items-center gap-2">
               <TrendingDown className="h-4 w-4 text-praise" />
-              <CardTitle className="font-display text-lg">Edit rate over time</CardTitle>
+              <CardTitle className="font-display text-lg">Draft edits over time</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
-              Edits per graded submission, by week. A downward trend means Mr Selby is matching your style more closely.
+              Edits per reviewed paper, by week. Fewer edits can mean drafts are getting closer to
+              your wording; this is a directional signal, not a feedback-quality score.
             </p>
           </CardHeader>
           <CardContent className="pt-6">
@@ -117,7 +118,7 @@ const Metrics = () => {
               <Skeleton className="h-64 w-full" />
             ) : editRate.length === 0 ? (
               <p className="py-12 text-center text-sm text-muted-foreground">
-                No graded submissions yet. Grade a batch to start tracking your improvement.
+                No reviewed papers yet. Finish a batch to start seeing the edit pattern.
               </p>
             ) : (
               <ResponsiveContainer width="100%" height={280}>

@@ -9,15 +9,9 @@ import Navbar from '@/components/Navbar';
 import { useAuth } from '@/components/AuthProvider';
 import { fetchGradingHistory, deriveFilterOptions, type HistoryRow } from '@/lib/historyApi';
 
-// OBS-02 — queryable grading history per teacher / class / assignment.
+// Queryable teacher activity per class and assignment. Operator/model evidence lives in Judge Mode.
 
 const ALL = '__all__';
-
-function fmtTokens(n: number | null): string {
-  if (n == null) return '—';
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
-  return String(n);
-}
 
 const HistoryPage = () => {
   const { user } = useAuth();
@@ -63,9 +57,9 @@ const HistoryPage = () => {
           <div>
             <div className="flex items-center gap-2">
               <HistoryIcon className="h-6 w-6 text-primary" />
-              <h1 className="font-display text-3xl font-semibold tracking-tight">Grading history</h1>
+              <h1 className="font-display text-3xl font-semibold tracking-tight">Activity</h1>
             </div>
-            <p className="text-muted-foreground">Every graded submission, with model, score, confidence, flags, and token usage.</p>
+            <p className="text-muted-foreground">Recent draft scores and review signals, grouped by class and assignment.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Select value={classFilter} onValueChange={(v) => { setClassFilter(v); setAssignmentFilter(ALL); }}>
@@ -88,7 +82,7 @@ const HistoryPage = () => {
         <Card>
           <CardHeader className="rule pb-3">
             <CardTitle className="font-display text-base">
-              {loading ? 'Loading…' : `${filtered.length} graded submission${filtered.length === 1 ? '' : 's'}`}
+              {loading ? 'Loading…' : `${filtered.length} drafted submission${filtered.length === 1 ? '' : 's'}`}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
@@ -97,7 +91,7 @@ const HistoryPage = () => {
                 {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
               </div>
             ) : filtered.length === 0 ? (
-              <p className="py-12 text-center text-sm text-muted-foreground">No graded submissions match these filters.</p>
+                <p className="py-12 text-center text-sm text-muted-foreground">No draft activity matches these filters.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -106,12 +100,9 @@ const HistoryPage = () => {
                       <th className="py-2 pr-4 font-medium">Student</th>
                       <th className="py-2 pr-4 font-medium">Assignment</th>
                       <th className="py-2 pr-4 font-medium">Class</th>
-                      <th className="py-2 pr-4 font-medium">Score</th>
-                      <th className="py-2 pr-4 font-medium">Conf.</th>
-                      <th className="py-2 pr-4 font-medium">Model</th>
-                      <th className="py-2 pr-4 font-medium">Tokens (in/out)</th>
-                      <th className="py-2 pr-4 font-medium">Flags</th>
-                      <th className="py-2 pr-4 font-medium">Graded</th>
+                      <th className="py-2 pr-4 font-medium">Draft score</th>
+                      <th className="py-2 pr-4 font-medium">Review notes</th>
+                      <th className="py-2 pr-4 font-medium">Drafted</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -125,12 +116,9 @@ const HistoryPage = () => {
                         <td className="py-2 pr-4 text-muted-foreground">{r.assignmentTitle || '—'}</td>
                         <td className="py-2 pr-4 text-muted-foreground">{r.className || '—'}</td>
                         <td className="metric py-2 pr-4">{r.overallScore ?? '—'}{r.overallMax ? <span className="text-muted-foreground">/{r.overallMax}</span> : null}</td>
-                        <td className="metric py-2 pr-4 text-muted-foreground">{r.confidence != null ? `${Math.round(r.confidence * 100)}%` : '—'}</td>
-                        <td className="py-2 pr-4 text-xs text-muted-foreground">{r.modelId || '—'}</td>
-                        <td className="metric py-2 pr-4 text-xs text-muted-foreground">{fmtTokens(r.inputTokens)} / {fmtTokens(r.outputTokens)}</td>
                         <td className="py-2 pr-4">
                           <div className="flex flex-wrap gap-1">
-                            {r.flags.length === 0 ? <span className="text-muted-foreground">—</span> :
+                            {r.flags.length === 0 ? <span className="text-muted-foreground">No exception flags</span> :
                               r.flags.map((f) => <Badge key={f} variant="outline" className="border-suggestion/50 text-[10px] text-suggestion">{f.replace(/_/g, ' ')}</Badge>)}
                           </div>
                         </td>

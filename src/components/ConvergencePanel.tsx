@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Sparkles, TrendingDown, Minus } from 'lucide-react';
+import { PenLine, TrendingDown, Minus } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
@@ -29,15 +29,15 @@ function verdictFor(series: ConvergenceSeries): Verdict {
   if (batchCount === 0) {
     return {
       tone: 'empty',
-      headline: 'No finalized batches yet',
-      sub: 'Grade and finalize a batch of submissions to start tracking whether Mr Selby is matching your voice.',
+      headline: 'No approved batches yet',
+      sub: 'Approve a batch of papers to start tracking how often you change drafted notes.',
     };
   }
   if (batchCount === 1) {
     return {
       tone: 'neutral',
       headline: 'One batch in',
-      sub: 'Grade and finalize another batch to see whether your edit rate is falling — convergence needs at least two.',
+      sub: 'Approve another batch before reading anything into the edit pattern.',
     };
   }
   if (editRateDeltaPct === null) {
@@ -51,21 +51,21 @@ function verdictFor(series: ConvergenceSeries): Verdict {
   if (converged) {
     return {
       tone: 'good',
-      headline: `Edit-rate signal: down ${delta}% — looks like Mr Selby is matching your voice`,
-      sub: `Across ${batchCount} batches you're editing Mr Selby's feedback ${delta}% less (corroborator threshold: ≥${CONVERGENCE_DECLINE_PCT}%). Corroborator only — the pre-registered verdict is the GPT-judge voice-fidelity proof.`,
+      headline: `You are changing ${delta}% fewer draft notes`,
+      sub: `That pattern spans ${batchCount} batches and passes the internal ${CONVERGENCE_DECLINE_PCT}% directional threshold. It does not measure feedback quality by itself.`,
     };
   }
   if (flat) {
     return {
       tone: 'flat',
-      headline: `Edit-rate signal: down only ${delta}% — holding steady`,
-      sub: `Across ${batchCount} batches your edit rate hasn't really moved. That alone doesn't disprove convergence (many teachers rarely edit) — the pre-registered verdict is the GPT-judge proof.`,
+      headline: 'Your edit pattern is holding steady',
+      sub: `Across ${batchCount} batches, the change is ${delta}%. That is useful context—not a judgment about your feedback or the drafts.`,
     };
   }
   return {
     tone: 'neutral',
-    headline: `Edit-rate signal: trending down ${delta}%`,
-    sub: `Edit rate is falling but hasn't reached the ≥${CONVERGENCE_DECLINE_PCT}% corroborator threshold across ${batchCount} batches. Corroborator only — the pre-registered verdict is the GPT-judge proof.`,
+    headline: `You are changing ${delta}% fewer draft notes`,
+    sub: `The pattern spans ${batchCount} batches but has not reached the internal ${CONVERGENCE_DECLINE_PCT}% directional threshold. Keep treating it as context, not a quality score.`,
   };
 }
 
@@ -96,7 +96,7 @@ const ConvergencePanel = () => {
     selfRating: b.meanSelfRating,
   }));
 
-  const Icon = verdict?.tone === 'good' ? TrendingDown : verdict?.tone === 'flat' ? Minus : Sparkles;
+  const Icon = verdict?.tone === 'good' ? TrendingDown : verdict?.tone === 'flat' ? Minus : PenLine;
   const accent =
     verdict?.tone === 'good' ? 'text-praise' : verdict?.tone === 'flat' ? 'text-muted-foreground' : 'text-primary';
 
@@ -104,13 +104,12 @@ const ConvergencePanel = () => {
     <Card className="mt-8">
       <CardHeader className="rule">
         <div className="flex items-center gap-2">
-          <Sparkles aria-hidden="true" className="h-4 w-4 text-primary" />
-          <CardTitle className="font-display text-lg">Is Mr Selby learning you?</CardTitle>
+          <PenLine aria-hidden="true" className="h-4 w-4 text-primary" />
+          <CardTitle className="font-display text-lg">How often you change the first pass</CardTitle>
         </div>
         <p className="text-sm text-muted-foreground">
-          How often you edit or dismiss Mr Selby's notes, batch over batch. A downward line is a
-          corroborating signal that Mr Selby is starting to write in your voice — it is <em>not</em> the
-          pre-registered proof, which is a blinded GPT-judge voice-fidelity study.
+          This tracks notes you edit or dismiss, batch by batch. A downward line can mean the drafts
+          are getting closer to your wording, but it does not prove that the feedback is better.
         </p>
       </CardHeader>
       <CardContent className="pt-6">
@@ -186,7 +185,7 @@ const ConvergencePanel = () => {
               </figure>
             ) : (
               <p className="py-12 text-center text-sm text-muted-foreground">
-                No finalized batches yet. Grade a batch to start tracking your improvement.
+                No approved batches yet. Finish a batch to start seeing the pattern.
               </p>
             )}
           </>

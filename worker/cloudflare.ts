@@ -1,9 +1,3 @@
-interface Env {
-  ASSETS: {
-    fetch(request: Request): Promise<Response>;
-  };
-}
-
 const CANONICAL_HOST = 'mrselby.app';
 const WWW_HOST = `www.${CANONICAL_HOST}`;
 
@@ -30,4 +24,4 @@ export const handleRequest = async (request: Request, env: Env): Promise<Respons
 
 export default {
   fetch: handleRequest,
-};
+} satisfies ExportedHandler<Env>;
